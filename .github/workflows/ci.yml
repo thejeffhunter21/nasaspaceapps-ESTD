@@ -13,3 +13,5 @@ jobs:
       - run: uv sync --locked
       - run: uv run --locked ruff check .
       - run: uv run --locked pytest
+      - name: Docker image builds
+        run: docker build -t estd-api .
