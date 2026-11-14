@@ -96,7 +96,40 @@ def test_known_slope_comes_out_per_month():
 
     values = [10 + 5 * math.sin(2 * math.pi * i / 12) + 0.01 * i for i in range(240)]
     values[30] = None  # a gap must not shift the seasons
-    trend = run_trend(values, "degC")
+    trend = run_trend(values)
     assert abs(trend["slope"] - 0.01) < 1e-6
-    assert trend["slope_unit"] == "degC/month"
     assert trend["trend"] == "increasing"
+
+
+def test_ai_layer_shapes(tmp_path, monkeypatch):
+    """explain returns {"text", "source"}; a forecast block is kept for the main region only."""
+    from earth_system_trend.pipeline import run
+
+    fc = {"method": "Holt-Winters (12-month season)", "months": 1,
+          "points": [{"time": "2025-01", "value": 5.0, "low": 4.0, "high": 6.0}],
+          "backtest_mae": 0.8, "beats_baseline": True, "note": "Assumes the past pattern continues."}
+    monkeypatch.setattr(run, "explain", lambda r: {"text": "AI words.", "source": "ai"})
+    monkeypatch.setattr(run, "forecast", lambda v, months=12: fc)
+    c = tmp_path / "timeseries.csv"
+    make_stub_csv(c)
+    make_stub_csv(tmp_path / "timeseries_north.csv", seed=1)
+    (tmp_path / "regions.json").write_text(json.dumps([{"id": "north", "label": "North"}]))
+    out = tmp_path / "results.json"
+    assert main(["--csv", str(c), "--out", str(out), "--all-regions",
+                 "--regions-file", str(tmp_path / "regions.json")]) == 0
+    main_results = load_results(out)
+    assert (main_results.explanation, main_results.explanation_source) == ("AI words.", "ai")
+    assert main_results.forecast.points[0].high == 6.0
+    assert main_results.trend.slope_unit == "degC/month"
+    assert load_results(tmp_path / "regions" / "north.json").forecast is None
+
+
+def test_broken_ai_falls_back(tmp_path, monkeypatch):
+    from earth_system_trend.pipeline import run
+
+    def boom(_):
+        raise RuntimeError("Gemini down")
+    monkeypatch.setattr(run, "explain", boom)
+    out = tmp_path / "r.json"
+    main(["--stub", "--csv", str(tmp_path / "t.csv"), "--out", str(out)])
+    assert load_results(out).explanation_source == "fallback"

@@ -59,6 +59,30 @@ class Trend(_Strict):
         return v
 
 
+class ForecastPoint(_Strict):
+    time: str = Field(pattern=MONTH)
+    value: float
+    low: float
+    high: float
+
+    @model_validator(mode="after")
+    def band_contains_value(self) -> ForecastPoint:
+        if not (self.low <= self.value <= self.high):
+            raise ValueError("forecast needs low <= value <= high")
+        return self
+
+
+class Forecast(_Strict):
+    """Optional (AI layer). Code makes the numbers; it assumes the past pattern continues."""
+
+    method: str = Field(min_length=1, description='e.g. "Holt-Winters (12-month season)"')
+    months: int = Field(ge=1)
+    points: list[ForecastPoint] = Field(min_length=1)
+    backtest_mae: float | None = Field(default=None, ge=0)
+    beats_baseline: bool | None = None
+    note: str = Field(min_length=1, description="caveat shown with the forecast")
+
+
 class Results(_Strict):
     region_id: str = Field(pattern=r"^[a-z0-9_]+$", description="use in ?region=")
     region: str = Field(min_length=1, description="label shown to people")
@@ -71,6 +95,7 @@ class Results(_Strict):
     explanation_source: ExplanationSource
     source: str = Field(min_length=1, description="where the data came from")
     method: str = Field(min_length=1, description="exact trend test used")
+    forecast: Forecast | None = None  # optional, main region only
 
     @model_validator(mode="after")
     def series_matches_period(self) -> Results:

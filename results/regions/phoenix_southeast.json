@@ -34,7 +34,7 @@
     },
     {
       "time": "2003-07",
-      "value": 29.1414
+      "value": 29.219
     },
     {
       "time": "2003-08",
@@ -82,7 +82,7 @@
     },
     {
       "time": "2004-07",
-      "value": 26.8715
+      "value": 26.9229
     },
     {
       "time": "2004-08",
@@ -94,7 +94,7 @@
     },
     {
       "time": "2004-10",
-      "value": 16.6209
+      "value": 16.7246
     },
     {
       "time": "2004-11",
@@ -130,7 +130,7 @@
     },
     {
       "time": "2005-07",
-      "value": 28.9073
+      "value": 28.8587
     },
     {
       "time": "2005-08",
@@ -150,7 +150,7 @@
     },
     {
       "time": "2005-12",
-      "value": 4.5236
+      "value": 4.5512
     },
     {
       "time": "2006-01",
@@ -162,7 +162,7 @@
     },
     {
       "time": "2006-03",
-      "value": 9.5714
+      "value": 9.5654
     },
     {
       "time": "2006-04",
@@ -178,7 +178,7 @@
     },
     {
       "time": "2006-07",
-      "value": 29.571
+      "value": 29.5357
     },
     {
       "time": "2006-08",
@@ -226,7 +226,7 @@
     },
     {
       "time": "2007-07",
-      "value": 29.0507
+      "value": 29.0835
     },
     {
       "time": "2007-08",
@@ -274,7 +274,7 @@
     },
     {
       "time": "2008-07",
-      "value": 29.0438
+      "value": 29.0901
     },
     {
       "time": "2008-08",
@@ -318,7 +318,7 @@
     },
     {
       "time": "2009-06",
-      "value": 24.1695
+      "value": 24.1417
     },
     {
       "time": "2009-07",
@@ -370,7 +370,7 @@
     },
     {
       "time": "2010-07",
-      "value": 29.3286
+      "value": 29.2899
     },
     {
       "time": "2010-08",
@@ -418,7 +418,7 @@
     },
     {
       "time": "2011-07",
-      "value": 28.9738
+      "value": 28.9302
     },
     {
       "time": "2011-08",
@@ -466,7 +466,7 @@
     },
     {
       "time": "2012-07",
-      "value": 27.6013
+      "value": null
     },
     {
       "time": "2012-08",
@@ -514,7 +514,7 @@
     },
     {
       "time": "2013-07",
-      "value": 28.8697
+      "value": 28.8284
     },
     {
       "time": "2013-08",
@@ -562,7 +562,7 @@
     },
     {
       "time": "2014-07",
-      "value": 29.4688
+      "value": 29.4883
     },
     {
       "time": "2014-08",
@@ -610,7 +610,7 @@
     },
     {
       "time": "2015-07",
-      "value": 28.5477
+      "value": 28.5345
     },
     {
       "time": "2015-08",
@@ -618,7 +618,7 @@
     },
     {
       "time": "2015-09",
-      "value": 25.8902
+      "value": 25.912
     },
     {
       "time": "2015-10",
@@ -646,7 +646,7 @@
     },
     {
       "time": "2016-04",
-      "value": 16.2268
+      "value": 16.1867
     },
     {
       "time": "2016-05",
@@ -706,11 +706,11 @@
     },
     {
       "time": "2017-07",
-      "value": 29.7622
+      "value": null
     },
     {
       "time": "2017-08",
-      "value": 28.8977
+      "value": 28.866
     },
     {
       "time": "2017-09",
@@ -718,7 +718,7 @@
     },
     {
       "time": "2017-10",
-      "value": 19.3159
+      "value": 19.3203
     },
     {
       "time": "2017-11",
@@ -754,11 +754,11 @@
     },
     {
       "time": "2018-07",
-      "value": 29.8278
+      "value": 29.8237
     },
     {
       "time": "2018-08",
-      "value": 29.0539
+      "value": 29.1038
     },
     {
       "time": "2018-09",
@@ -818,7 +818,7 @@
     },
     {
       "time": "2019-11",
-      "value": 10.5853
+      "value": 10.5707
     },
     {
       "time": "2019-12",
@@ -850,11 +850,11 @@
     },
     {
       "time": "2020-07",
-      "value": 31.7936
+      "value": 31.7448
     },
     {
       "time": "2020-08",
-      "value": 31.1594
+      "value": 31.1549
     },
     {
       "time": "2020-09",
@@ -918,7 +918,7 @@
     },
     {
       "time": "2021-12",
-      "value": 7.5357
+      "value": 7.5367
     },
     {
       "time": "2022-01",
@@ -986,15 +986,15 @@
     },
     {
       "time": "2023-05",
-      "value": 23.0128
+      "value": 23.0175
     },
     {
       "time": "2023-06",
-      "value": 26.0977
+      "value": 26.0707
     },
     {
       "time": "2023-07",
-      "value": 32.7395
+      "value": 32.6704
     },
     {
       "time": "2023-08",
@@ -1034,19 +1034,19 @@
     },
     {
       "time": "2024-05",
-      "value": 23.3353
+      "value": 23.4201
     },
     {
       "time": "2024-06",
-      "value": 29.7265
+      "value": null
     },
     {
       "time": "2024-07",
-      "value": 33.3453
+      "value": 33.2776
     },
     {
       "time": "2024-08",
-      "value": 30.9132
+      "value": 30.8755
     },
     {
       "time": "2024-09",
@@ -1066,14 +1066,15 @@
     }
   ],
   "trend": {
-    "slope": 0.009123,
+    "slope": 0.008891,
     "slope_unit": "degC/month",
     "p": 0.0,
-    "tau": 0.3481,
+    "tau": 0.3399,
     "trend": "increasing"
   },
-  "explanation": "From 2003-01 to 2024-12, nighttime land surface temperature in Phoenix southeast shows increasing (about +0.109 degC per year). The trend is statistically significant (p = 0).",
+  "explanation": "From 2003-01 to 2024-12, nighttime land surface temperature in Phoenix southeast shows increasing (about +0.107 degC per year). The trend is statistically significant (p = 0).",
   "explanation_source": "fallback",
-  "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid (LP DAAC, doi:10.5067/MODIS/MOD11C3.061)",
-  "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope"
+  "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+  "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+  "forecast": null
 }
