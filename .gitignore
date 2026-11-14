@@ -1,0 +1,16 @@
+# secrets and local settings
+.env
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+# raw NASA downloads stay out of git (processed CSVs are committed)
+data/raw/
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.html
