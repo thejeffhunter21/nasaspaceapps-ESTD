@@ -19,8 +19,7 @@ from pathlib import Path
 from ..contract import Results
 
 # The ONE place the AI layer's functions are imported. Swap these when theirs land.
-from .stubs import METHOD, explain, run_trend
-from .stubs import explain as fallback_explain
+from .stubs import METHOD, explain, fallback_text, forecast, run_trend
 from .timeseries import SeriesError, load_series
 
 log = logging.getLogger("pipeline")
@@ -39,25 +38,31 @@ DEFAULTS = {
 
 
 def build(csv: Path, *, region_id: str, region: str, variable: str, units: str,
-          source: str) -> Results:
+          source: str, forecast_on: bool = False) -> Results:
     months, values = load_series(csv)
     log.info("loaded %s: %d months", csv, len(months))
-    trend = run_trend(values, units)
+    trend = dict(run_trend(values))
+    trend["slope_unit"] = f"{units}/month"  # the pipeline knows the units, the AI layer doesn't
     log.info("trend: %s (p=%s)", trend["trend"], trend["p"])
     draft = {"region_id": region_id, "region": region, "variable": variable, "units": units,
              "period": {"start": months[0], "end": months[-1]},
              "series": [{"time": t, "value": v} for t, v in zip(months, values)],
              "trend": trend, "source": source, "method": METHOD}
-    using_stub = explain.__module__.endswith(".stubs")
     try:
-        text = explain(draft)
+        fc = forecast(values, months=12) if forecast_on else None
+    except Exception as exc:  # noqa: BLE001 - a forecast problem never stops the results
+        log.warning("forecast failed: %s", exc)
+        fc = None
+    if fc is not None:
+        draft["forecast"] = fc
+    try:
+        answer = explain(draft) or {}
+        text, source_kind = answer.get("text", ""), answer.get("source", "fallback")
     except Exception as exc:  # noqa: BLE001 - the AI step must never stop the pipeline
         log.warning("explain failed: %s", exc)
-        text = ""
-    if text and text.strip() and not using_stub:
-        source_kind = "ai"
-    else:
-        text, source_kind = fallback_explain(draft), "fallback"
+        text, source_kind = "", "fallback"
+    if not text or not text.strip() or source_kind not in ("ai", "fallback"):
+        text, source_kind = fallback_text(draft), "fallback"
     log.info("explanation (%s): %d chars", source_kind, len(text))
     return Results.model_validate({**draft, "explanation": text,
                                    "explanation_source": source_kind})
@@ -121,7 +126,9 @@ def main(argv: list[str] | None = None) -> int:
             if not args.force and job_csv.exists() and up_to_date(job_csv, job_out):
                 log.info("skip %s (up to date; --force to rebuild)", rid)
                 continue
-            write(build(job_csv, region_id=rid, region=label, **common), job_out)
+            main_region = job_out == out
+            write(build(job_csv, region_id=rid, region=label, forecast_on=main_region, **common),
+                  job_out)
         except (SeriesError, ValueError) as exc:
             failed += 1
             log.error("region %s failed: %s", rid, exc)

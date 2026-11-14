@@ -14,20 +14,33 @@ import pymannkendall as mk
 METHOD = "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope"
 
 
-def run_trend(values: list[float | None], units: str = "") -> dict:
-    """Trend of monthly values in order (None = missing month). Slope is per month."""
+def run_trend(values: list[float | None], method: str = "seasonal", alpha: float = 0.05) -> dict:
+    """Trend of monthly values in order (None = missing month). Slope is per month.
+
+    Same signature as the AI layer's run_trend. slope_unit is filled in by the pipeline.
+    """
     data = np.array([np.nan if v is None else v for v in values], dtype=float)
     result = mk.seasonal_test(data, period=12)  # slope comes out per year
     return {
         "slope": round(float(result.slope) / 12, 6),  # contract: per month
-        "slope_unit": f"{units}/month" if units else "per month",
+        "slope_unit": "per month",
         "p": round(float(result.p), 6),
         "tau": round(float(result.Tau), 4),
         "trend": result.trend,  # "increasing" | "decreasing" | "no trend"
     }
 
 
-def explain(results: dict) -> str:
+def explain(results: dict) -> dict:
+    """Same shape as the AI layer's explain: {"text": ..., "source": "fallback"}. Never raises."""
+    return {"text": fallback_text(results), "source": "fallback"}
+
+
+def forecast(values: list[float | None], months: int = 12) -> dict | None:
+    """Stand-in for the AI layer's forecast: none until theirs lands."""
+    return None
+
+
+def fallback_text(results: dict) -> str:
     """Plain summary from the numbers only. Never raises."""
     try:
         t = results["trend"]

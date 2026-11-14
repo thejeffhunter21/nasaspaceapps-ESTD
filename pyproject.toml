@@ -13,6 +13,7 @@ dependencies = [
     "pymannkendall",
     "python-dotenv",
     "requests",
+    "statsmodels",
     "uvicorn",
 ]
 
