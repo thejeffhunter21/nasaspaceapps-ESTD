@@ -19,11 +19,11 @@ def monthly_chart(view: ResultsView) -> go.Figure:
         mode="lines+markers",
         name="Monthly observations",
         connectgaps=False,
-        hovertemplate=f"%{{x|%Y-%m}}<br>%{{y}} {escape(view.units)}<extra></extra>",
+        hovertemplate=f"%{{x|%Y-%m}}<br>%{{y}} {escape(view.display_units)}<extra></extra>",
     ))
     figure.update_layout(
         xaxis={"title": "Month", "type": "date", "tickformat": "%Y-%m"},
-        yaxis={"title": f"{view.variable} ({view.units})"},
+        yaxis={"title": f"{view.variable} ({view.display_units})"},
         showlegend=False,
         margin={"t": 20},
     )

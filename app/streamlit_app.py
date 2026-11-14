@@ -130,12 +130,12 @@ with evidence.container():
         st.warning("Sample data — synthetic observations for previewing the dashboard.")
 
     st.subheader(view.region_label)
-    st.caption(f"{view.variable} ({view.units}) | {view.period_label}")
+    st.caption(f"{view.variable} ({view.display_units}) | {view.period_label}")
 
     st.subheader("Trend summary")
     with st.container(horizontal=True):
-        st.metric(f"Slope ({view.slope_unit})", str(view.slope), border=True)
-        st.metric("p-value", str(view.p), border=True)
+        st.metric(f"Slope ({view.display_slope_unit})", str(view.slope), border=True)
+        st.metric("p-value", view.display_p, border=True)
         st.metric("Direction", view.direction, border=True)
     st.caption(
         "Statistically significant (p < 0.05)."
@@ -149,14 +149,14 @@ with evidence.container():
         width="stretch",
         alt=(
             f"Monthly {view.variable.lower()} in {view.region_label}, {view.period_label}, "
-            f"in {view.units}. Gaps indicate missing observations."
+            f"in {view.display_units}. Gaps indicate missing observations."
         ),
     )
     st.caption("Gaps indicate missing observations.")
 
     st.subheader("Explanation")
     st.caption(
-        "Automatic summary (AI unavailable)"
+        "Automatic summary"
         if view.explanation_source == "fallback"
         else "AI-assisted explanation"
     )
@@ -168,7 +168,7 @@ with evidence.container():
         st.caption(f"Period: {view.period_label}")
         st.markdown(
             "**Slope:** the estimated rate of change over the full stated period, "
-            f"in {view.slope_unit}. Positive values indicate an increase; negative "
+            f"in {view.display_slope_unit}. Positive values indicate an increase; negative "
             "values indicate a decrease. The slope is not a forecast."
         )
         st.markdown(

@@ -27,7 +27,7 @@ def test_evidence_cards_chart_and_plain_text_match_sample():
     assert not app.exception
     cards = {metric.label: metric.value for metric in app.metric}
     assert cards == {
-        "Slope (degC/month)": "0.021",
+        "Slope (°C/month)": "0.021",
         "p-value": "0.012",
         "Direction": "increasing",
     }
@@ -54,7 +54,7 @@ def test_zero_slope_and_boundary_p_are_displayed_without_significance(monkeypatc
     app = AppTest.from_file(str(APP)).run()
     assert not app.exception
     assert {metric.label: metric.value for metric in app.metric} == {
-        "Slope (degC/month)": "0.0", "p-value": "0.05", "Direction": "no trend",
+        "Slope (°C/month)": "0.0", "p-value": "0.05", "Direction": "no trend",
     }
     assert any(item.value == "Not statistically significant (p >= 0.05)." for item in app.caption)
     assert app.text[0].value == "**Supplied text** <b>must stay literal</b>."

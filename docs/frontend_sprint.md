@@ -14,7 +14,7 @@ it does not imply teammate approval or that outstanding coordination is complete
 | FE-05 | Switch regions safely | Review |
 | FE-06 | Explain what people see | Review |
 | FE-07 | Design every state | Review |
-| FE-08 | Test the whole interaction | To do |
+| FE-08 | Test the whole interaction | Review |
 | FE-09 | Verify the real snapshot | To do |
 | FE-10 | Complete the real-data story | To do |
 | FE-11 | Make it readable everywhere | To do |
@@ -337,3 +337,62 @@ loading-context check verifies HTTP operations run inside the native spinners.
 
 No backend, AI, contract, dependency or hosting changes are included. Teammate
 review remains pending; FE-08 has not started.
+
+## FE-08: test the whole interaction
+
+The frontend suite now checks formatting boundaries and drives Streamlit through
+the actual FastAPI routes in memory. The in-process backend uses temporary files
+derived from the frontend's synthetic fixture, not NASA observations. HTTP is
+bridged to FastAPI's TestClient; normal tests do not contact Render, NASA or Gemini.
+The existing frontend fixture blocks unmocked network requests.
+
+The backend handoff's display requirements are now applied consistently:
+
+- API `degC` and `degC/month` render as `°C` and `°C/month` in the page, cards,
+  axes, hover text and accessible description. Raw API units stay unchanged.
+- A p-value strictly below 0.001 displays `p < 0.001`; 0.001 and larger values
+  retain their numeric display. Significance still uses the unrounded raw p-value
+  against 0.05. Boundary cases and tiny/zero p-values have dedicated unit checks.
+- The newer backend handoff supersedes the earlier long fallback caption:
+  `explanation_source=fallback` now displays **Automatic summary**. Explanation text
+  remains literal and unchanged. AI and sample/connection labels remain distinct.
+
+### Repeatable offline checks
+
+```sh
+uv run --locked pytest tests/frontend -m unit -q
+uv run --locked pytest tests/frontend -m integration -q
+uv run --locked pytest -q
+uv run --locked ruff check .
+```
+
+Observed on November 14, 2026: 91 frontend unit tests and two frontend integration
+tests passed (93 total); the full repository suite passed 393 tests; lint and
+whitespace checks passed. Existing CI already runs the complete suite, including
+these checks, without a workflow change.
+
+The integration journey verifies the formatted main result, updated region labels,
+region switching, exact chart-to-JSON agreement, preserved null gap, supplied
+explanation, and return-to-cache. A second journey removes a previously listed
+region from the temporary backend, checks that the resulting 404 clears old
+evidence, then refreshes the region list and recovers to the main area.
+
+### G2 live comparison evidence
+
+`docs/evidence/frontend/fe08_live_check.json` records the point-in-time comparison
+against the deployed `/series` and `/trend` responses for `phoenix_study_area` and
+`phoenix_northwest`. It includes selected IDs/labels, period, raw statistics,
+displayed cards, units, null months, source/method, explanation source and a hash
+of the returned series. All plotted times/values, supplied explanation and metadata
+were asserted against separate live JSON reads through the frontend AppTest run.
+
+Both regions had 264 positions; northwest retained the 2024-05 null. The API now
+returns unrounded p-values (main approximately 7.02e-11; northwest approximately
+3.28e-10), both displayed as `p < 0.001`. The new region labels and Automatic summary
+caption were observed. The local preview server was restarted with the new display
+properties loaded.
+
+This is API/frontend agreement, not independent dataset QC or a hosting deployment.
+FE-09 retains real-snapshot verification. No backend, AI, shared contract,
+dependency or hosting changes are included. Teammate review remains pending;
+FE-09 has not started.

@@ -9,7 +9,7 @@ from tests.frontend.test_api_page import backend as backend  # noqa: PLC0414 - r
 
 pytestmark = pytest.mark.unit
 APP = Path(__file__).resolve().parents[2] / "app/streamlit_app.py"
-FALLBACK_LABEL = "Automatic summary (AI unavailable)"
+FALLBACK_LABEL = "Automatic summary"
 
 
 def captions(app):
