@@ -1,0 +1,35 @@
+{
+  "region_id": "example_region",
+  "region": "Example Region",
+  "variable": "Land surface temperature",
+  "units": "degC",
+  "period": {
+    "start": "2003-01",
+    "end": "2003-03"
+  },
+  "series": [
+    {
+      "time": "2003-01",
+      "value": 19.79
+    },
+    {
+      "time": "2003-02",
+      "value": 23.6
+    },
+    {
+      "time": "2003-03",
+      "value": 27.15
+    }
+  ],
+  "trend": {
+    "slope": 0.021,
+    "slope_unit": "degC/month",
+    "p": 2,
+    "tau": 0.29,
+    "trend": "increasing"
+  },
+  "explanation": "Example Region warmed by about 0.021 degC per month from 2003-01 to 2005-12. The trend is statistically significant (p = 0.012). These are mock numbers for building the dashboard.",
+  "explanation_source": "fallback",
+  "source": "Mock data (not real NASA data)",
+  "method": "Mann-Kendall test (original) with Sen's slope"
+}
