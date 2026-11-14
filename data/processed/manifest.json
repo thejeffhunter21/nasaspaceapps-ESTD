@@ -1,0 +1,68 @@
+{
+  "data_version": "phoenix-qc-v1.0",
+  "policy": "qc-v1: produced QA 0/1, reported LST error <=1 K, positive valid land, >=1 clear night; regional area >=80%",
+  "source_sha256": "e493af19136f20554bd0fa7ab01ec5fcd6e04e90b107cb2e9cb185143b6e573e",
+  "region_definition_sha256": "0f93520afb960df0c99ed38eae88ba539dd50a7d6cf434e6cfa4c8964401f5a6",
+  "regions": {
+    "phoenix": {
+      "rows": 264,
+      "missing_dates": []
+    },
+    "phoenix_northwest": {
+      "rows": 264,
+      "missing_dates": [
+        "2024-05"
+      ]
+    },
+    "phoenix_northeast": {
+      "rows": 264,
+      "missing_dates": [
+        "2007-07",
+        "2023-07"
+      ]
+    },
+    "phoenix_southwest": {
+      "rows": 264,
+      "missing_dates": [
+        "2007-07",
+        "2010-07"
+      ]
+    },
+    "phoenix_southeast": {
+      "rows": 264,
+      "missing_dates": [
+        "2012-07",
+        "2017-07",
+        "2024-06"
+      ]
+    }
+  },
+  "files": [
+    {
+      "filename": "timeseries.csv",
+      "bytes": 7112,
+      "sha256": "040b7e413bd33c08662127192e0a642e9311a4ddbc52c592bc57a46218c5b31a"
+    },
+    {
+      "filename": "timeseries_phoenix_northeast.csv",
+      "bytes": 7067,
+      "sha256": "459ed07e87b6c2649bfdd8c5f532be53fd8f1c7279b04e2c36ec35e6b042ae48"
+    },
+    {
+      "filename": "timeseries_phoenix_northwest.csv",
+      "bytes": 7082,
+      "sha256": "4ed003958411f8dd785d7a1e15fe724f911a20143884b59fdc6414cb4535ed1a"
+    },
+    {
+      "filename": "timeseries_phoenix_southeast.csv",
+      "bytes": 7051,
+      "sha256": "3762b21d0eaf4ce53dffdd9df9cf32107ec6e3235f64e7e0c758d0a7d8892102"
+    },
+    {
+      "filename": "timeseries_phoenix_southwest.csv",
+      "bytes": 7056,
+      "sha256": "6a481a4323bdb738b8de14ce985a09421f2a5b1c46ad7b94b0e5c395fa5fb8a2"
+    }
+  ],
+  "source_reference": "PR #59; source checkout aef91f193d5a3b0f7c89e8107821cd564e6f1e20; bytes verified against docs/evidence/day17/freeze_manifest.json"
+}
