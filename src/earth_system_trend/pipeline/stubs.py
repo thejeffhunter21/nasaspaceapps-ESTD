@@ -46,9 +46,10 @@ def fallback_text(results: dict) -> str:
         t = results["trend"]
         sig = "statistically significant" if t["p"] < 0.05 else "not statistically significant"
         per_year = t["slope"] * 12
+        p_text = "p < 0.001" if t["p"] < 0.001 else f"p = {t['p']:.3g}"
         return (f"From {results['period']['start']} to {results['period']['end']}, "
                 f"{results['variable'].lower()} in {results['region']} shows {t['trend']} "
                 f"(about {per_year:+.3g} {results['units']} per year). "
-                f"The trend is {sig} (p = {t['p']:.3g}).")
+                f"The trend is {sig} ({p_text}).")
     except Exception:  # noqa: BLE001 - must never raise
         return "An automatic summary is not available for this result."
