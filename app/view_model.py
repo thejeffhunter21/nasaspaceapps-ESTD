@@ -26,6 +26,18 @@ class ResultsView:
     method: str
     is_sample: bool
 
+    @property
+    def display_units(self) -> str:
+        return "°C" if self.units == "degC" else self.units
+
+    @property
+    def display_slope_unit(self) -> str:
+        return "°C/month" if self.slope_unit == "degC/month" else self.slope_unit
+
+    @property
+    def display_p(self) -> str:
+        return "p < 0.001" if self.p < 0.001 else str(self.p)
+
 
 def build_view_model(payload: dict) -> ResultsView:
     """Validate contract v1.0; retain nulls, precision, units and supplied text.

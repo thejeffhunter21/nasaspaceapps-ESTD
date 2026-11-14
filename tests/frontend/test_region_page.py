@@ -64,7 +64,7 @@ def test_switch_updates_chart_cards_explanation_period_source_and_method(regiona
     assert not app.exception
     assert app.subheader[0].value == "South"
     assert {m.label: m.value for m in app.metric} == {
-        "Slope (degC/month)": "-0.03", "p-value": "0.6", "Direction": "decreasing",
+        "Slope (°C/month)": "-0.03", "p-value": "0.6", "Direction": "decreasing",
     }
     assert app.text[0].value == "South explanation"
     assert any("2006-01 to 2008-12" in c.value and "(K)" in c.value for c in app.caption)
