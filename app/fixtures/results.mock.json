@@ -1,0 +1,167 @@
+{
+  "region_id": "example_region",
+  "region": "Example Region",
+  "variable": "Land surface temperature",
+  "units": "degC",
+  "period": {
+    "start": "2003-01",
+    "end": "2005-12"
+  },
+  "series": [
+    {
+      "time": "2003-01",
+      "value": 19.79
+    },
+    {
+      "time": "2003-02",
+      "value": 23.6
+    },
+    {
+      "time": "2003-03",
+      "value": 27.15
+    },
+    {
+      "time": "2003-04",
+      "value": 27.55
+    },
+    {
+      "time": "2003-05",
+      "value": 27.05
+    },
+    {
+      "time": "2003-06",
+      "value": 23.94
+    },
+    {
+      "time": "2003-07",
+      "value": 19.59
+    },
+    {
+      "time": "2003-08",
+      "value": 16.15
+    },
+    {
+      "time": "2003-09",
+      "value": 12.68
+    },
+    {
+      "time": "2003-10",
+      "value": 12.1
+    },
+    {
+      "time": "2003-11",
+      "value": 12.76
+    },
+    {
+      "time": "2003-12",
+      "value": 15.73
+    },
+    {
+      "time": "2004-01",
+      "value": 20.15
+    },
+    {
+      "time": "2004-02",
+      "value": 24.65
+    },
+    {
+      "time": "2004-03",
+      "value": null
+    },
+    {
+      "time": "2004-04",
+      "value": 27.97
+    },
+    {
+      "time": "2004-05",
+      "value": 27.4
+    },
+    {
+      "time": "2004-06",
+      "value": 24.88
+    },
+    {
+      "time": "2004-07",
+      "value": 20.45
+    },
+    {
+      "time": "2004-08",
+      "value": 16.26
+    },
+    {
+      "time": "2004-09",
+      "value": 14.04
+    },
+    {
+      "time": "2004-10",
+      "value": 11.88
+    },
+    {
+      "time": "2004-11",
+      "value": 13.94
+    },
+    {
+      "time": "2004-12",
+      "value": 16.21
+    },
+    {
+      "time": "2005-01",
+      "value": 20.05
+    },
+    {
+      "time": "2005-02",
+      "value": 24.04
+    },
+    {
+      "time": "2005-03",
+      "value": 27.22
+    },
+    {
+      "time": "2005-04",
+      "value": 28.92
+    },
+    {
+      "time": "2005-05",
+      "value": 27.11
+    },
+    {
+      "time": "2005-06",
+      "value": 24.68
+    },
+    {
+      "time": "2005-07",
+      "value": 20.77
+    },
+    {
+      "time": "2005-08",
+      "value": 16.47
+    },
+    {
+      "time": "2005-09",
+      "value": 13.77
+    },
+    {
+      "time": "2005-10",
+      "value": 12.14
+    },
+    {
+      "time": "2005-11",
+      "value": 13.22
+    },
+    {
+      "time": "2005-12",
+      "value": 16.35
+    }
+  ],
+  "trend": {
+    "slope": 0.021,
+    "slope_unit": "degC/month",
+    "p": 0.012,
+    "tau": 0.29,
+    "trend": "increasing"
+  },
+  "explanation": "Example Region warmed by about 0.021 degC per month from 2003-01 to 2005-12. The trend is statistically significant (p = 0.012). These are mock numbers for building the dashboard.",
+  "explanation_source": "fallback",
+  "source": "Mock data (not real NASA data)",
+  "method": "Mann-Kendall test (original) with Sen's slope"
+}
