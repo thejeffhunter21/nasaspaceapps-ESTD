@@ -8,7 +8,7 @@ it does not imply teammate approval or that outstanding coordination is complete
 | Ticket | Scope | Status |
 | --- | --- | --- |
 | FE-01 | Start the app and board | Review |
-| FE-02 | Lock the screen and data shape | To do |
+| FE-02 | Lock the screen and data shape | Review |
 | FE-03 | Show the evidence | To do |
 | FE-04 | Connect the live mock API | To do |
 | FE-05 | Switch regions safely | To do |
@@ -61,3 +61,72 @@ and teammate review are still pending.
   infrastructure owner. No teammate confirmation or deployment has occurred.
 - Hosting URL and deployment command: awaiting the hosting handoff.
 - Keep FE-01 in Review until the PR is reviewed and hosting ownership is confirmed.
+
+## FE-02: screen and data shape
+
+The page now reads `app/fixtures/results.mock.json`, a frontend-owned copy of the
+agreed root mock. It keeps all 36 positions from 2003-01 to 2005-12, including the
+null at 2004-03. Keeping the fixture under `app/` lets the preview run without
+shipping test files. It is synthetic data, not the Phoenix 2003-2024 snapshot.
+The page labels it **Sample data** and derives its region and period from the file.
+
+### Single-page sketch for teammate review
+
+Read from top to bottom on desktop or phone:
+
+```text
+Earth System Trend Detective
+Data-mode label (Sample data for the current preview)
+Question: how has the selected region's surface temperature changed?
+Region label (fixed when only one region is available)
+Variable, units, period
+Trend summary: direction, per-month slope, significance
+Monthly observations chart: time/value, null months remain gaps
+Supplied plain-language explanation
+Source and method (collapsible)
+```
+
+FE-02 renders the title, sample label, region, variable, units and period only.
+FE-03 adds the evidence chart, cards and supplied explanation. Region selection,
+API requests and explanatory metadata UI remain in their assigned later tickets.
+The sketch is proposed for PR review; no teammate design sign-off is claimed.
+
+### Adapter boundary
+
+`app/view_model.py::build_view_model(payload)` accepts decoded results JSON and
+validates it with the existing shared `Results` model. It returns one immutable
+`ResultsView`; page components should consume that view instead of remapping JSON.
+
+| Contract input | Frontend value |
+| --- | --- |
+| `region_id`, `region` | Request ID, display label |
+| `variable`, `units`, `period` | Supplied variable/units and start-to-end label |
+| `series[].time`, `series[].value` | Ordered time/value tuples; null stays `None` |
+| `trend.slope`, `slope_unit`, `p`, `tau`, `trend` | Unrounded statistics, supplied units and direction |
+| `trend.p` | Significant only when the unrounded value is below 0.05 |
+| `explanation`, `explanation_source` | Supplied text and source, unchanged |
+| `source`, `method` | Supplied provenance and exact method, unchanged |
+| Source contains `mock`, or region is `Example Region` | Sample-data flag (case-insensitive) |
+
+No trend calculation, annualization, date filtering or gap filling occurs here.
+Absence of sample markers does not prove real-data provenance. Contract errors
+raise validation errors; page-level failure and recovery states belong to FE-07.
+
+### Contract decisions and pending handoffs
+
+- Current `docs/contract.md` v1.0 and `contract.py` agree on API series key `time`.
+  The frontend consumes results JSON, not Data CSVs, so any CSV `date` conversion
+  belongs at the pipeline boundary.
+- Current contract requires non-null trend statistics and three direction labels.
+  Insufficient-data/null-statistic payloads need Jeff's contract agreement before
+  frontend integration; the adapter does not invent zeros or a fourth label.
+- Current contract supplies source/method/period, but no snapshot ID or coverage
+  fields. Their delivery remains a backend/data handoff for real-data verification.
+- API URL, frontend host, deployment command and reviewer remain unconfirmed.
+
+### Verification
+
+Run `uv run --locked pytest tests/frontend -m unit -q`. The checks cover exact
+fixture parity, the missing month, zero preservation, mapping and unchanged input,
+unrounded significance at the 0.05 boundary, sample markers, malformed statistics,
+and page render/rerun from outside the repository working directory.
