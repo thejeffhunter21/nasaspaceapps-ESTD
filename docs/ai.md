@@ -114,10 +114,18 @@ reported p-values are from the uncorrected test and are smaller than the correct
 | A1 | `ai/ai_setup.py` | Builds the Gemini client from `GEMINI_API_KEY` and `GEMINI_MODEL`. No key: AI is off and the fallback is used. A 404 (wrong model or endpoint) fails at once. |
 | A2 | `ai/ai_retry.py` | Retries timeouts, dropped connections, 408, 429 and 5xx up to 3 attempts (1 s, 2 s waits; 8 s cap). A long Retry-After, a bad key (401/403) or a bad request stops at once. Errors and logs never include the provider's response body. |
 | A3 | `ai/ai_checks.py` | `check_explanation(text, results)` rejects text with numbers or dates not derived from the results, wrong significance wording, a direction that contradicts the trend, causes, forecasts, advice, the wrong product (air temperature, daily) or unit (Fahrenheit), or more than 600 characters. Never raises; anything it cannot check fails. |
-| A4 (next) | | `explain()`: prompt from the results, call through A2, check with A3, return `{"text", "source": "ai"}` or the fallback. |
+| A4 | `ai/explain.py`, `ai/prompts/explain_v1.txt` | `explain(results)` returns `{"text", "source"}` and never raises. Facts are formatted by code (slope per month and per year to 3 significant figures, `p < 0.001` for tiny p), sent with the versioned prompt through A2, and checked by A3. Only a reply that passes is `"ai"`; no key, setup errors, Gemini failures, empty replies and rejected replies all return the fallback, with the reason logged. |
 
-The fallback text (`pipeline/stubs.py: fallback_text`) is built from the numbers only and passes
-the A3 checks on every committed results file.
+The fallback text (`ai/explain.py: fallback_text`) is built from the numbers only and passes the
+A3 checks on every committed results file. Example (southeast): "From 2003-01 to 2024-12,
+nighttime land surface temperature in Phoenix southeast rose by about 0.00889 degC per month
+(0.107 degC per year). This trend is statistically significant (p < 0.001). 3 of 264 months are
+missing and were left as gaps, not filled in."
+
+To use it, the pipeline imports `explain` (and `fallback_text`) from `earth_system_trend.ai.explain`
+instead of `pipeline/stubs.py` (one import line in `pipeline/run.py`, owned by the pipeline).
+Prompt changes go in a new file (`explain_v2.txt`) with `PROMPT_VERSION` bumped, never by editing
+`explain_v1.txt` in place.
 
 The checks are pattern-based. They catch the common ways a model drifts but cannot fully
 understand meaning (a paraphrased cause can slip through), so they are a safety net, not proof.
