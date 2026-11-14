@@ -13,7 +13,7 @@ it does not imply teammate approval or that outstanding coordination is complete
 | FE-04 | Connect the live mock API | Review |
 | FE-05 | Switch regions safely | Review |
 | FE-06 | Explain what people see | Review |
-| FE-07 | Design every state | To do |
+| FE-07 | Design every state | Review |
 | FE-08 | Test the whole interaction | To do |
 | FE-09 | Verify the real snapshot | To do |
 | FE-10 | Complete the real-data story | To do |
@@ -294,3 +294,46 @@ and retry. Existing chart and region consistency checks remain in place.
 Demo: load the live page, read its connection and explanation labels, and expand
 the details panel. Run with `API_URL=` for the distinct Offline preview plus Sample
 data labels. Teammate review remains pending; FE-07 has not started.
+
+## FE-07: reliable loading and failure states
+
+The existing connection and selected-region spinners remain around network work.
+The evidence block is cleared before loading, so loading or failure cannot leave
+the previous region's chart and statistics displayed as the current result.
+
+| State | Visible message and recovery |
+| --- | --- |
+| Empty series or every value null | No observations available; retry, choose another region or explicitly use sample data |
+| Empty region directory | No regions available; retry, refresh regions or use sample data |
+| HTTP 404 | No data for this region; refresh the region list or choose another region |
+| HTTP 422 | Region selection needs updating; refresh available regions and select again |
+| HTTP 5xx | The data service is unavailable; retry and report persistent failures to backend |
+| Timeout after the one retry | The data service is taking too long; server wake-up guidance and retry/sample actions |
+| Connection failure | Cannot reach the data service; check connectivity and retry/use local sample |
+| HTTP 429 after the one retry | The data service is busy; wait briefly and retry |
+| Invalid JSON, contract fields or paired metadata | The data response could not be read; retry or explicitly choose sample data |
+| Invalid API address | The data connection needs setup; ask the demo owner to check the address |
+| Missing, unreadable, invalid JSON/encoding or invalid-contract sample file | The sample preview is unavailable; Retry preview and Retry API when a backend is configured |
+
+`ApiError.kind` carries the state without passing raw HTTP response bodies or
+file exception details into the page. **Refresh regions** clears the directory
+and current region cache; a region removed by a deployment can be replaced from
+the refreshed list. **Retry preview** rereads a restored sample file. Sample
+fallback remains explicit and labeled; a broken sample does not prevent reconnecting
+to the API.
+
+An empty/all-null series never becomes zero. Individual missing months still stay
+as gaps, and valid zero/negative observations remain valid observations. The current
+shared contract still requires non-null statistics: unsupported null-statistic
+responses show a malformed-response state instead of fabricated zero cards.
+No new insufficient-data schema is introduced by the frontend.
+
+Verification: `uv run --locked pytest tests/frontend -m unit -q`. New mocked states
+cover empty/all-null series, no regions, 404/422/500, timeout, invalid JSON, null
+statistics, and sample-file failures. Interaction checks exercise timeout retry,
+region refresh after a stale selection, preview retry after restoring the file,
+and API recovery even when both the initial request and local sample fail. A
+loading-context check verifies HTTP operations run inside the native spinners.
+
+No backend, AI, contract, dependency or hosting changes are included. Teammate
+review remains pending; FE-08 has not started.
