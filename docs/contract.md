@@ -46,7 +46,8 @@ Unknown fields are rejected. Fewer than 24 valid months: the pipeline does not w
 ## Functions from the AI layer
 
 Agreed at T+0 and updated to the AI layer guide. The pipeline imports them in one place
-(`pipeline/run.py`); until the AI layer's versions land, `pipeline/stubs.py` provides them.
+(`pipeline/run.py`): `run_trend` from `ai/trend.py` (A5), `explain` and `fallback_text` from
+`ai/explain.py` (A4). `forecast` still comes from `pipeline/stubs.py` and returns `None`.
 
 - `run_trend(values: list[float | None], method: str = "seasonal", alpha: float = 0.05) -> dict`
   returns `slope` (per month), `slope_unit`, `p`, `tau`, `trend`. `values` is the full monthly

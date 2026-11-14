@@ -45,7 +45,7 @@ def variant(**trend):
     return results
 
 
-RESULTS = load()  # study area: slope 0.007713 degC/month, p 0.0, increasing
+RESULTS = load()  # study area: slope about 0.00771 degC/month, p about 7e-11, increasing
 GOOD_REPLY = (
     "From 2003-01 to 2024-12, nighttime land surface temperature in the Phoenix study area rose "
     "by about 0.00771 degC per month (0.0926 degC per year). The increase is statistically "

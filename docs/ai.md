@@ -76,9 +76,7 @@ Expected gaps in qc-v1 (all below the 80% valid-area rule): northwest 2024-05; n
   accurate for tiny values (the library's `1 - cdf` loses precision and can reach exactly 0).
   qc-v1 p-values: study area 7.0e-11, northwest 3.3e-10, northeast 3.8e-06, southwest 3.0e-10,
   southeast 2.8e-14.
-- Until the pipeline switches to A5, the committed results files still come from
-  `pipeline/stubs.py`, which rounds p to 6 decimals (shown as `0.0`). No significance decision
-  changes, but the frontend plan asks for the unrounded value.
+- The pipeline uses A5 (A7), so the committed results files store this unrounded p.
 
 ## Serial dependence
 
@@ -125,6 +123,7 @@ reported p-values are from the uncorrected test and are smaller than the correct
 | A4 | `ai/explain.py`, `ai/prompts/explain_v1.txt` | `explain(results)` returns `{"text", "source"}` and never raises. Facts are formatted by code (slope per month and per year to 3 significant figures, `p < 0.001` for tiny p), sent with the versioned prompt through A2, and checked by A3. Only a reply that passes is `"ai"`; no key, setup errors, Gemini failures, empty replies and rejected replies all return the fallback, with the reason logged. |
 | A5 | `ai/trend.py` | `run_trend(values, method="seasonal", alpha=0.05)`: seasonal (default) or original Mann-Kendall with Sen's slope, slope per month, unrounded p, strict p < alpha, eligibility rules above. Replaces the pipeline stub. |
 | A6 | `ai/ai_cache.py` | Cache and daily cap. AI text that passed A3 is stored in `EXPLAIN_CACHE_PATH` (default `data/cache/explanations.json`, git-ignored), keyed by SHA-256 of the prompt version + exact facts, and re-checked on reuse; works without a key, so offline re-runs keep approved AI text. `AI_DAILY_CALL_CAP` (default 50, 0 = AI off) limits requests to Gemini per UTC day, retries included; a request over the cap is not sent and the fallback is used. Unreadable or unwritable cache files are logged, never raised. To refresh text, delete the file or bump the prompt version. |
+| A7 | `pipeline/run.py` (import switch), `tests/conftest.py` | The pipeline uses A4-A6; committed results regenerated (unrounded p, A4 fallback text). Shared test setup strips `GEMINI_API_KEY`/`GEMINI_MODEL` and isolates the cache, because `config.py` loads `.env`. `tests/ai/test_pipeline_integration.py` checks the wiring and that every committed results file matches A5 and passes A3. |
 
 The fallback text (`ai/explain.py: fallback_text`) is built from the numbers only and passes the
 A3 checks on every committed results file. Example (southeast): "From 2003-01 to 2024-12,
@@ -132,16 +131,32 @@ nighttime land surface temperature in Phoenix southeast rose by about 0.00889 de
 (0.107 degC per year). This trend is statistically significant (p < 0.001). 3 of 264 months are
 missing and were left as gaps, not filled in."
 
-To use A4 and A5, the pipeline imports `explain` and `fallback_text` from
-`earth_system_trend.ai.explain` and `run_trend` (with `METHODS["seasonal"]` as `METHOD`) from
-`earth_system_trend.ai.trend` instead of `pipeline/stubs.py`. That is one import change in
-`pipeline/run.py`, owned by the pipeline; it should also catch `TrendInputError` so one
-ineligible region is skipped rather than stopping the run.
 Prompt changes go in a new file (`explain_v2.txt`) with `PROMPT_VERSION` bumped, never by editing
 `explain_v1.txt` in place.
 
 The checks are pattern-based. They catch the common ways a model drifts but cannot fully
 understand meaning (a paraphrased cause can slip through), so they are a safety net, not proof.
+
+## Building the results
+
+Since A7 the pipeline (`pipeline/run.py`) imports `run_trend` and `METHOD` from A5 and `explain`
+and `fallback_text` from A4; only `forecast` still comes from `pipeline/stubs.py` (returns
+`None`). A region that fails eligibility (`TrendInputError`) is logged and skipped; the other
+regions are still written and the command exits 1.
+
+Rebuild all five results files from the qc-v1 CSVs (run from the repo root):
+
+```bash
+SRC="NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0"
+uv run --locked python -m earth_system_trend.pipeline.run --all-regions --force \
+  --region-id phoenix_study_area --region "Phoenix study area" --source "$SRC"
+```
+
+- Without `GEMINI_API_KEY` (or with `GEMINI_API_KEY= AI_DAILY_CALL_CAP=0` in front of the command)
+  every explanation is the fallback: reproducible, no data leaves the machine.
+- With a key and `GEMINI_MODEL` set, each region makes at most 3 requests; checked replies are
+  written as `"ai"` and cached (A6), so a re-run costs nothing.
+- The committed qc-v1 results were built without a key (all `"fallback"`).
 
 ## What the results do not say
 
