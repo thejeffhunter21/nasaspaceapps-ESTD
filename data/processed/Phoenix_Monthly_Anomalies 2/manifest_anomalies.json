@@ -1,0 +1,203 @@
+{
+  "data_version": "phoenix-qc-v1.0",
+  "source_product": "MOD11C3.061",
+  "source_doi": "10.5067/MODIS/MOD11C3.061",
+  "period": {
+    "start": "2003-01",
+    "end": "2024-12"
+  },
+  "baseline": {
+    "start": "2003-01",
+    "end": "2024-12",
+    "grouping": "region and calendar month",
+    "minimum_valid_samples": 2
+  },
+  "definition": "QC-screened monthly temperature minus corresponding regional calendar-month mean",
+  "units": "degrees Celsius difference",
+  "missing_value": "empty CSV cell; null in JSON",
+  "verification_tolerance_c": 1e-12,
+  "regions": [
+    {
+      "region": "phoenix",
+      "input_file": "timeseries.csv",
+      "input_sha256": "040b7e413bd33c08662127192e0a642e9311a4ddbc52c592bc57a46218c5b31a",
+      "output_file": "anomaly.csv",
+      "output_sha256": "9b476740407a317adf55aeb35f4e323dacfced2444bd05c4046ff7a23963a20e",
+      "rows": 264,
+      "valid_values": 264,
+      "missing_dates": [],
+      "baseline_counts": {
+        "1": 22,
+        "2": 22,
+        "3": 22,
+        "4": 22,
+        "5": 22,
+        "6": 22,
+        "7": 22,
+        "8": 22,
+        "9": 22,
+        "10": 22,
+        "11": 22,
+        "12": 22
+      },
+      "max_independent_calculation_difference_c": 3.552713678800501e-15,
+      "max_absolute_calendar_month_mean_anomaly_c": 5.006096547400706e-15
+    },
+    {
+      "region": "phoenix_northwest",
+      "input_file": "timeseries_phoenix_northwest.csv",
+      "input_sha256": "4ed003958411f8dd785d7a1e15fe724f911a20143884b59fdc6414cb4535ed1a",
+      "output_file": "anomaly_phoenix_northwest.csv",
+      "output_sha256": "f7a02ee11aeca958d9c3b087d356569291677fa374d23426ce65c36ccaa8ec92",
+      "rows": 264,
+      "valid_values": 263,
+      "missing_dates": [
+        "2024-05"
+      ],
+      "baseline_counts": {
+        "1": 22,
+        "2": 22,
+        "3": 22,
+        "4": 22,
+        "5": 21,
+        "6": 22,
+        "7": 22,
+        "8": 22,
+        "9": 22,
+        "10": 22,
+        "11": 22,
+        "12": 22
+      },
+      "max_independent_calculation_difference_c": 7.105427357601002e-15,
+      "max_absolute_calendar_month_mean_anomaly_c": 4.0371746350005696e-15
+    },
+    {
+      "region": "phoenix_northeast",
+      "input_file": "timeseries_phoenix_northeast.csv",
+      "input_sha256": "459ed07e87b6c2649bfdd8c5f532be53fd8f1c7279b04e2c36ec35e6b042ae48",
+      "output_file": "anomaly_phoenix_northeast.csv",
+      "output_sha256": "fb89846a0a599ec264a8d218ebe2cd92637414d427734fe55e5d3d53abcfbff8",
+      "rows": 264,
+      "valid_values": 262,
+      "missing_dates": [
+        "2007-07",
+        "2023-07"
+      ],
+      "baseline_counts": {
+        "1": 22,
+        "2": 22,
+        "3": 22,
+        "4": 22,
+        "5": 22,
+        "6": 22,
+        "7": 20,
+        "8": 22,
+        "9": 22,
+        "10": 22,
+        "11": 22,
+        "12": 22
+      },
+      "max_independent_calculation_difference_c": 7.105427357601002e-15,
+      "max_absolute_calendar_month_mean_anomaly_c": 5.81353147440082e-15
+    },
+    {
+      "region": "phoenix_southwest",
+      "input_file": "timeseries_phoenix_southwest.csv",
+      "input_sha256": "6a481a4323bdb738b8de14ce985a09421f2a5b1c46ad7b94b0e5c395fa5fb8a2",
+      "output_file": "anomaly_phoenix_southwest.csv",
+      "output_sha256": "6238d671baa97a77dfba9990b27a916029288886961e46ad7c017c6a367b2a7b",
+      "rows": 264,
+      "valid_values": 262,
+      "missing_dates": [
+        "2007-07",
+        "2010-07"
+      ],
+      "baseline_counts": {
+        "1": 22,
+        "2": 22,
+        "3": 22,
+        "4": 22,
+        "5": 22,
+        "6": 22,
+        "7": 20,
+        "8": 22,
+        "9": 22,
+        "10": 22,
+        "11": 22,
+        "12": 22
+      },
+      "max_independent_calculation_difference_c": 7.105427357601002e-15,
+      "max_absolute_calendar_month_mean_anomaly_c": 4.68312257660066e-15
+    },
+    {
+      "region": "phoenix_southeast",
+      "input_file": "timeseries_phoenix_southeast.csv",
+      "input_sha256": "3762b21d0eaf4ce53dffdd9df9cf32107ec6e3235f64e7e0c758d0a7d8892102",
+      "output_file": "anomaly_phoenix_southeast.csv",
+      "output_sha256": "be159bf54fd84616c0fb8d9afeaa8293faa88480ab03c1d612fbde6f1944ab9d",
+      "rows": 264,
+      "valid_values": 261,
+      "missing_dates": [
+        "2012-07",
+        "2017-07",
+        "2024-06"
+      ],
+      "baseline_counts": {
+        "1": 22,
+        "2": 22,
+        "3": 22,
+        "4": 22,
+        "5": 22,
+        "6": 21,
+        "7": 20,
+        "8": 22,
+        "9": 22,
+        "10": 22,
+        "11": 22,
+        "12": 22
+      },
+      "max_independent_calculation_difference_c": 3.552713678800501e-15,
+      "max_absolute_calendar_month_mean_anomaly_c": 3.9564311423005575e-15
+    }
+  ],
+  "baseline_file": "climatology.csv",
+  "baseline_sha256": "8cbb774d688ea9310ff6b9d393a98dc802152a9d7f0ecd9b7cd8eca1d513c7fc",
+  "baseline_rows": 60,
+  "files": [
+    {
+      "filename": "README_ANOMALIES.md",
+      "sha256": "ebe16996a3a8057b51d03c4f469e1c7f7cfbe38e8069a1786885caf890452f45",
+      "bytes": 3935
+    },
+    {
+      "filename": "anomaly.csv",
+      "sha256": "9b476740407a317adf55aeb35f4e323dacfced2444bd05c4046ff7a23963a20e",
+      "bytes": 7423
+    },
+    {
+      "filename": "anomaly_phoenix_northeast.csv",
+      "sha256": "fb89846a0a599ec264a8d218ebe2cd92637414d427734fe55e5d3d53abcfbff8",
+      "bytes": 7378
+    },
+    {
+      "filename": "anomaly_phoenix_northwest.csv",
+      "sha256": "f7a02ee11aeca958d9c3b087d356569291677fa374d23426ce65c36ccaa8ec92",
+      "bytes": 7412
+    },
+    {
+      "filename": "anomaly_phoenix_southeast.csv",
+      "sha256": "be159bf54fd84616c0fb8d9afeaa8293faa88480ab03c1d612fbde6f1944ab9d",
+      "bytes": 7367
+    },
+    {
+      "filename": "anomaly_phoenix_southwest.csv",
+      "sha256": "6238d671baa97a77dfba9990b27a916029288886961e46ad7c017c6a367b2a7b",
+      "bytes": 7378
+    },
+    {
+      "filename": "climatology.csv",
+      "sha256": "8cbb774d688ea9310ff6b9d393a98dc802152a9d7f0ecd9b7cd8eca1d513c7fc",
+      "bytes": 2432
+    }
+  ]
+}
