@@ -8,6 +8,8 @@ __pycache__/
 .ruff_cache/
 # raw NASA downloads stay out of git (processed CSVs are committed)
 data/raw/
+# AI explanation cache and daily call counter (local only)
+data/cache/
 # OS / editor junk
 .DS_Store
 Thumbs.db
