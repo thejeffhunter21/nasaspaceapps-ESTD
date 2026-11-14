@@ -33,6 +33,8 @@ Example: `results.mock.json` (fake data, region "Example Region").
 | explanation_source | string | "ai" or "fallback" (fallback = AI failed, text built from the numbers) |
 | source | string | where the data came from, e.g. NASA MODIS MOD11C3.061 |
 | method | string | exact trend test, e.g. "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope" |
+| anomaly | list or absent | optional, from the Data layer: same months as `series`, each `value` minus that region's 2003-2024 mean for the same calendar month, in `units`; `null` exactly where `series` is `null` |
+| baseline | list or absent | optional: 12 rows `{month 1-12, mean, count}`, the calendar-month means behind `anomaly` |
 | forecast | object or absent | optional, main region only. Omitted from `/results` when there is none |
 | forecast.method | string | e.g. "Holt-Winters (12-month season)" |
 | forecast.months | integer >= 1 | months ahead |

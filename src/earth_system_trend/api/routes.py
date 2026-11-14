@@ -17,7 +17,8 @@ router = APIRouter()
 def get_results() -> dict:
     """The whole main results file."""
     r = read_or_http_error(get_settings().results_path)
-    return r.model_dump(exclude={"forecast"} if r.forecast is None else None)
+    optional = {"forecast", "anomaly", "baseline"}
+    return r.model_dump(exclude={k for k in optional if getattr(r, k) is None})
 
 
 @router.get("/regions")
@@ -57,3 +58,18 @@ def get_demo() -> dict:
     if not stories:
         raise HTTPException(status_code=404, detail="No regions to build demo stories from")
     return {"cases": stories}
+
+
+@router.get("/anomaly")
+def get_anomaly(region: RegionParam = None) -> dict:
+    """Monthly anomalies (value minus the same calendar month's 2003-2024 mean) for one region,
+    plus the baseline used. Same months as /series; missing months are null."""
+    r = find_region(all_regions(get_settings()), region)
+    if r.anomaly is None:
+        raise HTTPException(status_code=404,
+                            detail=f"No anomaly data for '{r.region_id}' yet")
+    return {"region_id": r.region_id, "region": r.region, "variable": r.variable,
+            "units": r.units, "period": r.period.model_dump(),
+            "baseline_period": r.period.model_dump(),
+            "series": [p.model_dump() for p in r.anomaly],
+            "baseline": [b.model_dump() for b in r.baseline] if r.baseline else None}

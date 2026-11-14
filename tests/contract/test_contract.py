@@ -51,3 +51,34 @@ def test_unknown_field_rejected(tmp_path):
     path.write_text(json.dumps(data))
     with pytest.raises(ContractError, match="slpoe"):
         load_results(path)
+
+
+def _with_anomaly(values):
+    import json
+    data = json.loads((FIXTURES / "valid.json").read_text())
+    data["anomaly"] = [{"time": p["time"], "value": v} for p, v in zip(data["series"], values)]
+    return data
+
+
+def test_anomaly_must_line_up_with_series():
+    import json
+    data = json.loads((FIXTURES / "valid.json").read_text())
+    good = _with_anomaly([None if p["value"] is None else 0.1 for p in data["series"]])
+    Results.model_validate(good)
+    shifted = _with_anomaly([0.1] * len(data["series"]))
+    shifted["anomaly"][0]["time"] = "1999-01"
+    with pytest.raises(ValueError, match="same months"):
+        Results.model_validate(shifted)
+
+
+def test_anomaly_null_exactly_where_series_null():
+    import json
+    data = json.loads((FIXTURES / "valid.json").read_text())
+    wrong = _with_anomaly([0.1] * len(data["series"]))  # fills a missing month
+    if any(p["value"] is None for p in data["series"]):
+        with pytest.raises(ValueError, match="null exactly"):
+            Results.model_validate(wrong)
+    else:
+        wrong["anomaly"][0]["value"] = None
+        with pytest.raises(ValueError, match="null exactly"):
+            Results.model_validate(wrong)

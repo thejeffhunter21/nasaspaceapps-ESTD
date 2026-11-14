@@ -83,7 +83,9 @@ uv run --locked python -m earth_system_trend.pipeline.run --all-regions --force
 
 Without a Gemini key every explanation is the automatic summary
 (`explanation_source: "fallback"`). With `GEMINI_API_KEY` and `GEMINI_MODEL` in `.env`, checked
-AI text is used (`"ai"`). Missing months stay `null`; they are never filled in.
+AI text is used (`"ai"`). Missing months stay `null`; they are never filled in. If the Data
+layer's `anomaly*.csv` and `climatology.csv` are in `data/processed/`, each results file also
+gets the region's anomaly series and baseline.
 
 ## API
 
@@ -93,6 +95,7 @@ All endpoints are GET and return JSON. Full reference: [docs/api.md](docs/api.md
 |---|---|
 | `/regions` | Every region with its id, label and trend |
 | `/series?region=<id>` | The monthly values for the chart |
+| `/anomaly?region=<id>` | The same months as the difference from each calendar month's 2003-2024 average |
 | `/trend?region=<id>` | Trend numbers, explanation, source and method |
 | `/results` | The whole results file for the study area |
 | `/demo` | Three ready-made demo stories |
