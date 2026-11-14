@@ -86,3 +86,17 @@ def test_all_regions(tmp_path):
 def test_accepts_old_date_column(tmp_path):
     text = "date,value\n" + "\n".join(f"{m},{i}" for i, m in enumerate(months(24)))
     assert len(load_series(csv(tmp_path, text))[0]) == 24
+
+
+def test_known_slope_comes_out_per_month():
+    """Catches unit mistakes: a series rising exactly 0.01 per month must report 0.01."""
+    import math
+
+    from earth_system_trend.pipeline.stubs import run_trend
+
+    values = [10 + 5 * math.sin(2 * math.pi * i / 12) + 0.01 * i for i in range(240)]
+    values[30] = None  # a gap must not shift the seasons
+    trend = run_trend(values, "degC")
+    assert abs(trend["slope"] - 0.01) < 1e-6
+    assert trend["slope_unit"] == "degC/month"
+    assert trend["trend"] == "increasing"

@@ -31,9 +31,9 @@ DEFAULTS = {
     "regions_file": "data/processed/regions.json",
     "region_id": "study_area",
     "region": "Study area",
-    "variable": "Land surface temperature",
+    "variable": "Nighttime land surface temperature",
     "units": "degC",
-    "source": ("NASA Terra/MODIS MOD11C3.061 monthly land surface temperature, 0.05 deg grid "
+    "source": ("NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid "
                "(LP DAAC, doi:10.5067/MODIS/MOD11C3.061)"),
 }
 
