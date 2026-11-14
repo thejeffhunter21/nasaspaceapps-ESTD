@@ -10,7 +10,7 @@ it does not imply teammate approval or that outstanding coordination is complete
 | FE-01 | Start the app and board | Review |
 | FE-02 | Lock the screen and data shape | Review |
 | FE-03 | Show the evidence | Review |
-| FE-04 | Connect the live mock API | To do |
+| FE-04 | Connect the live mock API | Review |
 | FE-05 | Switch regions safely | To do |
 | FE-06 | Explain what people see | To do |
 | FE-07 | Design every state | To do |
@@ -122,7 +122,8 @@ raise validation errors; page-level failure and recovery states belong to FE-07.
   frontend integration; the adapter does not invent zeros or a fourth label.
 - Current contract supplies source/method/period, but no snapshot ID or coverage
   fields. Their delivery remains a backend/data handoff for real-data verification.
-- API URL, frontend host, deployment command and reviewer remain unconfirmed.
+- API URL was supplied during FE-04 (see below); frontend host, deployment command
+  and reviewer remain unconfirmed.
 
 ### Verification
 
@@ -154,3 +155,65 @@ Demo: run the existing Streamlit command, identify the sample-data warning and
 Example Region period, read the cards, then inspect the break between February
 and April 2004 and the explanation below the chart. Live API access starts in
 FE-04; no API requests or AI calls are added here.
+
+## FE-04: live API connection
+
+The frontend defaults to `https://estd-api.onrender.com`, supplied by backend.
+Run the existing command from the repository root to connect:
+
+```sh
+uv run --locked streamlit run app/streamlit_app.py
+```
+
+Override `API_URL` in the environment or the repository-root `.env` to select
+another backend. To run a local backend, for example:
+
+```sh
+API_URL=http://localhost:8000 uv run --locked streamlit run app/streamlit_app.py
+```
+
+Set `API_URL` to an empty string for the local sample preview without networking:
+
+```sh
+API_URL= uv run --locked streamlit run app/streamlit_app.py
+```
+
+`app/api_client.py` owns all frontend HTTP access. On a cache miss it calls
+`/health` first, then `/results` for the main study area. Each endpoint has a
+5-second connect timeout and a 45-second read timeout, with at most one retry
+for a timeout, connection error, HTTP 429 or HTTP 5xx. These are per-request
+timeouts, not an overall page deadline. Other HTTP errors, invalid JSON and
+invalid contract payloads fail without retrying. Error messages omit raw server
+details. A spinner is visible during loading.
+
+Only successfully validated results are cached, for 60 seconds and at most 16
+API URLs. Host caches remain separate. **Refresh data** clears the current URL's
+entry and reloads it immediately, useful when backend changes from mock to real
+results. No automatic background polling is performed.
+
+If connection fails, the page shows a useful error with **Retry API** and
+**Use sample data**. Sample data is an explicit choice, not a silent substitute.
+Choosing it does not trigger another failed API call; it uses the frontend fixture
+and keeps the Sample data label visible. **Retry API** then returns to the API.
+Successful API responses still receive the Sample data label when their source or
+region identifies them as mock. “Connected to API” describes the connection; it
+does not independently verify the dataset's provenance.
+
+### Verification and live observation
+
+Offline frontend checks mock HTTP and cover request order/timeouts, single retries,
+success-only caching, URL isolation, manual refresh, invalid JSON/contract payloads,
+and explicit sample/retry interaction. They do not require the deployed API.
+
+On November 14, 2026, the deployed `/health` returned `status: ok`. An initial
+`/results` read contained the Example Region mock with 36 positions and one null.
+During the live check the backend switched to Phoenix study area; both AppTest
+and browser inspection showed a successful API connection, nighttime land surface
+temperature for 2003-01 to 2024-12, slope 0.007713 degC/month, p 0.0 and increasing
+direction, as supplied by the API. This confirms connection/rendering; FE-09 owns
+independent snapshot verification.
+
+No backend, contract, AI, hosting or dependency changes are part of FE-04. Region
+switching remains FE-05. The deployed frontend URL still needs a hosting handoff;
+these checks run the frontend locally against the deployed backend. Streamlit's
+Python process makes these requests, so browser CORS is not involved in this path.
