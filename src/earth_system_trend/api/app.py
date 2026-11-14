@@ -19,6 +19,18 @@ app.add_middleware(
 )
 
 
+@app.get("/")
+def home() -> dict:
+    """What a person sees when they open the bare URL: what this is and where to go."""
+    return {
+        "name": "Earth System Trend Detective API",
+        "status": "ok",
+        "try": ["/regions", "/series?region=phoenix_study_area",
+                "/trend?region=phoenix_study_area", "/results", "/health"],
+        "docs": "/docs",
+    }
+
+
 @app.get("/health")
 def health() -> dict:
     """Is the server up? Used by Render and the uptime check."""
