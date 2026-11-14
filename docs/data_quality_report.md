@@ -1,4 +1,4 @@
-# Phoenix data quality report
+# Phoenix study area data quality report
 
 Data version: phoenix-qc-v1.0. The coverage file is copied unchanged from the QC freeze associated with reference PR #59. All input raw CSVs match the previously delivered qc-v1 files.
 

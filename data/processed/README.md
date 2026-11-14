@@ -1,4 +1,4 @@
-# Phoenix monthly nighttime land surface temperature
+# Phoenix study area monthly nighttime land surface temperature
 
 Source: NASA Terra/MODIS MOD11C3.061 (LP DAAC).
 Dataset DOI: https://doi.org/10.5067/MODIS/MOD11C3.061

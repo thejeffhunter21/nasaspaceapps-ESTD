@@ -1,4 +1,4 @@
-# Phoenix monthly temperature anomalies
+# Phoenix study area monthly temperature anomalies
 
 Data version: phoenix-qc-v1.0. Source: NASA Terra/MODIS MOD11C3.061 nighttime land surface temperature.
 Dataset DOI: https://doi.org/10.5067/MODIS/MOD11C3.061
@@ -20,7 +20,7 @@ All five use date,value and preserve 264 monthly positions from 2003-01 through 
 
 | File | Region | Valid / missing |
 |---|---|---|
-| anomaly.csv | Whole Phoenix study window | 264 / 0 |
+| anomaly.csv | Whole Phoenix study area | 264 / 0 |
 | anomaly_phoenix_northwest.csv | Northwest | 263 / 1 |
 | anomaly_phoenix_northeast.csv | Northeast | 262 / 2 |
 | anomaly_phoenix_southwest.csv | Southwest | 262 / 2 |
