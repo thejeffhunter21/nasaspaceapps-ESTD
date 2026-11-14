@@ -1,0 +1,37 @@
+[project]
+name = "earth-system-trend"
+version = "0.1.0"
+description = "Find, test and explain trends in NASA Earth science data (NASA Space Apps 2026)."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+# Backend runtime only. The Docker image installs just these.
+dependencies = [
+    "fastapi",
+    "openai",
+    "pandas",
+    "pydantic",
+    "pymannkendall",
+    "python-dotenv",
+    "requests",
+    "uvicorn",
+]
+
+[dependency-groups]
+dev = ["httpx", "pytest", "ruff"]
+# Data layer (download + clean NASA files)
+data = ["earthaccess", "netcdf4", "numpy", "xarray"]
+# Frontend (dashboard)
+frontend = ["plotly", "streamlit"]
+
+[tool.uv]
+default-groups = ["dev", "data", "frontend"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["uv_build>=0.11,<0.12"]
+build-backend = "uv_build"
