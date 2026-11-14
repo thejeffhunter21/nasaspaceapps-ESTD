@@ -5,6 +5,9 @@ retries -> A3 checks -> AI text if it passes, otherwise fallback_text() built fr
 
 AI is used only when GEMINI_API_KEY and GEMINI_MODEL are set (A1). Without a key, or on any
 failure, the fallback is returned and the reason is logged (never the key or provider body).
+
+A6: text that passed the checks is cached by prompt version + facts and reused (re-checked) on
+the next run, even without a key. Every request to Gemini spends one call from the daily cap.
 """
 
 from __future__ import annotations
@@ -17,6 +20,7 @@ from typing import Any
 
 from openai.types.chat import ChatCompletionMessageParam
 
+from earth_system_trend.ai.ai_cache import CappedClient, ExplanationStore, cache_key
 from earth_system_trend.ai.ai_checks import ALPHA, check_explanation, is_significant
 from earth_system_trend.ai.ai_retry import GeminiUnavailableError, RetryPolicy, complete_with_retry
 from earth_system_trend.ai.ai_setup import GeminiSetupError, build_client
@@ -40,6 +44,13 @@ def explain(
     except Exception:  # noqa: BLE001 - incomplete results: nothing safe to ask the model
         logger.warning("explain: results incomplete; using fallback")
         return fallback
+
+    store = ExplanationStore.from_env()
+    key = cache_key(messages, PROMPT_VERSION)
+    cached = _cached_text(store, key, results)
+    if cached:
+        return {"text": cached, "source": "ai"}
+
     try:
         client = build_client()
     except GeminiSetupError as exc:
@@ -49,7 +60,8 @@ def explain(
         return fallback  # AI disabled (no GEMINI_API_KEY)
 
     try:
-        reply = complete_with_retry(client, messages, policy=policy, sleep=sleep)
+        capped = CappedClient(client, store)
+        reply = complete_with_retry(capped, messages, policy=policy, sleep=sleep)
         text = _reply_text(reply)
         if not text:
             logger.warning("explain: Gemini returned no text; using fallback")
@@ -58,6 +70,7 @@ def explain(
         if not check.ok:
             logger.warning("explain: AI text rejected by checks: %s", "; ".join(check.problems))
             return fallback
+        store.put(key, text, model=client.model, prompt_version=PROMPT_VERSION)
         return {"text": text, "source": "ai"}
     except (GeminiSetupError, GeminiUnavailableError) as exc:
         logger.warning("explain: %s; using fallback", exc)
@@ -67,6 +80,23 @@ def explain(
         return fallback
     finally:
         client.close()
+
+
+def _cached_text(store: ExplanationStore, key: str, results: Any) -> str | None:
+    """Cached AI text for these exact facts, if it still passes today's checks."""
+    try:
+        text = store.get(key)
+        if text is None:
+            return None
+        check = check_explanation(text, results)
+        if check.ok:
+            return text
+        logger.warning("explain: cached AI text no longer passes checks (%s); asking again",
+                       "; ".join(check.problems))
+        store.drop(key)
+    except Exception as exc:  # noqa: BLE001 - the cache must never break explain
+        logger.warning("explain: cache lookup failed (%s)", type(exc).__name__)
+    return None
 
 
 def build_messages(results: Mapping[str, Any]) -> list[ChatCompletionMessageParam]:
