@@ -15,6 +15,25 @@ DEFAULT_API_URL = "https://estd-api.onrender.com"
 class ApiError(ValueError):
     """A safe, user-readable API connection or payload failure."""
 
+    def __init__(self, message: str, *, kind: str = "invalid_response"):
+        super().__init__(message)
+        self.kind = kind
+
+
+def require_observations(payload) -> None:
+    """Treat empty or all-null series as unavailable, without inserting values."""
+    points = payload.get("series") if isinstance(payload, dict) else None
+    if isinstance(points, list) and (
+        not points or all(
+            isinstance(point, dict) and "value" in point and point["value"] is None
+            for point in points
+        )
+    ):
+        raise ApiError(
+            "No measured values are available. Retry or choose another region; missing values stay missing.",
+            kind="empty",
+        )
+
 
 def fetch_results(api_url: str) -> dict:
     """Validate configuration, then cache by normalized API base URL."""
@@ -32,7 +51,9 @@ def _base_url(api_url: str) -> str:
     except ValueError:
         valid = False
     if not valid:
-        raise ApiError("API connection is not configured correctly. Use sample data or check API_URL.")
+        raise ApiError(
+            "Ask the demo owner to check the API address, or use sample data.", kind="configuration",
+        )
     return base_url
 
 
@@ -64,8 +85,10 @@ def _fetch_regions(base_url: str) -> list[dict]:
     with requests.Session() as session:
         health = _get_json(session, f"{base_url}/health")
         if not isinstance(health, dict) or health.get("status") != "ok":
-            raise ApiError("The API is not ready. Try again or use sample data.")
+            raise ApiError("The API is not ready. Try again or use sample data.", kind="server")
         payload = _get_json(session, f"{base_url}/regions")
+    if isinstance(payload, dict) and payload.get("regions") == []:
+        raise ApiError("No study regions are available yet. Retry or use sample data.", kind="empty_regions")
     try:
         directory = _RegionDirectory.model_validate(payload)
     except ValidationError:
@@ -79,7 +102,7 @@ def _fetch_regions(base_url: str) -> list[dict]:
 def fetch_region_results(api_url: str, region_id: str) -> dict:
     """Load one complete region; never return half of a series/trend pair."""
     if not isinstance(region_id, str) or not re.fullmatch(r"[a-z0-9_]+", region_id):
-        raise ApiError("Choose a region from the available list.")
+        raise ApiError("Refresh the region list and choose an available region.", kind="selection")
     return _fetch_region_results(_base_url(api_url), region_id)
 
 
@@ -88,6 +111,7 @@ def _fetch_region_results(base_url: str, region_id: str) -> dict:
     with requests.Session() as session:
         params = {"region": region_id}
         series = _get_json(session, f"{base_url}/series", params)
+        require_observations(series)
         trend = _get_json(session, f"{base_url}/trend", params)
     fields = ("region_id", "region", "variable", "units", "period")
     if (
@@ -110,8 +134,9 @@ def _fetch_results(base_url: str) -> dict:
     with requests.Session() as session:
         health = _get_json(session, f"{base_url}/health")
         if not isinstance(health, dict) or health.get("status") != "ok":
-            raise ApiError("The API is not ready. Try again or use sample data.")
+            raise ApiError("The API is not ready. Try again or use sample data.", kind="server")
         payload = _get_json(session, f"{base_url}/results")
+    require_observations(payload)
     try:
         Results.model_validate(payload)
     except ValidationError:
@@ -124,15 +149,42 @@ def _get_json(session: requests.Session, url: str, params: dict | None = None):
     for attempt in range(2):
         try:
             response = session.get(url, params=params, timeout=(5, 45), allow_redirects=False)
-        except (requests.Timeout, requests.ConnectionError):
+        except requests.Timeout:
             if attempt == 0:
                 continue
-            raise ApiError("The API did not respond after two attempts. Try again or use sample data.") from None
+            raise ApiError(
+                "The API did not respond after two attempts. It may be waking up. Retry or use sample data.",
+                kind="timeout",
+            ) from None
+        except requests.ConnectionError:
+            if attempt == 0:
+                continue
+            raise ApiError(
+                "Check your connection, then retry or use the local sample preview.", kind="connection",
+            ) from None
         except requests.RequestException:
-            raise ApiError("Could not connect to the API. Try again or use sample data.") from None
+            raise ApiError(
+                "Could not connect to the API. Try again or use sample data.", kind="connection",
+            ) from None
         if response.status_code != 200:
             if attempt == 0 and (response.status_code == 429 or 500 <= response.status_code < 600):
                 continue
+            if response.status_code == 404:
+                raise ApiError(
+                    "No data is available for this region (HTTP 404). Refresh regions or choose another.",
+                    kind="not_found",
+                )
+            if response.status_code == 422:
+                raise ApiError(
+                    "Refresh the available regions and choose one again (HTTP 422).", kind="selection",
+                )
+            if response.status_code == 429:
+                raise ApiError("Too many requests (HTTP 429). Wait briefly, then retry.", kind="rate_limit")
+            if response.status_code >= 500:
+                raise ApiError(
+                    f"The server could not load results (HTTP {response.status_code}). "
+                    "Retry; if this continues, report it to the backend owner.", kind="server",
+                )
             raise ApiError(f"API request failed (HTTP {response.status_code}). Try again or use sample data.")
         try:
             return response.json()
