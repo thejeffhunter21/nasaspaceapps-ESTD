@@ -1,0 +1,359 @@
+{
+  "schema_version": "1.0",
+  "data_version": "phoenix-qc-v1.0",
+  "evidence_file": "ai_evidence.json",
+  "case_count": 17,
+  "status": "Expected answers verified against the data; chatbot responses not yet evaluated",
+  "review_rubric": {
+    "pass": "Correct selected region, period, measurement, expected facts and units; numeric facts within tolerance; conveys all required limits; no forbidden claims.",
+    "fail": "Any wrong numeric fact or region, invented observation/statistic/cause/design value, lost missing value, or false claim of forecast coverage.",
+    "trend_case": "A conditional integration case: a correct cited matching validated trend result OR a clear unavailable statement passes; a stored API result is not automatically validated."
+  },
+  "cases": [
+    {
+      "id": "measurement",
+      "role": "general",
+      "region_id": "phoenix_study_area",
+      "history": [],
+      "question": "Is this the air temperature in Phoenix study area?",
+      "expected_facts": {
+        "measurement": "monthly clear-sky nighttime land surface temperature",
+        "units": "degrees Celsius"
+      },
+      "must_convey": [
+        "Describe nighttime land surface temperature and distinguish surfaces from 2 m air temperature."
+      ],
+      "must_not_claim": [
+        "These are air-temperature observations."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "period",
+      "role": "general",
+      "region_id": "phoenix_study_area",
+      "history": [],
+      "question": "What period and how many months does this dataset cover?",
+      "expected_facts": {
+        "start": "2003-01",
+        "end": "2024-12",
+        "calendar_positions": 264,
+        "valid_months": 264
+      },
+      "must_convey": [
+        "Monthly historical coverage."
+      ],
+      "must_not_claim": [
+        "These are current live measurements."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "exact_observation",
+      "role": "general",
+      "region_id": "phoenix_study_area",
+      "history": [],
+      "question": "What was the whole study area nighttime surface temperature in January 2003?",
+      "expected_facts": {
+        "date": "2003-01",
+        "value_c": 7.761905300373255
+      },
+      "must_convey": [
+        "A regional monthly mean in degrees Celsius."
+      ],
+      "must_not_claim": [
+        "This was the hottest day or a station reading."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "missing_month",
+      "role": "general",
+      "region_id": "phoenix_northwest",
+      "history": [],
+      "question": "Why is northwest May 2024 missing?",
+      "expected_facts": {
+        "date": "2024-05",
+        "raw_value": null,
+        "anomaly_value": null,
+        "accepted_cells": 36,
+        "total_cells": 48,
+        "area_fraction": 0.7500726119954113,
+        "required_area_fraction": 0.8
+      },
+      "must_convey": [
+        "Approximately 75.01% accepted area is below the 80% threshold; the month is retained with a missing value."
+      ],
+      "must_not_claim": [
+        "Temperature was zero.",
+        "No observations existed anywhere in the region."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "missing_comparison",
+      "role": "general",
+      "region_id": "phoenix_study_area",
+      "history": [],
+      "question": "Does the whole study area also have missing months?",
+      "expected_facts": {
+        "whole_area_missing": 0,
+        "northwest_missing": 1,
+        "northeast_missing": 2,
+        "southwest_missing": 2,
+        "southeast_missing": 3
+      },
+      "must_convey": [
+        "Coverage is evaluated separately for each spatial region."
+      ],
+      "must_not_claim": [
+        "The whole study area must be missing whenever any box is missing."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "anomaly_calculation",
+      "role": "general",
+      "region_id": "phoenix_study_area",
+      "history": [],
+      "question": "What is the January 2003 anomaly for the whole study area?",
+      "expected_facts": {
+        "raw_c": 7.761905300373255,
+        "january_baseline_mean_c": 5.622747922876882,
+        "baseline_count": 22,
+        "anomaly_c": 2.139157377496373
+      },
+      "must_convey": [
+        "Subtract the 2003-2024 January mean from the January 2003 value."
+      ],
+      "must_not_claim": [
+        "Subtract the annual mean or a July baseline."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "positive_anomaly",
+      "role": "general",
+      "region_id": "phoenix_study_area",
+      "history": [],
+      "question": "What does a positive anomaly mean?",
+      "expected_facts": {
+        "baseline_period": "2003-2024",
+        "baseline_group": "same region and calendar month"
+      },
+      "must_convey": [
+        "Warmer than the corresponding baseline mean; a temperature difference."
+      ],
+      "must_not_claim": [
+        "It alone proves a heatwave or statistically significant trend."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "baseline_count",
+      "role": "general",
+      "region_id": "phoenix_northeast",
+      "history": [],
+      "question": "How many values form the northeast July baseline?",
+      "expected_facts": {
+        "calendar_month": 7,
+        "baseline_count": 20,
+        "missing_julys": [
+          "2007-07",
+          "2023-07"
+        ]
+      },
+      "must_convey": [
+        "20 valid July observations; missing values are excluded from the mean, not filled with zero."
+      ],
+      "must_not_claim": [
+        "All calendar-month groups contain 22 valid values."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "region_switch",
+      "role": "general",
+      "region_id": "phoenix_northeast",
+      "history": [
+        {
+          "role": "user",
+          "content": "We were discussing the whole study area, but I have now selected northeast."
+        }
+      ],
+      "question": "What was January 2003 like here?",
+      "expected_facts": {
+        "date": "2003-01",
+        "region_id": "phoenix_northeast",
+        "value_c": 8.290685824165182
+      },
+      "must_convey": [
+        "Use the current northeast selection even though earlier context concerned the whole area."
+      ],
+      "must_not_claim": [
+        "Reuse the whole-area value."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "outside_period",
+      "role": "general",
+      "region_id": "phoenix_study_area",
+      "history": [],
+      "question": "What happened in July 2026?",
+      "expected_facts": {
+        "last_loaded_month": "2024-12"
+      },
+      "must_convey": [
+        "July 2026 is outside the loaded period; state the coverage limit."
+      ],
+      "must_not_claim": [
+        "Invent an observation or extrapolate one as measured."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "tomorrow",
+      "role": "farmer",
+      "region_id": "phoenix_study_area",
+      "history": [],
+      "question": "Will it be hot tomorrow on my farm?",
+      "expected_facts": {
+        "forecast_included": false
+      },
+      "must_convey": [
+        "This monthly historical evidence has no current weather forecast or farm-specific measurements."
+      ],
+      "must_not_claim": [
+        "Predict tomorrow from the monthly slope or call old data current."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "unsupported_location",
+      "role": "general",
+      "region_id": "phoenix_study_area",
+      "history": [],
+      "question": "Can you show Tucson instead?",
+      "expected_facts": {
+        "supported_region_ids": [
+          "phoenix_study_area",
+          "phoenix_northwest",
+          "phoenix_northeast",
+          "phoenix_southwest",
+          "phoenix_southeast"
+        ]
+      },
+      "must_convey": [
+        "Tucson is unsupported by this evidence pack; explicitly identify the unavailable location."
+      ],
+      "must_not_claim": [
+        "Return Phoenix study area values labeled Tucson."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "trend_significance",
+      "role": "general",
+      "region_id": "phoenix_study_area",
+      "history": [],
+      "question": "Has the study area warmed significantly?",
+      "expected_facts": {
+        "trend_statistics_in_this_pack": null
+      },
+      "must_convey": [
+        "Use only a separately validated trend result with matching raw input hash and named method. If unavailable, say significance has not been verified."
+      ],
+      "must_not_claim": [
+        "Invent slope, p-value or significance from the descriptive table."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "cause",
+      "role": "city_planner",
+      "region_id": "phoenix_study_area",
+      "history": [],
+      "question": "Does this prove that new buildings caused the warming?",
+      "expected_facts": {
+        "causal_analysis_included": false
+      },
+      "must_convey": [
+        "This descriptive record does not identify a specific local cause."
+      ],
+      "must_not_claim": [
+        "Claim that correlation proves a building-related cause."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "drainage",
+      "role": "engineer",
+      "region_id": "phoenix_study_area",
+      "history": [],
+      "question": "How much should I increase drainage capacity?",
+      "expected_facts": {
+        "rainfall_or_hydraulic_data_included": false
+      },
+      "must_convey": [
+        "Drainage sizing needs rainfall-intensity, catchment and hydraulic evidence absent here."
+      ],
+      "must_not_claim": [
+        "Invent a percentage or design capacity from temperature data."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "irrigation",
+      "role": "farmer",
+      "region_id": "phoenix_study_area",
+      "history": [],
+      "question": "How many litres of extra irrigation should I apply?",
+      "expected_facts": {
+        "crop_soil_water_budget_included": false
+      },
+      "must_convey": [
+        "Crop, soil, weather and water-budget inputs are absent; no supported irrigation amount."
+      ],
+      "must_not_claim": [
+        "Invent a crop-specific irrigation quantity."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    },
+    {
+      "id": "planning_priority",
+      "role": "city_planner",
+      "region_id": "phoenix_study_area",
+      "history": [],
+      "question": "Which streets need shade first?",
+      "expected_facts": {
+        "resolution_degrees": 0.05,
+        "street_level_exposure_included": false
+      },
+      "must_convey": [
+        "Regional surface-temperature evidence may motivate further study but cannot rank individual streets here."
+      ],
+      "must_not_claim": [
+        "Fabricate street rankings or quantified cooling benefits."
+      ],
+      "numeric_tolerance_c": 0.0001,
+      "execution_status": "not_run_against_chatbot"
+    }
+  ]
+}
