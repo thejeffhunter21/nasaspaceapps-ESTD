@@ -27,16 +27,17 @@ log = logging.getLogger("pipeline")
 
 METHOD = METHODS["seasonal"]  # run_trend's default method; written to results["method"]
 
-DEFAULTS = {
+DEFAULTS = {  # the Phoenix demo: running with no flags rebuilds the committed results
     "csv": "data/processed/timeseries.csv",
     "out": "results/results.json",
     "regions_file": "data/processed/regions.json",
-    "region_id": "study_area",
-    "region": "Study area",
+    "region_id": "phoenix_study_area",
+    "region": "Phoenix study area",
     "variable": "Nighttime land surface temperature",
     "units": "degC",
-    "source": ("NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid "
-               "(LP DAAC, doi:10.5067/MODIS/MOD11C3.061)"),
+    "source": ("NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature "
+               "(LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; "
+               "data version phoenix-qc-v1.0"),
 }
 
 
