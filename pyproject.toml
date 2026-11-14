@@ -31,6 +31,10 @@ line-length = 100
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "unit: fast test that uses only committed fixtures",
+    "integration: runs the pipeline and the API together (gates only)",
+]
 
 [build-system]
 requires = ["uv_build>=0.11,<0.12"]
