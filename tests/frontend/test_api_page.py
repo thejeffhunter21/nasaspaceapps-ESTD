@@ -23,7 +23,20 @@ def backend(monkeypatch):
             raise requests.Timeout()
         result = requests.Response()
         result.status_code = 200
-        body = {"status": "ok"} if url.endswith("/health") else state["payload"]
+        payload = state["payload"]
+        if url.endswith("/health"):
+            body = {"status": "ok"}
+        elif url.endswith("/regions"):
+            body = {"regions": [payload]}
+        elif url.endswith("/series"):
+            assert kwargs["params"] == {"region": payload["region_id"]}
+            body = {k: payload[k] for k in (
+                "region_id", "region", "variable", "units", "period", "series",
+            )}
+        else:
+            assert url.endswith("/trend")
+            assert kwargs["params"] == {"region": payload["region_id"]}
+            body = {k: v for k, v in payload.items() if k != "series"}
         result._content = json.dumps(body).encode()
         return result
 
@@ -41,7 +54,10 @@ def test_connected_results_render_and_rerun_uses_cache(backend):
     assert app.text[0].value == backend["payload"]["explanation"]
     app.run()
     assert not app.exception
-    assert backend["calls"] == ["https://backend.example/health", "https://backend.example/results"]
+    assert backend["calls"] == [
+        "https://backend.example/health", "https://backend.example/regions",
+        "https://backend.example/series", "https://backend.example/trend",
+    ]
 
 
 def test_connected_mock_results_keep_sample_label(backend):
@@ -72,7 +88,7 @@ def test_failure_offers_sample_without_automatically_substituting(backend):
     assert not app.exception
     assert app.subheader[0].value == "Phoenix study area"
     assert not app.warning
-    assert len(backend["calls"]) == 4
+    assert len(backend["calls"]) == 6
 
 
 def test_default_url_is_the_supplied_live_service(backend, monkeypatch):
@@ -80,7 +96,8 @@ def test_default_url_is_the_supplied_live_service(backend, monkeypatch):
     app = AppTest.from_file(str(APP)).run()
     assert not app.exception
     assert backend["calls"] == [
-        "https://estd-api.onrender.com/health", "https://estd-api.onrender.com/results",
+        "https://estd-api.onrender.com/health", "https://estd-api.onrender.com/regions",
+        "https://estd-api.onrender.com/series", "https://estd-api.onrender.com/trend",
     ]
 
 
@@ -91,4 +108,4 @@ def test_refresh_loads_changed_results_from_the_same_host(backend):
     next(button for button in app.button if button.label == "Refresh data").click().run()
     assert not app.exception
     assert app.subheader[0].value == "Updated study area"
-    assert len(backend["calls"]) == 4
+    assert len(backend["calls"]) == 8
