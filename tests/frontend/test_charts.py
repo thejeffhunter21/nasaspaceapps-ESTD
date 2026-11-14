@@ -35,9 +35,9 @@ def test_chart_labels_month_hover_and_supplied_units(view):
     chart = monthly_chart(view)
     assert chart.layout.xaxis.type == "date"
     assert chart.layout.xaxis.title.text == "Month"
-    assert chart.layout.yaxis.title.text == "Land surface temperature (degC)"
+    assert chart.layout.yaxis.title.text == "Land surface temperature (°C)"
     assert "%{x|%Y-%m}" in chart.data[0].hovertemplate
-    assert "degC" in chart.data[0].hovertemplate
+    assert "°C" in chart.data[0].hovertemplate
 
 
 def test_chart_preserves_zero_and_negative_observations(view):

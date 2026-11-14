@@ -1,0 +1,73 @@
+{
+  "checked_at_utc": "2026-11-14T23:34:10.302473+00:00",
+  "api_url": "https://estd-api.onrender.com",
+  "scope": "FE-08 point-in-time API-to-frontend comparison; not independent dataset QC",
+  "checks": [
+    {
+      "region_id": "phoenix_study_area",
+      "region": "Phoenix study area",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "api_units": "degC",
+      "display_units": "\u00b0C",
+      "api_slope_unit": "degC/month",
+      "display_slope_unit": "\u00b0C/month",
+      "raw_trend": {
+        "slope": 0.0077125000000000015,
+        "slope_unit": "degC/month",
+        "p": 7.02263552300232e-11,
+        "tau": 0.2893217893217893,
+        "trend": "increasing"
+      },
+      "display_cards": {
+        "Slope (\u00b0C/month)": "0.0077125000000000015",
+        "p-value": "p < 0.001",
+        "Direction": "increasing"
+      },
+      "positions": 264,
+      "null_months": [],
+      "series_sha256": "5532e5ae6a63e14b586cef62a204ae80e20cb80c9a774402e4fb6a982f9d3162",
+      "explanation_source": "fallback",
+      "explanation_label": "Automatic summary",
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "matches_api_json": true
+    },
+    {
+      "region_id": "phoenix_northwest",
+      "region": "Phoenix study area northwest",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "api_units": "degC",
+      "display_units": "\u00b0C",
+      "api_slope_unit": "degC/month",
+      "display_slope_unit": "\u00b0C/month",
+      "raw_trend": {
+        "slope": 0.0075514705882352845,
+        "slope_unit": "degC/month",
+        "p": 3.2750294941589206e-10,
+        "tau": 0.2795347146492185,
+        "trend": "increasing"
+      },
+      "display_cards": {
+        "Slope (\u00b0C/month)": "0.0075514705882352845",
+        "p-value": "p < 0.001",
+        "Direction": "increasing"
+      },
+      "positions": 264,
+      "null_months": [
+        "2024-05"
+      ],
+      "series_sha256": "d5cdd2c04764796bd5eb9df1236df9e2a63a020cf9f93c7ea232ebe76c734e9f",
+      "explanation_source": "fallback",
+      "explanation_label": "Automatic summary",
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "matches_api_json": true
+    }
+  ]
+}
