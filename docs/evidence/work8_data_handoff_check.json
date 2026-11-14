@@ -1,0 +1,325 @@
+{
+  "schema_version": "1.0",
+  "checked_at_utc": "2026-11-14T23:32:37.230197+00:00",
+  "source_commit": "d5f531af4cbb3c01bac999819339be8da30aab79",
+  "api_url": "https://estd-api.onrender.com",
+  "data_version": "phoenix-qc-v1.0",
+  "regional_checks": [
+    {
+      "region_id": "phoenix_study_area",
+      "label": "Phoenix study area",
+      "checks": {
+        "series_trend_identity_matches": true,
+        "selection_id_matches": true,
+        "study_area_label": true,
+        "measurement_correct": true,
+        "units_correct": true,
+        "period_correct": true,
+        "full_series_and_gaps_match": true,
+        "source_product_and_field": true,
+        "source_version": true,
+        "not_mock_source": true,
+        "method_matches_snapshot": true,
+        "trend_numbers_match_snapshot": true,
+        "explanation_matches_snapshot": true,
+        "explanation_source_labeled": true,
+        "explanation_guard_pass": true,
+        "no_active_forecast": true,
+        "nonzero_p_preserved": true
+      },
+      "missing_dates": [],
+      "explanation_source": "fallback",
+      "response_digest_sha256": "c3afeb98acb7dbd9e1d6cbf2a240a2eac72a55a8e39c81d02782e7b9b5641c7b"
+    },
+    {
+      "region_id": "phoenix_northeast",
+      "label": "Phoenix study area northeast",
+      "checks": {
+        "series_trend_identity_matches": true,
+        "selection_id_matches": true,
+        "study_area_label": true,
+        "measurement_correct": true,
+        "units_correct": true,
+        "period_correct": true,
+        "full_series_and_gaps_match": true,
+        "source_product_and_field": true,
+        "source_version": true,
+        "not_mock_source": true,
+        "method_matches_snapshot": true,
+        "trend_numbers_match_snapshot": true,
+        "explanation_matches_snapshot": true,
+        "explanation_source_labeled": true,
+        "explanation_guard_pass": true,
+        "no_active_forecast": true,
+        "nonzero_p_preserved": true
+      },
+      "missing_dates": [
+        "2007-07",
+        "2023-07"
+      ],
+      "explanation_source": "fallback",
+      "response_digest_sha256": "e5d532d3d702154b900f75240b692329d9af429d45652d5a29ce680caec95c89"
+    },
+    {
+      "region_id": "phoenix_northwest",
+      "label": "Phoenix study area northwest",
+      "checks": {
+        "series_trend_identity_matches": true,
+        "selection_id_matches": true,
+        "study_area_label": true,
+        "measurement_correct": true,
+        "units_correct": true,
+        "period_correct": true,
+        "full_series_and_gaps_match": true,
+        "source_product_and_field": true,
+        "source_version": true,
+        "not_mock_source": true,
+        "method_matches_snapshot": true,
+        "trend_numbers_match_snapshot": true,
+        "explanation_matches_snapshot": true,
+        "explanation_source_labeled": true,
+        "explanation_guard_pass": true,
+        "no_active_forecast": true,
+        "nonzero_p_preserved": true
+      },
+      "missing_dates": [
+        "2024-05"
+      ],
+      "explanation_source": "fallback",
+      "response_digest_sha256": "67ae1fe7aad2a544c9a517e8eee8d3fbbfad1de4f6862f57f25c57787912b22e"
+    },
+    {
+      "region_id": "phoenix_southeast",
+      "label": "Phoenix study area southeast",
+      "checks": {
+        "series_trend_identity_matches": true,
+        "selection_id_matches": true,
+        "study_area_label": true,
+        "measurement_correct": true,
+        "units_correct": true,
+        "period_correct": true,
+        "full_series_and_gaps_match": true,
+        "source_product_and_field": true,
+        "source_version": true,
+        "not_mock_source": true,
+        "method_matches_snapshot": true,
+        "trend_numbers_match_snapshot": true,
+        "explanation_matches_snapshot": true,
+        "explanation_source_labeled": true,
+        "explanation_guard_pass": true,
+        "no_active_forecast": true,
+        "nonzero_p_preserved": true
+      },
+      "missing_dates": [
+        "2012-07",
+        "2017-07",
+        "2024-06"
+      ],
+      "explanation_source": "fallback",
+      "response_digest_sha256": "9c41e95d23eeba2850506e8e369ed78d7a361779ae40d26b152030d9716a8358"
+    },
+    {
+      "region_id": "phoenix_southwest",
+      "label": "Phoenix study area southwest",
+      "checks": {
+        "series_trend_identity_matches": true,
+        "selection_id_matches": true,
+        "study_area_label": true,
+        "measurement_correct": true,
+        "units_correct": true,
+        "period_correct": true,
+        "full_series_and_gaps_match": true,
+        "source_product_and_field": true,
+        "source_version": true,
+        "not_mock_source": true,
+        "method_matches_snapshot": true,
+        "trend_numbers_match_snapshot": true,
+        "explanation_matches_snapshot": true,
+        "explanation_source_labeled": true,
+        "explanation_guard_pass": true,
+        "no_active_forecast": true,
+        "nonzero_p_preserved": true
+      },
+      "missing_dates": [
+        "2007-07",
+        "2010-07"
+      ],
+      "explanation_source": "fallback",
+      "response_digest_sha256": "699e7651b806acc0e978b457f0bd97463f62f7c0d0daeb151f31a8da9ec1a599"
+    }
+  ],
+  "unknown_location_checks": [
+    {
+      "endpoint": "/series",
+      "query": "Tucson",
+      "expected_status": 404,
+      "actual_status": 404
+    },
+    {
+      "endpoint": "/series",
+      "query": "not_a_real_region",
+      "expected_status": 404,
+      "actual_status": 404
+    },
+    {
+      "endpoint": "/series",
+      "query": "<invalid>",
+      "expected_status": 422,
+      "actual_status": 422
+    },
+    {
+      "endpoint": "/trend",
+      "query": "Tucson",
+      "expected_status": 404,
+      "actual_status": 404
+    },
+    {
+      "endpoint": "/trend",
+      "query": "not_a_real_region",
+      "expected_status": 404,
+      "actual_status": 404
+    },
+    {
+      "endpoint": "/trend",
+      "query": "<invalid>",
+      "expected_status": 422,
+      "actual_status": 422
+    }
+  ],
+  "case_insensitive_label_lookup": "passed for northwest on /series and /trend",
+  "frontend_replay_checks": [
+    {
+      "region_id": "phoenix_study_area",
+      "checks": {
+        "heading_matches": true,
+        "all_chart_dates_match": true,
+        "all_chart_values_match": true,
+        "chart_does_not_connect_gaps": true,
+        "axis_unit_and_measurement": true,
+        "slope_card_matches": true,
+        "p_card_matches": true,
+        "direction_card_matches": true,
+        "explanation_matches": true,
+        "source_caption_matches": true,
+        "method_caption_matches": true,
+        "connection_labeled_live_api": true,
+        "fallback_caption_correct": true,
+        "no_sample_warning": true
+      }
+    },
+    {
+      "region_id": "phoenix_northeast",
+      "checks": {
+        "heading_matches": true,
+        "all_chart_dates_match": true,
+        "all_chart_values_match": true,
+        "chart_does_not_connect_gaps": true,
+        "axis_unit_and_measurement": true,
+        "slope_card_matches": true,
+        "p_card_matches": true,
+        "direction_card_matches": true,
+        "explanation_matches": true,
+        "source_caption_matches": true,
+        "method_caption_matches": true,
+        "connection_labeled_live_api": true,
+        "fallback_caption_correct": true,
+        "no_sample_warning": true
+      }
+    },
+    {
+      "region_id": "phoenix_northwest",
+      "checks": {
+        "heading_matches": true,
+        "all_chart_dates_match": true,
+        "all_chart_values_match": true,
+        "chart_does_not_connect_gaps": true,
+        "axis_unit_and_measurement": true,
+        "slope_card_matches": true,
+        "p_card_matches": true,
+        "direction_card_matches": true,
+        "explanation_matches": true,
+        "source_caption_matches": true,
+        "method_caption_matches": true,
+        "connection_labeled_live_api": true,
+        "fallback_caption_correct": true,
+        "no_sample_warning": true
+      }
+    },
+    {
+      "region_id": "phoenix_southeast",
+      "checks": {
+        "heading_matches": true,
+        "all_chart_dates_match": true,
+        "all_chart_values_match": true,
+        "chart_does_not_connect_gaps": true,
+        "axis_unit_and_measurement": true,
+        "slope_card_matches": true,
+        "p_card_matches": true,
+        "direction_card_matches": true,
+        "explanation_matches": true,
+        "source_caption_matches": true,
+        "method_caption_matches": true,
+        "connection_labeled_live_api": true,
+        "fallback_caption_correct": true,
+        "no_sample_warning": true
+      }
+    },
+    {
+      "region_id": "phoenix_southwest",
+      "checks": {
+        "heading_matches": true,
+        "all_chart_dates_match": true,
+        "all_chart_values_match": true,
+        "chart_does_not_connect_gaps": true,
+        "axis_unit_and_measurement": true,
+        "slope_card_matches": true,
+        "p_card_matches": true,
+        "direction_card_matches": true,
+        "explanation_matches": true,
+        "source_caption_matches": true,
+        "method_caption_matches": true,
+        "connection_labeled_live_api": true,
+        "fallback_caption_correct": true,
+        "no_sample_warning": true
+      }
+    }
+  ],
+  "frontend_test_mode": "AppTest with captured live series/trend/catalog responses; no browser visual review in this run",
+  "openapi_paths": [
+    "/",
+    "/health",
+    "/results",
+    "/regions",
+    "/series",
+    "/trend"
+  ],
+  "anomaly_view_available": false,
+  "chat_input_available": false,
+  "mandatory_checks_pass": true,
+  "pending": [
+    {
+      "item": "anomaly_view",
+      "owner": "Frontend/backend",
+      "status": "pending",
+      "reason": "No anomaly control in checked frontend; no anomaly query or route in live OpenAPI."
+    },
+    {
+      "item": "conversational_chat",
+      "owner": "AI/backend/frontend",
+      "status": "not_integrated_in_checked_dashboard",
+      "reason": "No chat input in checked frontend or chat route in live OpenAPI; manual AI answer review is separate."
+    }
+  ],
+  "limits": [
+    "Live response agreement does not verify the deployed binary commit.",
+    "AppTest validates rendered component values and chart traces, not visual layout or browser-network behavior.",
+    "Explanation guards are pattern-based and do not prove all possible AI responses are scientifically correct.",
+    "No claim is made that all future locations, predictions or causal recommendations are supported."
+  ],
+  "existing_test_run": {
+    "command": "uv run --locked pytest tests/frontend tests/api -q",
+    "passed": 116,
+    "failed": 0,
+    "network": "Mocked services in unit tests; separate captured-live checks are recorded above."
+  }
+}
