@@ -72,9 +72,13 @@ Expected gaps in qc-v1 (all below the 80% valid-area rule): northwest 2024-05; n
 - Significant only if **p < 0.05**, compared on the unrounded p. p = 0.05 is not significant.
 - "Not significant" means the test found insufficient evidence of a trend, not that the change
   is zero.
-- Known issue: results files currently store p rounded to 6 decimals, so very small values
-  appear as `0.0`. This does not change any significance decision on qc-v1 (the largest p is
-  3.8e-06), but the frontend plan asks for the unrounded value.
+- A5 (`ai/trend.py`) returns p unrounded and computes it as `2 * norm.sf(|z|)`, which stays
+  accurate for tiny values (the library's `1 - cdf` loses precision and can reach exactly 0).
+  qc-v1 p-values: study area 7.0e-11, northwest 3.3e-10, northeast 3.8e-06, southwest 3.0e-10,
+  southeast 2.8e-14.
+- Until the pipeline switches to A5, the committed results files still come from
+  `pipeline/stubs.py`, which rounds p to 6 decimals (shown as `0.0`). No significance decision
+  changes, but the frontend plan asks for the unrounded value.
 
 ## Serial dependence
 
@@ -103,9 +107,13 @@ reported p-values are from the uncorrected test and are smaller than the correct
   (`pipeline/timeseries.py`).
 - That rule alone does not establish that the seasonal test is adequate. qc-v1 easily exceeds it:
   every calendar month has 20-22 valid years in every region.
-- Open decision for the AI layer: a per-calendar-month minimum (for example, at least 10 valid
-  years in every calendar month) before the seasonal test is reported. Until it is agreed, the
-  24-month rule is the only one enforced.
+- A5 rule (`ai/trend.py`): `run_trend` raises `TrendInputError` unless the series has at least
+  24 valid months and, for the seasonal test, **at least 10 valid years in every calendar
+  month** (`MIN_YEARS_PER_CALENDAR_MONTH`). With fewer, a calendar month contributes too few
+  pairs to the test and slope to be meaningful. qc-v1 passes in every region (lowest: 20 years).
+- Calendar months are counted from the series' first month. Pipeline series start at the period
+  start (January for qc-v1), so position 1 is January.
+- Non-numbers, booleans and infinite values are rejected; `None` and NaN are missing months.
 
 ## Explanations
 
@@ -115,6 +123,7 @@ reported p-values are from the uncorrected test and are smaller than the correct
 | A2 | `ai/ai_retry.py` | Retries timeouts, dropped connections, 408, 429 and 5xx up to 3 attempts (1 s, 2 s waits; 8 s cap). A long Retry-After, a bad key (401/403) or a bad request stops at once. Errors and logs never include the provider's response body. |
 | A3 | `ai/ai_checks.py` | `check_explanation(text, results)` rejects text with numbers or dates not derived from the results, wrong significance wording, a direction that contradicts the trend, causes, forecasts, advice, the wrong product (air temperature, daily) or unit (Fahrenheit), or more than 600 characters. Never raises; anything it cannot check fails. |
 | A4 | `ai/explain.py`, `ai/prompts/explain_v1.txt` | `explain(results)` returns `{"text", "source"}` and never raises. Facts are formatted by code (slope per month and per year to 3 significant figures, `p < 0.001` for tiny p), sent with the versioned prompt through A2, and checked by A3. Only a reply that passes is `"ai"`; no key, setup errors, Gemini failures, empty replies and rejected replies all return the fallback, with the reason logged. |
+| A5 | `ai/trend.py` | `run_trend(values, method="seasonal", alpha=0.05)`: seasonal (default) or original Mann-Kendall with Sen's slope, slope per month, unrounded p, strict p < alpha, eligibility rules above. Replaces the pipeline stub. |
 
 The fallback text (`ai/explain.py: fallback_text`) is built from the numbers only and passes the
 A3 checks on every committed results file. Example (southeast): "From 2003-01 to 2024-12,
@@ -122,8 +131,11 @@ nighttime land surface temperature in Phoenix southeast rose by about 0.00889 de
 (0.107 degC per year). This trend is statistically significant (p < 0.001). 3 of 264 months are
 missing and were left as gaps, not filled in."
 
-To use it, the pipeline imports `explain` (and `fallback_text`) from `earth_system_trend.ai.explain`
-instead of `pipeline/stubs.py` (one import line in `pipeline/run.py`, owned by the pipeline).
+To use A4 and A5, the pipeline imports `explain` and `fallback_text` from
+`earth_system_trend.ai.explain` and `run_trend` (with `METHODS["seasonal"]` as `METHOD`) from
+`earth_system_trend.ai.trend` instead of `pipeline/stubs.py`. That is one import change in
+`pipeline/run.py`, owned by the pipeline; it should also catch `TrendInputError` so one
+ineligible region is skipped rather than stopping the run.
 Prompt changes go in a new file (`explain_v2.txt`) with `PROMPT_VERSION` bumped, never by editing
 `explain_v1.txt` in place.
 
