@@ -51,6 +51,7 @@ evidence = st.empty()
 evidence.empty()
 with evidence.container():
     if use_sample:
+        st.caption("Connection: Offline preview")
         st.caption("Local sample preview.")
         if api_url:
             st.button("Retry API", on_click=retry_api)
@@ -79,6 +80,7 @@ with evidence.container():
             st.button("Retry API", on_click=retry_api)
             st.button("Use sample data", on_click=show_sample, args=(api_url,))
             st.stop()
+        st.caption("Connection: Live API")
         st.caption("Connected to API. Successful results are cached for up to 60 seconds.")
 
     view = build_view_model(payload)
@@ -110,8 +112,32 @@ with evidence.container():
         ),
     )
     st.caption("Gaps indicate missing observations.")
-    st.caption(f"Source: {view.source}")
-    st.caption(f"Method: {view.method}")
 
     st.subheader("Explanation")
+    st.caption(
+        "Automatic summary (AI unavailable)"
+        if view.explanation_source == "fallback"
+        else "AI-assisted explanation"
+    )
     st.text(view.explanation, width="stretch")
+
+    with st.expander("Source, method and definitions"):
+        st.caption(f"Source: {view.source}")
+        st.caption(f"Method: {view.method}")
+        st.caption(f"Period: {view.period_label}")
+        st.markdown(
+            "**Slope:** the estimated rate of change over the full stated period, "
+            f"in {view.slope_unit}. Positive values indicate an increase; negative "
+            "values indicate a decrease. The slope is not a forecast."
+        )
+        st.markdown(
+            "**p-value:** how unusual a result at least this extreme would be if "
+            "there were no underlying trend, under the test's assumptions. Below "
+            "0.05 is statistically significant here. At or above 0.05 means "
+            "insufficient evidence of a trend, not proof of no change."
+        )
+        st.markdown(
+            "**Data labels:** Live API describes the connection, not live measurements. "
+            "Offline preview uses a local file. Sample data identifies synthetic "
+            "observations, whether received from the API or read locally."
+        )
