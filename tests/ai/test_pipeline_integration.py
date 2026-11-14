@@ -4,6 +4,7 @@ No test reaches Gemini: tests/conftest.py strips the key; AI replies here are mo
 """
 
 import json
+import math
 from pathlib import Path
 
 import httpx
@@ -124,8 +125,11 @@ def test_committed_results_come_from_the_ai_layer(path):
     results = load_results(path)
     data = results.model_dump()
     expected = ai_trend.run_trend([p.value for p in results.series])
-    assert {k: data["trend"][k] for k in ("slope", "p", "tau", "trend")} == \
-        {k: expected[k] for k in ("slope", "p", "tau", "trend")}
+    # Committed files may be built on another OS/CPU; the last bit of a float can differ
+    # (e.g. macOS arm64 vs Linux x86 CI), so compare numbers to 1 part in 1e9.
+    assert data["trend"]["trend"] == expected["trend"]
+    for key in ("slope", "p", "tau"):
+        assert math.isclose(data["trend"][key], expected[key], rel_tol=1e-9, abs_tol=1e-15), key
     assert data["trend"]["p"] > 0
     assert results.method == ai_trend.METHODS["seasonal"]
     assert check_explanation(results.explanation, data).ok
