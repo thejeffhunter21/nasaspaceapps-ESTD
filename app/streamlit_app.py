@@ -11,9 +11,11 @@ from api_client import (
     clear_results_cache,
     fetch_region_results,
     fetch_regions,
+    require_observations,
 )
 from charts import monthly_chart
 from dotenv import load_dotenv
+from pydantic import ValidationError
 from view_model import build_view_model
 
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
@@ -29,6 +31,31 @@ def retry_api():
 
 def refresh_api(api_url):
     clear_results_cache(api_url, st.session_state.get("selected_region"))
+
+
+def show_failure(error, api_url, *, preview=False):
+    titles = {
+        "empty": "No observations available",
+        "empty_regions": "No regions available",
+        "not_found": "No data for this region",
+        "selection": "Region selection needs updating",
+        "server": "The data service is unavailable",
+        "timeout": "The data service is taking too long",
+        "connection": "Cannot reach the data service",
+        "rate_limit": "The data service is busy",
+        "configuration": "The data connection needs setup",
+        "sample": "The sample preview is unavailable",
+    }
+    st.error(str(error), title=titles.get(error.kind, "The data response could not be read"))
+    if preview:
+        st.button("Retry preview")
+    if api_url:
+        st.button("Retry API", on_click=retry_api)
+        if error.kind in ("not_found", "selection", "empty_regions"):
+            st.button("Refresh regions", on_click=refresh_api, args=(api_url,))
+    if not preview:
+        st.button("Use sample data", on_click=show_sample, args=(api_url,))
+    st.stop()
 
 
 st.set_page_config(
@@ -53,10 +80,14 @@ with evidence.container():
     if use_sample:
         st.caption("Connection: Offline preview")
         st.caption("Local sample preview.")
-        if api_url:
-            st.button("Retry API", on_click=retry_api)
         sample_path = Path(__file__).resolve().parent / "fixtures/results.mock.json"
-        payload = json.loads(sample_path.read_text(encoding="utf-8"))
+        try:
+            payload = json.loads(sample_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError):
+            show_failure(ApiError(
+                "Retry the preview. If it remains unavailable, ask the demo owner to restore the sample file.",
+                kind="sample",
+            ), api_url, preview=True)
     else:
         st.button("Refresh data", on_click=refresh_api, args=(api_url,))
         try:
@@ -72,18 +103,28 @@ with evidence.container():
             else:
                 selected_id = regions[0]["region_id"]
             if selected_id not in labels:
-                raise ApiError("Choose a region from the available list.")
+                raise ApiError("Choose a region from the refreshed list.", kind="selection")
             with st.spinner("Loading the selected region…"):
                 payload = fetch_region_results(api_url, selected_id)
         except ApiError as exc:
-            st.error(str(exc))
-            st.button("Retry API", on_click=retry_api)
-            st.button("Use sample data", on_click=show_sample, args=(api_url,))
-            st.stop()
+            show_failure(exc, api_url)
+
+    try:
+        require_observations(payload)
+        view = build_view_model(payload)
+    except ApiError as exc:
+        show_failure(exc, api_url, preview=use_sample)
+    except ValidationError:
+        show_failure(ApiError(
+            "Required result fields are missing or invalid. Retry; do not treat missing statistics as zero.",
+            kind="sample" if use_sample else "invalid_response",
+        ), api_url, preview=use_sample)
+
+    if use_sample and api_url:
+        st.button("Retry API", on_click=retry_api)
+    if not use_sample:
         st.caption("Connection: Live API")
         st.caption("Connected to API. Successful results are cached for up to 60 seconds.")
-
-    view = build_view_model(payload)
 
     if view.is_sample:
         st.warning("Sample data — synthetic observations for previewing the dashboard.")
