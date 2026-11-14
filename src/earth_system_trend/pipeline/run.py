@@ -16,13 +16,16 @@ import random
 import sys
 from pathlib import Path
 
+# The ONE place the AI layer's functions are imported.
+from ..ai.explain import explain, fallback_text  # A4 (A6 cache + cap inside)
+from ..ai.trend import METHODS, run_trend  # A5
 from ..contract import Results
-
-# The ONE place the AI layer's functions are imported. Swap these when theirs land.
-from .stubs import METHOD, explain, fallback_text, forecast, run_trend
+from .stubs import forecast  # no AI-layer forecast this sprint: returns None
 from .timeseries import SeriesError, load_series
 
 log = logging.getLogger("pipeline")
+
+METHOD = METHODS["seasonal"]  # run_trend's default method; written to results["method"]
 
 DEFAULTS = {
     "csv": "data/processed/timeseries.csv",
