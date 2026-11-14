@@ -11,7 +11,7 @@ it does not imply teammate approval or that outstanding coordination is complete
 | FE-02 | Lock the screen and data shape | Review |
 | FE-03 | Show the evidence | Review |
 | FE-04 | Connect the live mock API | Review |
-| FE-05 | Switch regions safely | To do |
+| FE-05 | Switch regions safely | Review |
 | FE-06 | Explain what people see | To do |
 | FE-07 | Design every state | To do |
 | FE-08 | Test the whole interaction | To do |
@@ -217,3 +217,50 @@ No backend, contract, AI, hosting or dependency changes are part of FE-04. Regio
 switching remains FE-05. The deployed frontend URL still needs a hosting handoff;
 these checks run the frontend locally against the deployed backend. Streamlit's
 Python process makes these requests, so browser CORS is not involved in this path.
+
+## FE-05: switch regions safely
+
+The page now wakes `/health`, reads `/regions`, and requests `/series` and `/trend`
+with the selected `region_id` in the `region` query parameter. The dropdown displays
+the API's labels and sends its IDs. Only returned regions are offered. With one
+region (including the local sample), the page shows a fixed region heading instead
+of a selector. Changing API host resets the previous host's region selection.
+
+The region list is cached by normalized API URL for 60 seconds. A complete selected
+result is cached by API URL and region ID for 60 seconds, up to 64 entries. It is
+assembled only after both endpoints succeed, agree on ID/label/variable/units/period,
+match the requested region ID, and validate against the shared results contract.
+Empty/invalid directories and duplicate IDs fail visibly. Failed or mismatched
+responses are not cached. The older whole-main-area `fetch_results` helper remains
+available, but region rendering uses the paired endpoints so one flow handles the
+main area and all subregions.
+
+The previous evidence block is cleared before loading. The new title, period,
+chart, cards, explanation, source and method are then rendered from the same
+complete result. A failed switch shows the recovery actions without leaving the
+previous region's chart or statistics under the new selection. Source and method
+are displayed below the chart; explanatory definitions remain FE-06.
+
+**Refresh data** clears the current directory and selected region's result without
+flushing unrelated hosts/regions. Returning to a recently loaded region uses its
+own cached pair. Existing timeout/retry and explicit sample fallback behavior is
+retained.
+
+### Verification and live observation
+
+Run `uv run --locked pytest tests/frontend -m unit -q`. New checks cover two-region
+switching across chart values/dates/units, cards, explanation, period, source and
+method; switching back from cache; failed switches; a single fixed region; host
+changes; query IDs; cache isolation/refresh; wrong requested IDs; paired metadata
+mismatches; and invalid or duplicate directory entries.
+
+On November 14, 2026, the live frontend listed Phoenix study area and all four
+subregions. Switching to Phoenix northwest rendered 264 monthly positions and the
+2024-05 null gap. The API supplied slope 0.007551 degC/month, p 0.0, increasing,
+the phoenix-qc-v1.0 source and the seasonal Mann-Kendall/Sen method. This verifies
+selection and rendering; independent dataset verification remains FE-09.
+
+Demo: run the existing Streamlit command, switch between the main study area and
+Phoenix northwest, inspect the updated evidence and northwest gap, then switch
+back. Teammate review remains pending. No backend, AI, contract, dependency or
+hosting changes are included; FE-06 has not started.
