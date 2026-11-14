@@ -16,10 +16,13 @@ import random
 import sys
 from pathlib import Path
 
+# The ONE place the AI layer's functions are imported. forecast is still a stand-in.
+from ..ai.explain import explain  # Gemini text when a key is set, checked fallback otherwise
+from ..ai.trend import METHODS, run_trend
 from ..contract import Results
+from .stubs import fallback_text, forecast
 
-# The ONE place the AI layer's functions are imported. Swap these when theirs land.
-from .stubs import METHOD, explain, fallback_text, forecast, run_trend
+METHOD = METHODS["seasonal"]
 from .timeseries import SeriesError, load_series
 
 log = logging.getLogger("pipeline")
