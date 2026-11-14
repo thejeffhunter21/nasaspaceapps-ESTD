@@ -1,7 +1,7 @@
 {
   "region_id": "phoenix_northeast",
   "region": "Phoenix northeast",
-  "variable": "Land surface temperature",
+  "variable": "Nighttime land surface temperature",
   "units": "degC",
   "period": {
     "start": "2003-01",
@@ -1072,8 +1072,8 @@
     "tau": 0.2107,
     "trend": "increasing"
   },
-  "explanation": "From 2003-01 to 2024-12, land surface temperature in Phoenix northeast shows increasing (about +0.0647 degC per year). The trend is statistically significant (p = 2e-06).",
+  "explanation": "From 2003-01 to 2024-12, nighttime land surface temperature in Phoenix northeast shows increasing (about +0.0647 degC per year). The trend is statistically significant (p = 2e-06).",
   "explanation_source": "fallback",
-  "source": "NASA Terra/MODIS MOD11C3.061 monthly land surface temperature, 0.05 deg grid (LP DAAC, doi:10.5067/MODIS/MOD11C3.061)",
+  "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid (LP DAAC, doi:10.5067/MODIS/MOD11C3.061)",
   "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope"
 }
