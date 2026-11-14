@@ -3,10 +3,14 @@
 Rule: code computes every number; the AI only writes words. An explanation passes only if
 
 - every number in it can be derived from the results (allowing for the rounding shown),
-- every YYYY-MM date in it is a month in the data, and the only bare years are the period bounds,
+- every YYYY-MM date in it is a month in the data, and the only bare years are the period bounds;
+  a missing month's date may only be mentioned as missing,
+- it names only the selected region: no other box (compass name), no other city, no street-level
+  claims (the grid is 0.05 deg, about 5 km),
 - its significance wording matches p (significant means p < 0.05, unrounded; p = 0.05 is not),
 - its direction words do not contradict the trend,
-- it names no cause, makes no forecast and gives no advice (the data supports none of these),
+- it names no cause, makes no forecast, gives no advice and does not call the data current
+  (the data supports none of these),
 - it does not describe a different product (air temperature, daily data) or unit (Fahrenheit),
 - it is non-empty and at most MAX_CHARS characters.
 
@@ -49,8 +53,21 @@ _BANNED = {
         r"\b(will|forecast\w*|predict\w*|project(?:ed|ion|ions)|future|tomorrow|"
         r"next (?:week|month|year|decade|summer|winter))\b", re.IGNORECASE),
     "advice": re.compile(
-        r"\b(should|must|ought|recommend\w*|advis\w*|irrigat\w*)\b", re.IGNORECASE),
+        r"\b(should|must|ought|recommend\w*|advis\w*|irrigat\w*|drainage|capacit\w*|shade\w*)\b",
+        re.IGNORECASE),
+    "current": re.compile(
+        r"\b(current(?:ly)?|right now|today|nowadays|this (?:week|month|year)|"
+        r"live (?:data|measurements?|readings?))\b", re.IGNORECASE),
 }
+_COMPASS = ("northwest", "northeast", "southwest", "southeast")
+# Proper nouns, matched case-sensitively so ordinary words (e.g. "mesa") are not caught.
+_OTHER_PLACES = re.compile(
+    r"\b(Tucson|Flagstaff|Yuma|Mesa|Tempe|Scottsdale|Chandler|Glendale|Gilbert|Peoria|"
+    r"Prescott|Sedona|Las Vegas|Albuquerque|El Paso|Los Angeles|San Diego)\b")
+_STREET_LEVEL = re.compile(r"\b(streets?|street-level|neighbou?rhoods?)\b", re.IGNORECASE)
+_SAYS_MISSING = re.compile(
+    r"\b(missing|gaps?|blank|not available|no (?:valid )?(?:value|data))\b", re.IGNORECASE)
+_SENTENCE_BREAK = re.compile(r"(?<!\d)[.;!?](?!\d)")
 _FAHRENHEIT = re.compile(r"°\s*F\b|\bfahrenheit\b|\bdeg(?:rees?)?\s*F\b", re.IGNORECASE)
 
 
@@ -90,6 +107,7 @@ def check_explanation(text: Any, results: Any) -> CheckResult:
         if found:
             problems.append(f"{label} claim not supported by the data: {', '.join(found)}")
     problems += _check_product(text, facts)
+    problems += _check_place(text, facts)
     return CheckResult(tuple(problems))
 
 
@@ -97,7 +115,9 @@ def check_explanation(text: Any, results: Any) -> CheckResult:
 class _Facts:
     numbers: tuple[float, ...]
     months: frozenset[str]
+    gaps: frozenset[str]
     years: frozenset[str]
+    compass: str | None
     p: float
     trend: str
     variable: str
@@ -125,10 +145,13 @@ class _Facts:
         for key in ("region", "variable", "units", "source", "method"):
             numbers += [float(m.group(1)) for m in _NUMBER.finditer(str(results.get(key, "")))]
         numbers += [float(m.group(1)) for m in _NUMBER.finditer(str(trend.get("slope_unit", "")))]
+        where = f"{results.get('region_id', '')} {results.get('region', '')}".lower()
         return cls(
             numbers=tuple(abs(x) for x in numbers),
             months=frozenset(months) | {start, end},
+            gaps=frozenset(str(pt["time"]) for pt in series if pt.get("value") is None),
             years=frozenset({start[:4], end[:4]}),
+            compass=next((c for c in _COMPASS if c in where), None),
             p=p,
             trend=direction,
             variable=str(results.get("variable", "")),
@@ -140,6 +163,13 @@ def _check_dates_and_numbers(text: str, facts: _Facts) -> list[str]:
     bad_dates = sorted({m.group(0) for m in _DATE.finditer(text)} - facts.months)
     if bad_dates:
         problems.append(f"date not in the data: {', '.join(bad_dates)}")
+    unexplained_gaps = sorted({
+        m.group(0) for m in _DATE.finditer(text)
+        if m.group(0) in facts.gaps and not _SAYS_MISSING.search(_sentence_at(text, m.start()))
+    })
+    if unexplained_gaps:
+        problems.append("missing month mentioned without saying it is missing: "
+                        + ", ".join(unexplained_gaps))
     without_dates = _DATE.sub(" ", text)
 
     bad_numbers = []
@@ -162,7 +192,17 @@ def _grounded(token: str, allowed: tuple[float, ...]) -> bool:
         return any(math.isclose(value, a, rel_tol=0.05) for a in allowed)
     decimals = len(token.split(".")[1]) if "." in token else 0
     tolerance = 0.5 * 10 ** -decimals + 1e-12
+    if decimals == 0:  # a whole number must round from a value of at least 0.5, or be exact
+        return any(abs(value - a) <= tolerance and (a >= 0.5 or a == value) for a in allowed)
     return any(abs(value - a) <= tolerance for a in allowed)
+
+
+def _sentence_at(text: str, index: int) -> str:
+    """The sentence (split on . ; ! ? that are not decimal points) containing text[index]."""
+    starts = [0] + [m.end() for m in _SENTENCE_BREAK.finditer(text) if m.end() <= index]
+    end = next((m.start() for m in _SENTENCE_BREAK.finditer(text) if m.start() >= index),
+               len(text))
+    return text[starts[-1]:end]
 
 
 def _check_significance(text: str, facts: _Facts) -> list[str]:
@@ -203,8 +243,23 @@ def _check_product(text: str, facts: _Facts) -> list[str]:
     lower = text.lower()
     if "air temperature" in lower and "air" not in facts.variable.lower():
         problems.append("wrong product: data is land surface temperature, not air temperature")
-    if re.search(r"\bdaily\b", lower):
+    if re.search(r"\b(daily|days?)\b", lower):
         problems.append("wrong product: data is monthly, not daily")
     if _FAHRENHEIT.search(text):
         problems.append("wrong unit: Fahrenheit is not in the results")
+    return problems
+
+
+def _check_place(text: str, facts: _Facts) -> list[str]:
+    problems = []
+    other_boxes = sorted(c for c in _COMPASS
+                         if c != facts.compass and re.search(rf"\b{c}\b", text, re.IGNORECASE))
+    if other_boxes:
+        problems.append(f"place: mentions {', '.join(other_boxes)}, but this result is for "
+                        f"{facts.compass or 'the whole study area'}")
+    cities = sorted({m.group(0) for m in _OTHER_PLACES.finditer(text)})
+    if cities:
+        problems.append(f"place: names a location outside this result: {', '.join(cities)}")
+    if _STREET_LEVEL.search(text):
+        problems.append("place: street-level claim; the data is a 0.05 deg (about 5 km) grid")
     return problems
