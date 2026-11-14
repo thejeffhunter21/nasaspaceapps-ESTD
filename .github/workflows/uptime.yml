@@ -1,0 +1,19 @@
+# B11: check the live API every 10 minutes. This also keeps Render's free tier awake.
+# GitHub can run scheduled jobs late, so still open the site 5 minutes before judging.
+name: Uptime
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Live /health answers
+        run: |
+          for i in 1 2 3; do
+            curl -fsS --max-time 90 https://estd-api.onrender.com/health && exit 0
+            echo "Try $i failed, waiting 30 s"; sleep 30
+          done
+          echo "::error::https://estd-api.onrender.com/health did not answer"
+          exit 1

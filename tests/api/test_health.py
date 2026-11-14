@@ -15,3 +15,10 @@ def test_home_page_points_to_endpoints(client):
     body = client.get("/").json()
     assert body["status"] == "ok"
     assert "/regions" in body["try"] and body["docs"] == "/docs"
+
+
+def test_version_reports_live_commit(client, monkeypatch):
+    monkeypatch.setenv("RENDER_GIT_COMMIT", "abc123")
+    assert client.get("/version").json() == {"commit": "abc123"}
+    monkeypatch.delenv("RENDER_GIT_COMMIT")
+    assert client.get("/version").json() == {"commit": "unknown"}
