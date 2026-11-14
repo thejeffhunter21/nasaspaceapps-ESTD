@@ -12,7 +12,7 @@ it does not imply teammate approval or that outstanding coordination is complete
 | FE-03 | Show the evidence | Review |
 | FE-04 | Connect the live mock API | Review |
 | FE-05 | Switch regions safely | Review |
-| FE-06 | Explain what people see | To do |
+| FE-06 | Explain what people see | Review |
 | FE-07 | Design every state | To do |
 | FE-08 | Test the whole interaction | To do |
 | FE-09 | Verify the real snapshot | To do |
@@ -264,3 +264,33 @@ Demo: run the existing Streamlit command, switch between the main study area and
 Phoenix northwest, inspect the updated evidence and northwest gap, then switch
 back. Teammate review remains pending. No backend, AI, contract, dependency or
 hosting changes are included; FE-06 has not started.
+
+## FE-06: explain what people see
+
+The explanation remains the supplied plain text. Its source now controls a visible
+label: `fallback` displays exactly **Automatic summary (AI unavailable)**; `ai`
+displays **AI-assisted explanation**. The frontend does not generate or rewrite the
+text.
+
+Connection and dataset labels are independent. A successful response shows
+**Connection: Live API**, including when the API is serving mock data. A local
+fixture shows **Connection: Offline preview**. The existing **Sample data** warning
+continues to identify synthetic observations in either connection mode. Offline
+preview is a local sample file, not an approved real-data snapshot; that packaging
+remains FE-14.
+
+The collapsible **Source, method and definitions** panel follows the explanation.
+It displays the selected response's source, exact method and period, without
+hardcoding a NASA product or statistical method. It defines slope using the
+supplied unit and full stated period, and explains the p-value and strict 0.05
+significance threshold. The text distinguishes insufficient evidence from proof
+of no change and identifies slope as a historical estimate rather than a forecast.
+
+Verification: `uv run --locked pytest tests/frontend -m unit -q` covers offline
+sample/fallback labels, API mock data, non-mock API responses with an AI explanation,
+supplied metadata in the panel, and connection-label changes after sample recovery
+and retry. Existing chart and region consistency checks remain in place.
+
+Demo: load the live page, read its connection and explanation labels, and expand
+the details panel. Run with `API_URL=` for the distinct Offline preview plus Sample
+data labels. Teammate review remains pending; FE-07 has not started.
