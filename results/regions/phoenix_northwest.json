@@ -1066,14 +1066,14 @@
     }
   ],
   "trend": {
-    "slope": 0.007605,
+    "slope": 0.007611,
     "slope_unit": "degC/month",
-    "p": 0.206581,
-    "tau": 0.0522,
-    "trend": "no trend"
+    "p": 0.0,
+    "tau": 0.2843,
+    "trend": "increasing"
   },
-  "explanation": "From 2003-01 to 2024-12, land surface temperature in Phoenix northwest shows no trend (about +0.0913 degC per year). The trend is not statistically significant (p = 0.207).",
+  "explanation": "From 2003-01 to 2024-12, land surface temperature in Phoenix northwest shows increasing (about +0.0913 degC per year). The trend is statistically significant (p = 0).",
   "explanation_source": "fallback",
   "source": "NASA Terra/MODIS MOD11C3.061 monthly land surface temperature, 0.05 deg grid (LP DAAC, doi:10.5067/MODIS/MOD11C3.061)",
-  "method": "Mann-Kendall test (original) with Sen's slope"
+  "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope"
 }
