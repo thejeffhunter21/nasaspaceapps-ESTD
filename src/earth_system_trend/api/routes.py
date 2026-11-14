@@ -15,7 +15,8 @@ router = APIRouter()
 @router.get("/results")
 def get_results() -> dict:
     """The whole main results file."""
-    return read_or_http_error(get_settings().results_path).model_dump()
+    r = read_or_http_error(get_settings().results_path)
+    return r.model_dump(exclude={"forecast"} if r.forecast is None else None)
 
 
 @router.get("/regions")
@@ -44,4 +45,5 @@ def get_trend(region: RegionParam = None) -> dict:
     return {"region_id": r.region_id, "region": r.region, "variable": r.variable,
             "units": r.units, "period": r.period.model_dump(), "trend": r.trend.model_dump(),
             "explanation": r.explanation, "explanation_source": r.explanation_source,
-            "source": r.source, "method": r.method}
+            "source": r.source, "method": r.method,
+            "forecast": r.forecast.model_dump() if r.forecast else None}
