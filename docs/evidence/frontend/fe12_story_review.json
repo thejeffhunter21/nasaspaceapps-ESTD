@@ -1,0 +1,120 @@
+{
+  "checked_at_utc": "2026-11-15T02:45:39.028463+00:00",
+  "api_url": "https://estd-api.onrender.com",
+  "checked_checkout_commit": "78fae30c4fef0e0d504762ecbc13ad7b9469b5a0",
+  "reviewer_sha256": "111f6ef4280acedf30cf7dea2f50d78cae4e38330a452d7b05f1575f4832de55",
+  "method_reference": "docs/ai.md and earth_system_trend.ai.trend.METHODS['seasonal']",
+  "status": "PASS",
+  "regions": [
+    {
+      "region_id": "phoenix_study_area",
+      "region": "Phoenix study area",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.0077125000000000015,
+        "slope_unit": "degC/month",
+        "p": 7.022635523002321e-11,
+        "tau": 0.2893217893217893,
+        "trend": "increasing"
+      },
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "explanation_source": "fallback",
+      "explanation": "From 2003-01 to 2024-12, nighttime land surface temperature in Phoenix study area rose by about 0.00771 degC per month (0.0926 degC per year). This trend is statistically significant (p < 0.001).",
+      "word_count": 31,
+      "issues": [],
+      "passed": true
+    },
+    {
+      "region_id": "phoenix_northwest",
+      "region": "Phoenix study area northwest",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.0075514705882352845,
+        "slope_unit": "degC/month",
+        "p": 3.275029494158922e-10,
+        "tau": 0.2795347146492185,
+        "trend": "increasing"
+      },
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "explanation_source": "fallback",
+      "explanation": "From 2003-01 to 2024-12, nighttime land surface temperature in Phoenix study area northwest rose by about 0.00755 degC per month (0.0906 degC per year). This trend is statistically significant (p < 0.001). 1 of 264 months are missing and were left as gaps, not filled in.",
+      "word_count": 46,
+      "issues": [],
+      "passed": true
+    },
+    {
+      "region_id": "phoenix_northeast",
+      "region": "Phoenix study area northeast",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.005289583333333329,
+        "slope_unit": "degC/month",
+        "p": 3.799507330776624e-06,
+        "tau": 0.20615159282314172,
+        "trend": "increasing"
+      },
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "explanation_source": "fallback",
+      "explanation": "From 2003-01 to 2024-12, nighttime land surface temperature in Phoenix study area northeast rose by about 0.00529 degC per month (0.0635 degC per year). This trend is statistically significant (p < 0.001). 2 of 264 months are missing and were left as gaps, not filled in.",
+      "word_count": 46,
+      "issues": [],
+      "passed": true
+    },
+    {
+      "region_id": "phoenix_southwest",
+      "region": "Phoenix study area southwest",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.007761666666666667,
+        "slope_unit": "degC/month",
+        "p": 2.979982995713438e-10,
+        "tau": 0.2808495056755767,
+        "trend": "increasing"
+      },
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "explanation_source": "fallback",
+      "explanation": "From 2003-01 to 2024-12, nighttime land surface temperature in Phoenix study area southwest rose by about 0.00776 degC per month (0.0931 degC per year). This trend is statistically significant (p < 0.001). 2 of 264 months are missing and were left as gaps, not filled in.",
+      "word_count": 46,
+      "issues": [],
+      "passed": true
+    },
+    {
+      "region_id": "phoenix_southeast",
+      "region": "Phoenix study area southeast",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.008890624999999985,
+        "slope_unit": "degC/month",
+        "p": 2.7803117595238375e-14,
+        "tau": 0.33985239852398524,
+        "trend": "increasing"
+      },
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "explanation_source": "fallback",
+      "explanation": "From 2003-01 to 2024-12, nighttime land surface temperature in Phoenix study area southeast rose by about 0.00889 degC per month (0.107 degC per year). This trend is statistically significant (p < 0.001). 3 of 264 months are missing and were left as gaps, not filled in.",
+      "word_count": 46,
+      "issues": [],
+      "passed": true
+    }
+  ]
+}
