@@ -16,7 +16,7 @@ it does not imply teammate approval or that outstanding coordination is complete
 | FE-07 | Design every state | Review |
 | FE-08 | Test the whole interaction | Review |
 | FE-09 | Verify the real snapshot | Review |
-| FE-10 | Complete the real-data story | To do |
+| FE-10 | Complete the real-data story | Review (deployment pending) |
 | FE-11 | Make it readable everywhere | To do |
 | FE-12 | Freeze a dependable demo | To do |
 | FE-13 | Fix and document | To do |
@@ -465,3 +465,27 @@ rerun NASA retrieval or pixel-level QC, approve causal interpretation, or prove 
 deployment commit (the API does not expose code provenance). No dashboard behavior,
 backend, AI, shared contract, dependencies or hosting is changed. Teammate review
 remains pending; FE-10 has not started.
+
+
+## FE-10: complete the real-data story
+
+The read-only `scripts/review_frontend_story.py` reviews all five saved or live
+region explanations against the AI owner's existing deterministic guardrails and
+seasonal method reference. It retains the supplied text, statistics and source
+labels, rejects mock data, and records a reproducible evidence report. Seven new
+tests cover the valid result and contradictory method, significance, causal claim,
+number, product wording and sample provenance.
+
+The live review passed for all five regions. The demo walkthrough and a separate
+native Python Render Blueprint are documented in `docs/frontend_deployment.md`.
+The Blueprint passes Render's official schema, and its frontend-only installation,
+start command and health endpoint have been exercised locally.
+
+Verification on November 14, 2026: all 502 repository tests passed, including the
+seven new review tests; repository lint and whitespace checks passed.
+
+**Deployment remains pending:** Render was not installed/connected in this chat.
+No public frontend URL, public browser verification or teammate approval is
+claimed. This ticket stays in Review with deployment outstanding. The PR changes
+review tooling, evidence and deployment documentation/configuration; it does not
+change dashboard behavior, backend or AI logic. FE-11 has not started.
