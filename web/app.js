@@ -7,7 +7,7 @@
  *    AI discoveries (/discoveries). Nothing is interpolated or estimated in the browser.
  *  - A missing month stays missing. An annual average needs all 12 months (enforced server-side).
  *  - One shared state object drives every view; the URL hash mirrors it for shareable links.
- * The camera never moves. Scrolling only moves the four quarter pieces.
+ * The camera never moves. One map: regions, cells, comparison and data information open from it.
  */
 (() => {
   "use strict";
@@ -68,6 +68,8 @@
     compA: {year: 2003, month: "avg"}, compB: {year: 2023, month: "avg"}, rtA: "phoenix_southeast", rtB: "phoenix_northeast",
     // playback / scroll
     playing: false, speed: 900, progress: 0, eased: 0,
+    // map chrome (not in the URL): floating legend on/off, which drawer is open
+    legend: window.innerWidth > 900, drawer: null,
     // data
     regions: null, regionStats: null, series: {}, anomaly: {}, baseline: null, discoveries: null,
     cells: null, cellIndex: {}, frames: new Map(), frame: null, quarterIds: {}, view: null, targets: {},
@@ -231,7 +233,10 @@
   const deckgl = new Deck({
     parent: $("map"), controller: false, initialViewState: fitView(), getTooltip, layers: [],
     useDevicePixels: Math.min(window.devicePixelRatio || 1, 2),
-    onClick: ({object}) => { if (object && object.kind === "cell") setState({cell: object.id}); },
+    onClick: ({object}) => {
+      if (object && object.kind === "cell") setState({cell: object.id});
+      else if (object && object.kind === "piece") selectRegion(state.region === object.q && !state.cell ? "all" : object.q);
+    },
     onError: (err) => console.warn("deck.gl:", err),
   });
 
@@ -278,6 +283,9 @@
         state.layer === "anomaly" ? `${signed(v, 2)} °C vs usual` : state.layer === "coverage" ? `${v} of 12 months` : `${fmt(v, 2)} °C`;
       return {style, html: `<b>Cell ${esc(object.id)}</b> · ${esc(QUARTERS[object.quarter].name)}<br>${esc(L.label)}${state.layer === "rate" ? "" : `, ${esc(periodLabel())}`}: <b>${shown}</b><br><span style="color:#7a6a45">Click for details</span>`};
     }
+    if (object.kind === "piece") {
+      return {style, html: `<b>${esc(QUARTERS[object.q].name)} quarter</b><br><span style="color:#7a6a45">Click for its trend, record and coverage</span>`};
+    }
     if (object.kind === "quarter") {
       return {style, html: `<b>${esc(object.label)}</b><br>Quarter average, ${esc(periodLabel())}: <b>${object.value == null ? "no valid value" : fmt(object.value, 2) + " °C"}</b>`};
     }
@@ -310,7 +318,8 @@
         getWidth: state.region === q ? 2 : 1, updateTriggers: {getPath: e, getColor: state.region, getWidth: state.region},
       }));
       layers.push(new PolygonLayer({   // the base, cut to the Phoenix metro outline
-        id: `piece-${q}`, data: shaped ? urban.parts[q].map((poly) => ({poly})) : [{poly: rect(w, s, ea, n)}],
+        id: `piece-${q}`, pickable: true,
+        data: shaped ? urban.parts[q].map((poly) => ({poly, kind: "piece", q})) : [{poly: rect(w, s, ea, n), kind: "piece", q}],
         getPolygon: (d) => d.poly.map(f), getFillColor: shaped ? [44, 40, 32, Math.round(170 + 70 * e)] : [28, 29, 33, Math.round(150 + 90 * e)],
         getLineColor: state.region === q ? [200, 55, 45, 255] : [224, 164, 58, 200],
         lineWidthUnits: "pixels", getLineWidth: state.region === q ? 2.5 : 1.4, stroked: true, filled: true,
@@ -379,10 +388,10 @@
         }));
       }
       layers.push(new TextLayer({
-        id: `qname-${q}`, data: [{t: QUARTERS[q].name.toUpperCase()}], characterSet: CHARS,
+        id: `qname-${q}`, data: [{t: QUARTERS[q].name.toUpperCase(), kind: "piece", q}], characterSet: CHARS, pickable: true,
         getPosition: () => f([q.endsWith("W") ? w + 0.012 : ea - 0.012, n - 0.012]),
         getTextAnchor: q.endsWith("W") ? "start" : "end", getAlignmentBaseline: "top",
-        getText: (d) => d.t, getSize: 11, getColor: state.region === q ? [200, 55, 45, 255] : [224, 164, 58, 230],
+        getText: (d) => d.t, getSize: 13, getColor: state.region === q ? [200, 55, 45, 255] : [224, 164, 58, 230],
         fontWeight: 700, fontFamily: "system-ui, -apple-system, Segoe UI, Arial", parameters: {depthTest: false},
         updateTriggers: {getPosition: e, getColor: state.region},
       }));
@@ -403,16 +412,9 @@
     if (frameReq) return;
     frameReq = requestAnimationFrame(() => {
       frameReq = 0;
-      const e = state.eased;
       deckgl.setProps({layers: buildLayers()});
-      $("hint").style.opacity = String(1 - clamp(e * 4));
-      document.querySelector(".brand").style.opacity = String(1 - clamp(e * 2.5));
-      const ctl = $("controls");
-      ctl.style.opacity = String(1 - clamp((e - 0.15) * 3));
-      ctl.style.pointerEvents = e > 0.4 ? "none" : "auto";
-      ctl.setAttribute("aria-hidden", e > 0.4 ? "true" : "false");
-      $("inspector").style.opacity = String(1 - clamp((e - 0.1) * 4));
-      syncControls(); renderLegend(); renderInspector(); renderStatus(); placePanels(); updatePanels();
+      $("hint").hidden = !!(state.cell || state.region !== "all" || state.drawer);
+      syncControls(); renderLegend(); renderInspector(); renderStatus(); renderChrome();
     });
   }
 
@@ -435,15 +437,59 @@
   }
 
   function renderLegend() {
-    const L = LAYERS[state.layer];
+    const L = LAYERS[state.layer], box = $("legend");
     const finding = currentFinding();
-    $("legend").innerHTML = `<div class="legend-title">${esc(L.label)} <span>(${esc(L.unit)})</span></div>
+    box.hidden = !state.legend;
+    if (!state.legend) return;
+    box.innerHTML = `<div class="legend-title">${esc(L.label)} <span>(${esc(L.unit)})</span></div>
       <div class="legend-bar" style="background:${rampCss(L.ramp)}" aria-hidden="true"></div>
       <div class="legend-scale" aria-hidden="true">${L.ticks.map((t) => `<span>${esc(t)}</span>`).join("")}</div>
       <p class="legend-note">${esc(L.note)}</p>
-      ${urban.inside ? '<p class="legend-note"><i class="ua-key"></i>Shown: the 88 cells inside the Phoenix urban area (Natural Earth, MODIS c. 2002). The other 104 cells of the NASA window are hidden on the map but included in every statistic.</p>' : ""}
       ${!reduceMotion && state.layer !== "rate" ? '<p class="legend-note">Changes ease between observed frames; only the settled frame is data.</p>' : ""}
-      ${finding ? `<p class="legend-note overlay"><i style="border-color:rgb(${(HIGHLIGHT[finding.highlight] || HIGHLIGHT.none).join(",")})"></i>${finding.id === "ask" ? `Cells from your question: ${finding.cells.length} outlined.` : `${esc(finding.title)} (${esc(finding.status)}): ${finding.cells.length} cells outlined.`}</p>` : ""}`;
+      ${finding ? `<p class="legend-note overlay"><i style="border-color:rgb(${(HIGHLIGHT[finding.highlight] || HIGHLIGHT.none).join(",")})"></i>AI highlight (outline only, not a measurement): ${finding.id === "ask" ? `cells from your question, ${finding.cells.length} outlined.` : `${esc(finding.title)} (${esc(finding.status)}), ${finding.cells.length} cells outlined.`} <button type="button" id="finding-clear">Clear</button></p>` : ""}`;
+    $("finding-clear")?.addEventListener("click", () => setState({finding: null}));
+  }
+
+  // ---------- toolbar, drawers, reset ----------
+  const DRAWERS = {info: ["info-drawer", "tb-info"], compare: ["compare-drawer", "tb-compare"]};
+  function renderChrome() {
+    for (const [name, [id, btn]] of Object.entries(DRAWERS)) {
+      const open = state.drawer === name;
+      $(id).hidden = !open;
+      $(btn).setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    $("tb-legend").setAttribute("aria-pressed", state.legend ? "true" : "false");
+  }
+  function openDrawer(name) {
+    const opening = state.drawer !== name;
+    setState({drawer: opening ? name : null}, {skipUrl: true});
+    if (opening) {
+      if (name === "compare") { renderCompare(); renderRegionTest(); }
+      requestAnimationFrame(() => $(DRAWERS[name][0]).querySelector(".drawer-close")?.focus());
+    }
+  }
+  function closeDrawer() {
+    if (!state.drawer) return;
+    const btn = $(DRAWERS[state.drawer][1]);
+    setState({drawer: null}, {skipUrl: true});
+    btn.focus();
+  }
+  function selectRegion(q) { setState({region: q, cell: null}); }
+  // Reset view: back to the whole, unobstructed map. Year, month and layer are settings, so they stay.
+  function resetView() {
+    stopPlayback();
+    setState({region: "all", cell: null, finding: null, drawer: null});
+    document.querySelectorAll(".disc.active").forEach((el) => el.classList.remove("active"));
+    deckgl.setProps({initialViewState: fitView()});
+    window.scrollTo({top: 0, behavior: reduceMotion ? "auto" : "smooth"});
+  }
+  function setupChrome() {
+    $("tb-info").addEventListener("click", () => openDrawer("info"));
+    $("tb-compare").addEventListener("click", () => openDrawer("compare"));
+    $("tb-legend").addEventListener("click", () => setState({legend: !state.legend}, {skipUrl: true}));
+    $("tb-reset").addEventListener("click", resetView);
+    document.querySelectorAll("[data-drawer-close]").forEach((b) => b.addEventListener("click", closeDrawer));
+    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && state.drawer && !document.body.classList.contains("touring")) closeDrawer(); });
   }
 
   function renderStatus() {
@@ -499,9 +545,9 @@
   }
   function renderInspector() {
     const box = $("inspector");
-    if (!state.cell || !state.cellIndex[state.cell]) { box.hidden = true; return; }
+    if (!state.cell || !state.cellIndex[state.cell]) { renderRegionPanel(box); return; }
     const r = cellRecord(state.cell);
-    box.hidden = false;
+    box.hidden = false; box.dataset.mode = "cell";
     $("inspector-body").innerHTML = `
       <h3>Cell ${esc(r.id)}</h3>
       <p class="ins-sub">${r.lat.toFixed(3)}° N, ${Math.abs(r.lon).toFixed(3)}° W · ${esc(QUARTERS[r.quarter].name)} quarter · 0.05° (≈5 km)</p>
@@ -516,20 +562,74 @@
         ${urban.inside ? `<dt>Phoenix urban area (c. 2002)</dt><dd>${urban.inside.has(r.id) ? "inside" : "outside"}</dd>` : ""}
       </dl>
       <figure class="ins-chart">${cellYearsSvg(r.id)}<figcaption>Yearly mean vs this cell's usual (complete years only); line: its Sen's slope trend.</figcaption></figure>
-      <p class="ins-note">q is the p-value corrected for testing all ${state.cells.length} cells (Benjamini-Hochberg). Seasonal Mann-Kendall and Sen's slope on this cell's own QC'd months.</p>`;
+      <p class="ins-note">q is the p-value corrected for testing all ${state.cells.length} cells (Benjamini-Hochberg). Seasonal Mann-Kendall and Sen's slope on this cell's own QC'd months.</p>
+      <p class="ins-actions"><button type="button" id="ins-region">Open the ${esc(QUARTERS[r.quarter].name)} quarter</button></p>`;
+    $("ins-region").addEventListener("click", () => selectRegion(r.quarter));
+  }
+
+  // Region case file: everything that used to sit in a separate section per quarter, shown once, on request.
+  function monthlySvg(rid) {
+    const s = state.series[rid];
+    if (!s) return "";
+    const W2 = 260, H2 = 84, pad = 4, n = s.times.length;
+    const vals = s.values.filter((v) => v != null), lo = Math.min(...vals), hi = Math.max(...vals);
+    const X = (i) => pad + (i / (n - 1)) * (W2 - 2 * pad), Y = (v) => pad + (1 - (v - lo) / (hi - lo || 1)) * (H2 - 2 * pad);
+    let d = "", pen = false;
+    s.values.forEach((v, i) => { if (v == null) { pen = false; return; } d += `${pen ? "L" : "M"}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`; pen = true; });
+    const gaps = s.values.map((v, i) => (v == null ? `<line x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${pad}" y2="${H2 - pad}" stroke="#b9a67c" stroke-dasharray="2 3"><title>${s.times[i]}: missing (failed quality control)</title></line>` : "")).join("");
+    let dot = "";
+    if (state.month !== "avg") {
+      const i = s.times.indexOf(`${state.year}-${String(state.month).padStart(2, "0")}`);
+      if (i >= 0 && s.values[i] != null) dot = `<circle cx="${X(i).toFixed(1)}" cy="${Y(s.values[i]).toFixed(1)}" r="3.5" fill="#b3261e" stroke="#f6edd5" stroke-width="1.5"><title>${esc(periodLabel())}: ${fmt(s.values[i], 2)} °C</title></circle>`;
+    }
+    return `<svg viewBox="0 0 ${W2} ${H2 + 14}" role="img" aria-label="Monthly quarter average, ${s.times[0]} to ${s.times[n - 1]}; ${n - vals.length} missing months shown as gaps">
+      ${gaps}<path d="${d}" fill="none" stroke="#2a2418" stroke-width="1"/>${dot}
+      <text x="${pad}" y="${H2 + 11}" font-size="9" fill="#6b5d40">${s.times[0].slice(0, 4)}</text><text x="${W2 - pad}" y="${H2 + 11}" font-size="9" fill="#6b5d40" text-anchor="end">${s.times[n - 1].slice(0, 4)}</text>
+      <text x="${W2 / 2}" y="${H2 + 11}" font-size="9" fill="#6b5d40" text-anchor="middle">${fmt(lo, 1)} to ${fmt(hi, 1)} °C</text></svg>`;
+  }
+  function renderRegionPanel(box) {
+    const q = state.region, rid = q !== "all" && state.quarterIds[q];
+    const r = rid && state.regions?.find((x) => x.region_id === rid);
+    if (!r) { box.hidden = true; return; }
+    const t = r.trend, st = state.regionStats?.regions?.[rid] || {}, perYear = t.slope * 12, sig = t.p < 0.05;
+    const s = state.series[rid], months = s ? s.times.length : 264;
+    const val = s ? periodValue(s.times, s.values, state.year, state.month) : null;
+    const quarters = ORDER.map((k) => state.regions.find((x) => x.region_id === state.quarterIds[k])).filter(Boolean);
+    const fastest = quarters.reduce((a, b) => (b.trend.slope > a.trend.slope ? b : a), quarters[0]);
+    const inQ = state.cells ? state.cells.filter((c) => c.quarter === q) : [];
+    const sigCells = inQ.filter((c) => c.significant_fdr).length;
+    const rates = inQ.map((c) => c.slope_per_year).filter((v) => v != null);
+    const shown = state.frame ? inQ.filter((c) => state.frame.byId[c.id]?.value != null).length : null;
+    box.hidden = false; box.dataset.mode = "region";
+    $("inspector-body").innerHTML = `
+      <h3>${esc(QUARTERS[q].name)} quarter</h3>
+      <p class="ins-sub">${inQ.length || 48} grid cells · nighttime land surface temperature${r === fastest && sig && t.slope > 0 ? ' · <b class="stamp">fastest warming</b>' : ""}</p>
+      <p class="ins-rate">${signed(perYear, 3)} °C<small> per year, 2003–2024</small></p>
+      <dl>
+        <dt>95% CI</dt><dd>${st.ci_low_per_year != null ? `${signed(st.ci_low_per_year, 3)} to ${signed(st.ci_high_per_year, 3)}` : "—"}</dd>
+        <dt>Significance</dt><dd>${sig ? "significant" : "not significant"} (${pText(t.p)})</dd>
+        <dt>Kendall's τ</dt><dd>${t.tau.toFixed(2)}</dd>
+        <dt>Trend line over the period</dt><dd>≈ ${signed(t.slope * months, 1)} °C</dd>
+        <dt>${esc(periodLabel())}, quarter avg</dt><dd>${val == null ? "no valid value" : `${fmt(val, 2)} °C`}</dd>
+        <dt>Valid months</dt><dd>${st.valid_months ?? "—"} of ${st.months ?? months}</dd>
+        ${shown != null && state.layer !== "rate" ? `<dt>Cells measured, ${esc(periodLabel())}</dt><dd>${shown} of ${inQ.length}</dd>` : ""}
+        ${rates.length ? `<dt>Cell trends in this quarter</dt><dd>${signed(Math.min(...rates), 3)} to ${signed(Math.max(...rates), 3)} °C/yr</dd><dt>Cells significant (FDR)</dt><dd>${sigCells} of ${inQ.length}</dd>` : ""}
+      </dl>
+      <figure class="ins-chart">${monthlySvg(rid)}<figcaption>Monthly quarter average. Dashed lines are months left missing; the red dot is the month on the map.</figcaption></figure>
+      <figure class="ins-chart">${sparkSVG(rid)}<figcaption>Yearly mean vs this quarter's usual (complete years only).</figcaption></figure>
+      <p class="ins-note">Seasonal Mann-Kendall test with seasonal Sen's slope on the quarter's monthly averages. "Over the period" is a trend-line estimate, not a measured difference.</p>
+      <p class="ins-actions"><button type="button" id="ins-compare">Compare with another region</button><button type="button" id="ins-method">Method and data</button></p>`;
+    $("ins-compare").addEventListener("click", () => {
+      state.rtA = rid; if (state.rtB === rid) state.rtB = state.quarterIds.whole;
+      $("rt-a").value = state.rtA; $("rt-b").value = state.rtB;
+      if (state.drawer !== "compare") openDrawer("compare"); else renderRegionTest();
+    });
+    $("ins-method").addEventListener("click", () => { if (state.drawer !== "info") openDrawer("info"); });
   }
 
   // ---------- scroll ----------
   function onScroll() {
-    const stage = $("stage"), vh = window.innerHeight;
-    const travelled = -stage.getBoundingClientRect().top;
-    const raw = clamp((travelled - 0.3 * vh) / (1.5 * vh));
-    const p = reduceMotion ? (raw > 0.5 ? 1 : 0) : raw;
-    if (state.playing && travelled > 2.4 * vh) stopPlayback();   // left the map section
-    if (p === state.progress) return;
-    state.progress = p;
-    state.eased = reduceMotion ? p : easeInOut(p);
-    renderAll();
+    if (state.playing && window.scrollY > 0.8 * window.innerHeight) stopPlayback();   // left the map
   }
 
   // ---------- playback (one timer at most) ----------
@@ -557,40 +657,7 @@
   }
   document.addEventListener("visibilitychange", () => { if (document.hidden) stopPlayback(); });
 
-  // ---------- regional panels ----------
-  function placePanels() {
-    const e = state.eased, o = clamp((e - 0.72) / 0.28);
-    const vp = new WebMercatorViewport({...state.view, width: $("map").clientWidth, height: $("map").clientHeight});
-    for (const q of ORDER) {
-      const el = document.getElementById(`panel-${q}`);
-      if (!el) continue;
-      const {f} = pieceTransform(q, e);
-      const [w, s, ea, n] = QUARTERS[q].b;
-      const pts = [[w, s], [ea, s], [ea, n], [w, n]].map((pt) => vp.project(f(pt)));
-      const xs = pts.map((pt) => pt[0]), ys = pts.map((pt) => pt[1]);
-      const left = Math.min(...xs), right = Math.max(...xs), top = Math.min(...ys), bottom = Math.max(...ys);
-      let x, y, width;
-      if (layoutMode() === "tall") {
-        width = Math.max(150, right - left); el.style.width = `${width}px`; x = left; y = bottom + 8;
-      } else {
-        const gap = 16, half = window.innerWidth / 2;
-        width = Math.min(310, Math.max(210, (q.endsWith("W") ? half - right : left - half) - 1.5 * gap));
-        el.style.width = `${width}px`;
-        const h = el.offsetHeight || 200;
-        x = q.endsWith("W") ? right + gap : left - gap - width;
-        y = q.startsWith("N") ? top : bottom - h;
-      }
-      const h = el.offsetHeight || 200;
-      el.style.left = `${clamp(x, 8, window.innerWidth - width - 8)}px`;
-      el.style.top = `${clamp(y, 8, window.innerHeight - h - 8)}px`;
-      el.style.opacity = String(o);
-      el.style.transform = `translateY(${(1 - o) * 6}px)`;
-      el.style.visibility = o > 0.01 ? "visible" : "hidden";
-      el.setAttribute("aria-hidden", o > 0.5 ? "false" : "true");
-      el.classList.toggle("selected", state.region === q);
-    }
-  }
-
+  // ---------- regional charts ----------
   function yearlyAnomalyMeans(rid) {
     const a = state.anomaly[rid];
     if (!a) return [];
@@ -601,51 +668,11 @@
     if (!bars.length) return "";
     const W2 = 240, H2 = 44, max = Math.max(0.5, ...bars.map((b) => Math.abs(b.v || 0))), bw = W2 / bars.length, mid = H2 / 2;
     const rects = bars.map((b, i) => {
-      if (b.v == null) return `<rect x="${i * bw + bw * 0.2}" y="${mid - 0.5}" width="${bw * 0.6}" height="1" fill="#cfd4e2"><title>${b.y}: incomplete year</title></rect>`;
+      if (b.v == null) return `<rect x="${i * bw + bw * 0.2}" y="${mid - 0.5}" width="${bw * 0.6}" height="1" fill="#9c927d"><title>${b.y}: incomplete year</title></rect>`;
       const h = (Math.abs(b.v) / max) * (mid - 2), y = b.v >= 0 ? mid - h : mid;
       return `<rect x="${i * bw + bw * 0.15}" y="${y}" width="${bw * 0.7}" height="${Math.max(h, 0.8)}" fill="${b.v >= 0 ? "#b3261e" : "#4f6f8f"}"><title>${b.y}: ${signed(b.v, 2)} °C vs average</title></rect>`;
     }).join("");
-    return `<svg viewBox="0 0 ${W2} ${H2}" preserveAspectRatio="none" role="img" aria-label="Yearly mean anomaly bars, 2003 to 2024"><line x1="0" x2="${W2}" y1="${mid}" y2="${mid}" stroke="#cfd4e2"/>${rects}</svg>`;
-  }
-
-  function buildPanels() {
-    const host = $("panels");
-    host.innerHTML = "";
-    const stats = state.regionStats?.regions || {};
-    const quarterRegions = ORDER.map((q) => state.regions.find((r) => r.region_id === state.quarterIds[q])).filter(Boolean);
-    const fastest = quarterRegions.reduce((a, b) => (b.trend.slope > a.trend.slope ? b : a), quarterRegions[0]);
-    for (const q of ORDER) {
-      const r = state.regions.find((x) => x.region_id === state.quarterIds[q]);
-      if (!r) continue;
-      const t = r.trend, st = stats[r.region_id] || {}, perYear = t.slope * 12, sig = t.p < 0.05;
-      const isFastest = r === fastest && t.slope > 0 && sig;
-      const el = document.createElement("article");
-      el.className = `panel q-${q}` + (isFastest ? " fastest" : "");
-      el.id = `panel-${q}`;
-      el.tabIndex = 0;
-      el.setAttribute("aria-label", `${QUARTERS[q].name} quarter; select to focus this region`);
-      el.innerHTML = `
-        <div class="panel-head"><h3>${QUARTERS[q].name}</h3>${isFastest ? '<span class="tag">Fastest warming</span>' : ""}</div>
-        <p class="rate${perYear < 0 ? " cool" : ""}">${signed(perYear, 3)} °C<small>per year</small></p>
-        <p class="ci">${st.ci_low_per_year != null ? `95% CI ${signed(st.ci_low_per_year, 3)} to ${signed(st.ci_high_per_year, 3)}` : ""}</p>
-        <p class="sig">${sig ? "Statistically significant" : "Not statistically significant"} · ${pText(t.p)} · τ ${t.tau.toFixed(2)}</p>
-        ${sparkSVG(r.region_id)}
-        <div class="spark-cap"><span>2003</span><span>yearly mean vs average (full years)</span><span>2024</span></div>
-        <dl><dt id="pl-${q}">—</dt><dd id="pv-${q}">—</dd><dt>Valid months</dt><dd>${st.valid_months ?? "—"} of ${st.months ?? 264}</dd></dl>`;
-      el.addEventListener("click", () => setState({region: state.region === q ? "all" : q}));
-      el.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); el.click(); } });
-      host.appendChild(el);
-    }
-  }
-  function updatePanels() {
-    for (const q of ORDER) {
-      const rid = state.quarterIds[q], s = rid && state.series[rid];
-      const l = document.getElementById(`pl-${q}`), v = document.getElementById(`pv-${q}`);
-      if (!l || !s) continue;
-      l.textContent = `${periodLabel()}, quarter avg`;
-      const val = periodValue(s.times, s.values, state.year, state.month);
-      v.textContent = val == null ? "no value" : `${fmt(val)} °C`;
-    }
+    return `<svg viewBox="0 0 ${W2} ${H2}" preserveAspectRatio="none" role="img" aria-label="Yearly mean anomaly bars, 2003 to 2024"><line x1="0" x2="${W2}" y1="${mid}" y2="${mid}" stroke="#b9a67c"/>${rects}</svg>`;
   }
 
   // ---------- controls ----------
@@ -660,7 +687,7 @@
     $("next").addEventListener("click", () => { stopPlayback(); setState({year: Math.min(+yr.max, state.year + 1)}); showPeriod(); });
     $("play").addEventListener("click", () => (state.playing ? stopPlayback() : startPlayback()));
     $("speed").addEventListener("change", () => { state.speed = +$("speed").value; if (state.playing) { stopPlayback(); startPlayback(); } });
-    $("region").addEventListener("change", () => setState({region: $("region").value}));
+    $("region").addEventListener("change", () => selectRegion($("region").value));
     const host = $("months");
     for (const [val, label] of [["avg", "Annual avg"], ...MONTHS.map((m, i) => [i + 1, m])]) {
       const b = document.createElement("button");
@@ -680,7 +707,7 @@
       });
     }
     for (const b of $("layers").querySelectorAll("button")) b.addEventListener("click", () => setState({layer: b.dataset.layer}));
-    $("inspector-close").addEventListener("click", () => setState({cell: null}));
+    $("inspector-close").addEventListener("click", () => setState(state.cell ? {cell: null} : {region: "all"}));
     $("share").addEventListener("click", async () => {
       writeUrl();
       try { await navigator.clipboard.writeText(location.href); $("share").textContent = "Link copied"; }
@@ -690,7 +717,7 @@
     $("csv").addEventListener("click", downloadCsv);
     $("png").addEventListener("click", downloadPng);
     $("map").addEventListener("keydown", onMapKey);
-    setupNav();
+    setupNav(); setupChrome();
   }
 
   // ---------- map image (PNG) ----------
@@ -740,7 +767,11 @@
   // ---------- keyboard: arrow keys move between the cells drawn on the map ----------
   function onMapKey(ev) {
     const steps = {ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1]};
-    if (ev.key === "Escape") { if (state.cell) { setState({cell: null}); $("cell-live").textContent = "Cell closed."; } return; }
+    if (ev.key === "Escape") {
+      if (state.cell) { setState({cell: null}); $("cell-live").textContent = "Cell closed."; }
+      else if (state.region !== "all") { setState({region: "all"}); $("cell-live").textContent = "Region closed."; }
+      return;
+    }
     if (!(ev.key in steps) && ev.key !== "Enter" && ev.key !== " ") return;
     if (!state.cells) return;
     ev.preventDefault();
@@ -775,15 +806,14 @@
     const go = (where) => {
       const smooth = reduceMotion ? "auto" : "smooth";
       if (where === "map") window.scrollTo({top: 0, behavior: smooth});
-      else if (where === "quarters") window.scrollTo({top: $("stage").offsetTop + 1.9 * window.innerHeight, behavior: smooth});
       else $(where)?.scrollIntoView({behavior: smooth, block: "start"});
     };
     nav.querySelectorAll("button[data-go]").forEach((b) => b.addEventListener("click", () => go(b.dataset.go)));
-    const ids = ["compare", "coverage", "discoveries", "method"];
+    const ids = ["discoveries"];
     const update = () => {
       const y = window.scrollY, vh = window.innerHeight;
       nav.hidden = y < 0.6 * vh;
-      let cur = y < 1.4 * vh ? "map" : "quarters";
+      let cur = "map";
       for (const id of ids) { const el = $(id); if (el && el.getBoundingClientRect().top < vh * 0.4) cur = id; }
       nav.querySelectorAll("button[data-go]").forEach((b) => b.toggleAttribute("aria-current", b.dataset.go === cur && cur !== "map"));
     };
@@ -847,7 +877,7 @@
       <div class="legend-scale" aria-hidden="true"><span>−6 °C</span><span>0</span><span>+6 °C</span></div>
       <p><b>${diffs.length}</b> cells measured in both periods; mean cell ΔT <b>${signed(mean, 2)} °C</b>. White cells lack a valid value in at least one period.</p>
       <table class="mini"><thead><tr><th>Regional average</th><th>A (°C)</th><th>B (°C)</th><th>ΔT</th></tr></thead><tbody>${regional}</tbody></table>
-      <p class="note">A single-period difference mixes the long-term trend with year-to-year weather. For the trend itself see the warming-rate layer and the findings table; no significance is claimed here.</p>`;
+      <p class="note">A single-period difference mixes the long-term trend with year-to-year weather. For the trend itself see the warming-rate layer and Data information; no significance is claimed here.</p>`;
   }
 
   function buildCompareControls(years) {
@@ -975,7 +1005,7 @@
     $("ask-chips").querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => askAgain(b.textContent)));
     $("ask").addEventListener("submit", (ev) => { ev.preventDefault(); const q = $("ask-input").value.trim(); if (q) askAI(q); });
     if (!d) {
-      host.innerHTML = '<p class="det-info">The AI findings are unavailable right now (the cell-level analysis service did not answer). The map above is unaffected.</p>';
+      host.innerHTML = '<p class="det-info">The AI findings are unavailable right now (the cell-level analysis service did not answer). The map is unaffected.</p>';
       $("finding-wrap").hidden = true; $("discover").disabled = true; return;
     }
     const sel = $("finding");
@@ -1022,7 +1052,7 @@
     const months = state.series[rows[0].region_id]?.times.length || 264, years = months / 12;
     $("findings-body").innerHTML = rows.map((r) => {
       const t = r.trend, st = stats[r.region_id] || {};
-      return `<tr class="${r === fastest ? "fastest" : ""}"><td>${esc(r.region)}</td><td>${esc(t.trend)}${t.p < 0.05 ? ", significant" : ", not significant"}</td>
+      return `<tr class="${r === fastest ? "fastest" : ""}"><td>${esc(r.region_id === state.quarterIds.whole ? "Whole study area" : QUARTERS[quarterOfRegion(r.region_id)]?.name || r.region)}</td><td>${esc(t.trend)}${t.p < 0.05 ? ", significant" : ", not significant"}</td>
         <td class="num">${signed(t.slope * 12, 3)} °C</td><td class="num">${st.ci_low_per_year != null ? `${signed(st.ci_low_per_year, 3)} to ${signed(st.ci_high_per_year, 3)}` : "—"}</td>
         <td class="num">≈ ${signed(t.slope * months, 1)} °C</td><td class="num">${t.tau.toFixed(2)}</td><td class="num">${pText(t.p)}</td><td class="num">${st.valid_months ?? "—"}</td></tr>`;
     }).join("");
@@ -1111,7 +1141,7 @@
       if (state.cell && !state.cellIndex[state.cell]) state.cell = null;
       const times = state.series[state.quarterIds.whole || ids[0]].times;
       const years = [...new Set(times.map((t) => +t.slice(0, 4)))];
-      buildControls(years); buildCompareControls(years); buildPanels(); buildFindings(); buildMethodFigure(); buildProvenance();
+      buildControls(years); buildCompareControls(years); buildFindings(); buildMethodFigure(); buildProvenance();
       buildDiscoveries(); renderCoverage();
       await showPeriod();
       renderCompare(); renderRegionTest();

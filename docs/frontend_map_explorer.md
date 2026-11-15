@@ -29,15 +29,21 @@ Dark Gray basemap (no key). Without it the map still shows the grid, freeways (N
    - Its value and anomaly for the period, and valid months that year.
    - Its 2003–2024 trend with a 95% confidence interval.
    - The FDR q-value and valid months overall.
-4. **Region filter.** All, NW, NE, SW or SE. The other quarters are dimmed.
-5. **Scroll split.** The four quarters move outward to their own panels, each showing:
-   - Warming per year with its 95% CI, p and τ.
-   - Yearly anomaly bars.
-   - The selected period's quarter average and valid months.
-6. **Compare.** Any two periods side by side, plus a difference map and regional ΔT.
+4. **Region case file.** Click a quarter's name or its base on the map (or use the Region list).
+   The other quarters dim and one panel opens with:
+   - Warming per year with its 95% CI, p and τ, and the trend-line change over the period.
+   - The selected period's quarter average, valid months and cells measured.
+   - The range of cell trends in the quarter and how many are significant after FDR.
+   - The monthly record (gaps stay gaps) and yearly anomaly bars.
+   Close it to return to the whole map. A cell's panel replaces it while a cell is open.
+5. **Map toolbar.** Data information, Compare, Legend (show or hide the active layer's legend)
+   and Reset view (clears region, cell, AI highlight and drawers; keeps year, month and layer).
+   Data information is a drawer with collapsible groups: results table, NASA source and
+   provenance, methods, data quality and coverage, limitations.
+6. **Compare** (toolbar drawer). Any two periods side by side, plus a difference map and regional ΔT.
    **Region test:** a direct seasonal Mann-Kendall test on the monthly difference between two
    quarters (`/region-compare`).
-7. **Coverage.** Valid cell-months per cell across all 264 months (50,276 of 50,688, 99.2%).
+7. **Coverage** (map layer per year; the all-period map is in Data information). Valid cell-months per cell across all 264 months (50,276 of 50,688, 99.2%).
 8. **Ask the Climate Detective.** A question box (with example chips) sends the question to
    `POST /ask`. The answer card shows a large headline, up to four coloured stat tiles, short
    details, the method, which tools computed it, and a button that outlines the answer's cells
@@ -76,8 +82,8 @@ for anomalies, Plasma for warming rate, Viridis for coverage.
   replayable from the header and footer; Esc closes it. Step 6 points to share links and CSV
   because there is no notebook yet.
 
-- **Section menu.** After you scroll past the map, a fixed menu appears (Back to map, Quarters,
-  Compare, Coverage, Ask, Method) and marks the current section.
+- **Section menu.** The only section below the map is the Climate Detective. After you scroll
+  past the map, a fixed menu appears (Back to map, Ask the detective).
 - **Map image.** "Download map image (PNG)" saves the current map view with a title, legend and
   data and basemap credits.
 - **Keyboard.** Tab to the map; the arrow keys move between the drawn cells (opening each cell's
