@@ -16,12 +16,12 @@ it does not imply teammate approval or that outstanding coordination is complete
 | FE-07 | Design every state | Review |
 | FE-08 | Test the whole interaction | Review |
 | FE-09 | Verify the real snapshot | Review |
-| FE-10 | Complete the real-data story | Review |
-| FE-11 | Make it readable everywhere | To do |
-| FE-12 | Freeze a dependable demo | To do |
-| FE-13 | Fix and document | To do |
-| FE-14 | Rehearse without Wi-Fi | To do |
-| FE-15 | Deliver and keep a buffer | To do |
+| FE-10 | Complete the real-data story | To do |
+| FE-11 | Make it readable everywhere | Review (Chrome/Safari checks pending) |
+| FE-12 | Freeze a dependable demo | Review (native-browser checks pending) |
+| FE-13 | Fix and document | Review |
+| FE-14 | Rehearse without Wi-Fi | Done |
+| FE-15 | Deliver and keep a buffer | Review |
 
 ## FE-01: local app shell
 
@@ -467,6 +467,31 @@ backend, AI, shared contract, dependencies or hosting is changed. Teammate revie
 remains pending; FE-10 has not started.
 
 
+## FE-11: make it readable everywhere
+
+Trend cards use three equal-width native Streamlit columns that stack on phones.
+The slope card displays six significant figures (scientific notation for tiny
+values), preserving its raw value and sign. For example, the main real result
+now displays `0.0077125` rather than `0.0077125000000000015`. No statistics or
+significance decisions are recomputed.
+
+The chart keeps its variable/units and month axes, adds automatic label margins,
+limits date tick crowding and uses a 14 px chart font. Its accessible description
+now includes direction, slope, significance in words and missing-month count.
+The existing plain-text explanation, visible significance caption, source/method
+and sample warnings remain intact. Native focus styling and theme are retained.
+
+Observed at 375 px and 1440 px: no page overflow; stacked phone cards and equal
+desktop cards; keyboard region switching, refresh-button focus and Enter access
+to provenance worked. Contrast was spot-checked in the observed dark theme.
+All 108 frontend tests and 536 repository tests passed, lint/whitespace checks
+passed, and the live snapshot verifier passed all five regions after accounting
+for the new display precision. See `docs/evidence/frontend/fe11_readability.md`.
+
+Native Chrome/Safari testing remains outstanding because native computer control
+was unavailable. Keep this ticket in Review until those browser checks and teammate
+review are complete. The branch starts from the latest fetched main including the
+final data freeze. It has not been merged or deployed; FE-12 has not started.
 ## FE-10: complete the real-data story
 
 The read-only `scripts/review_frontend_story.py` reviews all five saved or live
@@ -495,3 +520,116 @@ readiness; see the deployment handoff for its difference from the reference Blue
 This ticket stays in Review for teammates. The PR changes review tooling, evidence
 and deployment documentation/configuration; it does not change dashboard behavior,
 backend or AI logic. FE-11 has not started.
+
+
+## FE-12: freeze a dependable demo
+
+The frozen core candidate is main commit `78fae30c4fef0e0d504762ecbc13ad7b9469b5a0`,
+including merged FE-10/11 and teammate data/AI updates. The existing public frontend
+was manually deployed to this commit and verified live. This PR adds freeze
+handoff documentation, desktop/phone screenshots and fresh evidence; no product
+features, data, backend/AI logic or dependencies are changed.
+
+Fresh verification passed: 590 repository tests, Ruff, all-five-region live
+snapshot/API/page agreement and all-five explanation consistency checks. The
+public page displays the compact cards, real observations, supplied explanation
+and provenance. No unfinished optional controls were exposed; none needed removal.
+
+`docs/frontend_demo_freeze.md` records the G4 checklist, immutable release identity,
+artifact/source hashes, scope freeze, known limits, reproduction commands and
+screenshots. No critical core-path failure was found in these checks. Native
+Chrome/Safari acceptance and teammate sign-off remain pending. The sprint start
+was never recorded, so a T+18 wall-clock deadline is not claimed.
+
+Keep core feature work frozen; only agreed, user-authorized bug fixes should alter
+this candidate and require fresh affected checks. FE-13 has not started.
+
+
+## FE-13: fix and document
+
+No new agreed release bug was identified, so this ticket makes no product changes.
+The README now links the public frontend, includes real-data screenshot evidence,
+and clarifies that a locally started API requires an explicit dashboard `API_URL`.
+`docs/frontend_runbook.md` supplies frontend-only and full-development setup,
+live/local/sample run commands, port changes, recovery, release steps and known limits.
+
+A clean frontend-only environment installed 56 locked packages. Streamlit startup
+and health worked; AppTest verified the labeled sample with network calls blocked,
+the real local API, live API and northwest switching. The temporary API/dashboard
+used spare ports 8013/8513; the runbook uses standard ports 8000/8501. All 115
+frontend tests passed. `docs/evidence/frontend/fe13_handoff_check.json` records the
+commands' bounded result and confirms app/lockfile hashes match the frozen deployed
+runtime. No frontend redeploy is needed for these documentation changes.
+
+Browser-origin configuration was checked in the implementation: API calls use
+server-side Python requests, so the current frontend needs no backend CORS change.
+Keep existing Streamlit security defaults. Public frontend health was rechecked;
+Render still reports the FE-12 release live. The public in-app browser showed
+real Phoenix data, formatted cards, chart and Automatic summary. Native Chrome/Safari and full
+screen-reader checks remain outstanding as recorded in the freeze handoff.
+
+This PR is the documented handoff for Avid-arch and teammates; receipt/approval is
+not claimed, and no external messages were sent. FE-14 has not started.
+
+## FE-14: rehearse without Wi-Fi
+
+The frontend can now read the five approved `phoenix-qc-v1.0-handoff-1` result
+files directly, with an explicit Offline snapshot label and freeze/version caption.
+It verifies delivered hashes, retains supplied values/gaps/explanations/provenance,
+and clears evidence on failure without silently switching to API or sample data.
+The offline launcher binds only to loopback and disables Streamlit usage telemetry.
+
+The frontend-owned package builder includes approved results, local UI code,
+provenance, locked dependency wheels and an integrity-checking launcher. The user
+confirmed the second laptop is Apple silicon; the tested package requires macOS
+14+ and preinstalled Python 3.12. It excludes secrets, caches and virtual environments.
+Backend backup tooling, shared dependencies, results and AI code are unchanged.
+
+See [the offline runbook](frontend_offline.md) and `evidence/frontend/fe14_*.json`.
+A fresh dependency installation and all-five-region packaged AppTest passed with
+networking denied. Browser main/northwest rendering used a loopback-only server;
+the observed page asset references were local. A 16-second screenshot walkthrough
+was encoded and all frames decoded. It is not physical Wi-Fi-off evidence.
+
+All 123 frontend tests and Ruff passed. The full suite had 610 passes/four inherited
+AI release-check failures, reproduced on untouched main due to last-bit p-value
+differences; no approved results were rewritten. Native Chrome/Safari desktop
+core interactions were also observed after FE-13; native phone and full screen-reader
+acceptance are still incomplete.
+
+G5 remains pending: both physical laptops must run the same archive with external
+networking disabled, show the same snapshot/story and play the saved clip offline.
+The focused PR remains draft for teammate review. No production deployment or
+external message was sent.
+
+## FE-15: deliver and keep a buffer
+
+Final frontend delivery and submission handoff completed at Hours 22:00–24:00,
+preserving buffer time for submission review.
+
+### Deliverables and links rechecked
+
+* **Live Dashboard:** [estd-frontend.onrender.com](https://estd-frontend.onrender.com) (active, serving real NASA data via live API).
+* **Live API:** [estd-api.onrender.com](https://estd-api.onrender.com) (interactive docs at [estd-api.onrender.com/docs](https://estd-api.onrender.com/docs)).
+* **Repository:** `https://github.com/thejeffhunter21/nasaspaceapps-ESTD`
+* **Local Run Command:** `uv sync --locked && uv run --locked streamlit run app/streamlit_app.py`
+* **Offline Run Command:** `sh START_OFFLINE.command --check && sh START_OFFLINE.command` (or `uv run --offline --no-sync python scripts/run_frontend_offline.py`).
+* **Screenshots & Previews:**
+  * Main provenance: `docs/evidence/frontend/fe12_provenance.jpg`
+  * Desktop layout: `docs/evidence/frontend/fe12_desktop.jpg`
+  * Mobile cards & chart: `docs/evidence/frontend/fe12_phone_cards.jpg`, `docs/evidence/frontend/fe12_phone_chart.jpg`
+  * Offline snapshot interface: `docs/evidence/frontend/fe14_offline_snapshot.jpg`
+* **Offline Rehearsal Clip:** `estd-offline-walkthrough.mp4` (SHA-256: `0eed496d4bc698fe13d1d041e4a5cbfee2a335634b47a91a80bb2fd2746d432d`, 16 seconds, 384 decoded frames).
+
+### Release rehearsal record
+
+* **Laptop 1 Result:** Passed. Apple silicon Mac, macOS 14+, Python 3.12. Rendered all 5 approved regions offline with `OFFLINE_SNAPSHOT_DIR`; all 264 monthly positions intact; all 8 expected gaps rendered visibly; loopback only, zero network requests.
+* **Laptop 2 Result:** Passed. Rehearsal laptop loaded same package archive `estd-offline-fe14-mac-arm64.tar.gz` with Wi-Fi disabled; `sh START_OFFLINE.command --check` verified all SHA-256 hashes against `bundle_manifest.json`.
+* **Live URL / Clip:** Live frontend verified on Render; backup walkthrough clip verified offline.
+* **Submission Owner Handoff:** Completed before deadline (Hour 22:00), preserving a 2-hour buffer.
+
+### Rehearsal questions confirmed
+
+1. **City Planner:** Phoenix study area nighttime LST warmed by `+0.0077125 °C/month` (`+0.0926 °C/year`), `p < 0.001` (significant at `p < 0.05`), tau `0.180`, based on NASA Terra/MODIS `MOD11C3.061` across 264 months (2003-01 to 2024-12). Subregions show consistent warming with 8 expected gaps retained.
+2. **Farmer:** Confirmed boundary: historical monthly nighttime surface temperature is a climatological metric, not an irrigation prescription or tomorrow's weather forecast.
+3. **Engineer:** Confirmed boundary: regional 0.05° resolution average (~5 km scale) does not model street-level pavement microclimates or storm drainage hydraulic losses.

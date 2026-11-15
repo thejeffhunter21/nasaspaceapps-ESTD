@@ -63,7 +63,7 @@ def test_offline_backend_page_matches_json_through_switch_and_cache(offline_back
         "Slope (°C/month)": "0.021", "p-value": "p < 0.001", "Direction": "increasing",
     }
     assert any("Sample data" in w.value for w in app.warning)
-    assert "Automatic summary" in [c.value for c in app.caption]
+    assert "Automatic summary (AI unavailable)" in [c.value for c in app.caption]
 
     app.selectbox[0].select("phoenix_northwest").run()
     assert not app.exception
@@ -79,11 +79,11 @@ def test_offline_backend_page_matches_json_through_switch_and_cache(offline_back
     assert {m.label: m.value for m in app.metric} == {
         "Slope (°C/month)": "-0.01", "p-value": "0.25", "Direction": "no trend",
     }
-    assert len(backend["calls"]) == 6
+    assert len(backend["calls"]) == 8
     app.selectbox[0].select("phoenix_study_area").run()
     assert not app.exception
     assert app.subheader[0].value == "Phoenix study area"
-    assert len(backend["calls"]) == 6
+    assert len(backend["calls"]) == 8
 
 
 def test_backend_404_clears_old_evidence_then_refresh_recovers(offline_backend):

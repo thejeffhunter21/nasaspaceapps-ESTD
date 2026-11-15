@@ -1,0 +1,47 @@
+{
+  "recorded_at_utc": "2026-11-15T02:50:12.890742+00:00",
+  "release_commit": "78fae30c4fef0e0d504762ecbc13ad7b9469b5a0",
+  "frontend_url": "https://estd-frontend.onrender.com",
+  "backend_url": "https://estd-api.onrender.com",
+  "service_id": "srv-dbsfr5rl550s738bm9s0",
+  "deploy_id": "dep-dbshq13bc2fs73bjsjb0",
+  "deploy_status": "live",
+  "deploy_finished_at_utc": "2026-11-15T02:47:51.276649Z",
+  "health": "ok",
+  "auto_deploy": "off",
+  "verification": {
+    "repository_tests_passed": 590,
+    "lint": "PASS",
+    "snapshot_all_five_regions": "PASS",
+    "explanation_all_five_regions": "PASS",
+    "public_browser": "main and northwest, live real data, compact cards, chart and provenance; keyboard region selection",
+    "runtime_error_logs": "none returned for 2026-11-15T02:47:51Z to 02:49:04Z"
+  },
+  "screenshots": {
+    "fe12_desktop.jpg": "1440x1000, main-area overview",
+    "fe12_provenance.jpg": "1440x1000, main chart, explanation and expanded source/method",
+    "fe12_phone_cards.jpg": "375x812, northwest stacked cards",
+    "fe12_phone_chart.jpg": "375x812, northwest chart and explanation"
+  },
+  "limitations": [
+    "Native Chrome/Safari and full screen-reader checks remain pending.",
+    "Offline two-laptop rehearsal belongs to FE-14.",
+    "Backend is independently deployed; evidence is point-in-time."
+  ],
+  "artifacts_sha256": {
+    "docs/evidence/frontend/fe12_desktop.jpg": "dc6663fae5a7c6b05b8ed0e6e6e4d11092868d9148ec65404cbfbe05f5d404a0",
+    "docs/evidence/frontend/fe12_phone_cards.jpg": "819d2268951d10d43c8d1e9fab09f6d4e8b12cd39ce6eb157d38ff702a1b4abc",
+    "docs/evidence/frontend/fe12_phone_chart.jpg": "84f863910a8a310d0e11326b07452cc4d17556c8b86261364a8244ba562ba548",
+    "docs/evidence/frontend/fe12_provenance.jpg": "b21a105027ae46b356a650066244f3b53acf2b679ae89f4d3cd01f13bdeac6bb",
+    "docs/evidence/frontend/fe12_snapshot_check.json": "dbf14e4abd3ca320c9f1e868c478558927a5311ec8a9d80b7a38b88372999949",
+    "docs/evidence/frontend/fe12_story_review.json": "28072972bdf6cc8e9e0c2aa100cdc104331a8c5933c0052f26fdf8ee57e8b32b"
+  },
+  "runtime_inputs_sha256": {
+    "uv.lock": "a6868ddeee96e414e63436bbb9d6e5749fa8a7ab298524ea9830254634ee6c02",
+    "app/api_client.py": "82d58081b214ddba2625195e45f5dcdc7cbbbcf8c98e13a79ee1e89b6b24b4d8",
+    "app/charts.py": "0d7f9c98927ebc55bd2a4465b66f8d884a27d1de064792101a23e85a27c81435",
+    "app/streamlit_app.py": "95786af88de92a898561b3a59e10e3a6bb9dfec89b89ab5900d006c975b0a0fb",
+    "app/view_model.py": "fecfa9ab29a2bb415721b17b88d9fa79708de7f3a5589654802b11997f156657",
+    "app/fixtures/results.mock.json": "05d77c2839fc468044960efe30dc87ab6015b635dfe326f8ed4f4c5b61f15bef"
+  }
+}

@@ -7,7 +7,7 @@ import requests
 import streamlit as st
 from pydantic import BaseModel, Field, ValidationError
 
-from earth_system_trend.contract import Results
+from earth_system_trend.contract import Results, SeriesPoint, Trend
 
 DEFAULT_API_URL = "https://estd-api.onrender.com"
 
@@ -62,8 +62,11 @@ def clear_results_cache(api_url: str, region_id: str | None = None) -> None:
     base_url = api_url.strip().rstrip("/")
     _fetch_results.clear(base_url)
     _fetch_regions.clear(base_url)
+    _region_payload.clear(base_url)
+    _fetch_region_directory.clear(base_url)
     if region_id:
         _fetch_region_results.clear(base_url, region_id)
+        _fetch_region_anomaly.clear(base_url, region_id)
 
 
 class _RegionOption(BaseModel):
@@ -80,13 +83,17 @@ def fetch_regions(api_url: str) -> list[dict]:
     return _fetch_regions(_base_url(api_url))
 
 
+def fetch_region_trends(api_url: str) -> dict[str, dict]:
+    """Trend summaries per region from the same cached /regions response; {} if absent."""
+    try:
+        return _fetch_region_directory(_base_url(api_url))
+    except ApiError:
+        return {}
+
+
 @st.cache_data(ttl=60, max_entries=16, show_spinner=False)
 def _fetch_regions(base_url: str) -> list[dict]:
-    with requests.Session() as session:
-        health = _get_json(session, f"{base_url}/health")
-        if not isinstance(health, dict) or health.get("status") != "ok":
-            raise ApiError("The API is not ready. Try again or use sample data.", kind="server")
-        payload = _get_json(session, f"{base_url}/regions")
+    payload = _region_payload(base_url)
     if isinstance(payload, dict) and payload.get("regions") == []:
         raise ApiError("No study regions are available yet. Retry or use sample data.", kind="empty_regions")
     try:
@@ -97,6 +104,58 @@ def _fetch_regions(base_url: str) -> list[dict]:
     if len(ids) != len(set(ids)):
         raise ApiError("The API returned duplicate region IDs. Try again or use sample data.")
     return [region.model_dump() for region in directory.regions]
+
+
+@st.cache_data(ttl=60, max_entries=16, show_spinner=False)
+def _region_payload(base_url: str):
+    with requests.Session() as session:
+        health = _get_json(session, f"{base_url}/health")
+        if not isinstance(health, dict) or health.get("status") != "ok":
+            raise ApiError("The API is not ready. Try again or use sample data.", kind="server")
+        return _get_json(session, f"{base_url}/regions")
+
+
+@st.cache_data(ttl=60, max_entries=16, show_spinner=False)
+def _fetch_region_directory(base_url: str) -> dict[str, dict]:
+    """Keep only well-formed supplied trends; the comparison view is optional."""
+    payload = _region_payload(base_url)
+    regions = payload.get("regions") if isinstance(payload, dict) else None
+    trends = {}
+    for region in regions if isinstance(regions, list) else []:
+        try:
+            option = _RegionOption.model_validate(region)
+            trend = Trend.model_validate(region["trend"])
+        except (ValidationError, KeyError, TypeError):
+            continue
+        trends[option.region_id] = {"region": option.region, **trend.model_dump()}
+    return trends
+
+
+def fetch_region_anomaly(api_url: str, region_id: str, times: tuple[str, ...]) -> tuple | None:
+    """Optional /anomaly values aligned to the displayed months; None hides the view."""
+    try:
+        values = _fetch_region_anomaly(_base_url(api_url), region_id)
+    except ApiError:
+        return None
+    if values is None or tuple(time for time, _ in values) != times:
+        return None
+    return tuple(value for _, value in values)
+
+
+@st.cache_data(ttl=60, max_entries=64, show_spinner=False)
+def _fetch_region_anomaly(base_url: str, region_id: str):
+    try:
+        with requests.Session() as session:
+            payload = _get_json(session, f"{base_url}/anomaly", {"region": region_id})
+    except ApiError:
+        return None  # optional view: cache the absence instead of retrying every rerun
+    if not isinstance(payload, dict) or payload.get("region_id") != region_id:
+        return None
+    try:
+        points = [SeriesPoint.model_validate(point) for point in payload["series"]]
+    except (ValidationError, KeyError, TypeError):
+        return None
+    return tuple((point.time, point.value) for point in points)
 
 
 def fetch_region_results(api_url: str, region_id: str) -> dict:

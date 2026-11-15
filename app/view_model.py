@@ -25,6 +25,8 @@ class ResultsView:
     source: str
     method: str
     is_sample: bool
+    anomaly: tuple[float | None, ...] | None = None
+    baseline: tuple[tuple[int, float], ...] | None = None
 
     @property
     def display_units(self) -> str:
@@ -35,8 +37,50 @@ class ResultsView:
         return "°C/month" if self.slope_unit == "degC/month" else self.slope_unit
 
     @property
+    def display_slope(self) -> str:
+        """Six significant figures for cards; retain the raw slope for evidence."""
+        return format(self.slope, ".6g") if self.slope else str(self.slope)
+
+    @property
     def display_p(self) -> str:
         return "p < 0.001" if self.p < 0.001 else str(self.p)
+
+    @property
+    def months_total(self) -> int:
+        return len(self.values)
+
+    @property
+    def months_observed(self) -> int:
+        return sum(value is not None for value in self.values)
+
+    @property
+    def years_label(self) -> str:
+        """Calendar span of the supplied series, e.g. 22 for 2003-01..2024-12."""
+        return f"{self.months_total / 12:.0f}" if self.months_total % 12 == 0 else (
+            f"{self.months_total / 12:.1f}")
+
+    @property
+    def baseline_label(self) -> str:
+        """Years the supplied anomaly baseline covers (the full stated period)."""
+        return f"{self.times[0][:4]}–{self.times[-1][:4]}" if self.times else ""
+
+    @property
+    def per_year_slope(self) -> float:
+        """Annual display = supplied monthly slope x 12; always labelled as such."""
+        return self.slope * 12
+
+    @property
+    def period_change_estimate(self) -> float:
+        """Slope x months in the period: a trend-line estimate, not a measured difference."""
+        return self.slope * self.months_total
+
+    @property
+    def seasonal_swing(self) -> float | None:
+        """Gap between the warmest and coolest calendar-month baseline means, if supplied."""
+        if not self.baseline:
+            return None
+        means = [mean for _, mean in self.baseline]
+        return max(means) - min(means)
 
 
 def build_view_model(payload: dict) -> ResultsView:
@@ -69,4 +113,8 @@ def build_view_model(payload: dict) -> ResultsView:
             "mock" in result.source.casefold()
             or result.region.strip().casefold() == "example region"
         ),
+        anomaly=(tuple(point.value for point in result.anomaly)
+                 if result.anomaly is not None else None),
+        baseline=(tuple((b.month, b.mean) for b in result.baseline)
+                  if result.baseline else None),
     )

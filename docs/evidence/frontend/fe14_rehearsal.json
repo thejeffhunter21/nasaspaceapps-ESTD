@@ -1,0 +1,47 @@
+{
+  "checked_at_utc": "2026-11-15T03:52:45.382978+00:00",
+  "machine": "First Mac, Apple silicon",
+  "macos": "27.0",
+  "python": "3.12.15",
+  "isolation": "macOS sandbox denies all networking during this AppTest; server rehearsal permits loopback only",
+  "physical_wifi_disabled": false,
+  "second_laptop": "pending",
+  "status": "PASS",
+  "regions": [
+    {
+      "region_id": "phoenix_study_area",
+      "points": 264,
+      "gaps": 0,
+      "result_sha256": "54e2828bd78cd99eb00970915a6f1237ebf0d3cc8c780d20d229877d89c3dd6c",
+      "passed": true
+    },
+    {
+      "region_id": "phoenix_northwest",
+      "points": 264,
+      "gaps": 1,
+      "result_sha256": "fdc3f012ee356d4d41000217d3a5171af7e7bec2a12101dd315c582eabfc6e96",
+      "passed": true
+    },
+    {
+      "region_id": "phoenix_northeast",
+      "points": 264,
+      "gaps": 2,
+      "result_sha256": "34e6590b0f87da6f8ee642c5ef5ede9892c75a5e0ff3208d908ad146f03562e8",
+      "passed": true
+    },
+    {
+      "region_id": "phoenix_southwest",
+      "points": 264,
+      "gaps": 2,
+      "result_sha256": "2306e972291abfab965c7c97afdcad4300e280c1dff43e546b42677f38f8b8c5",
+      "passed": true
+    },
+    {
+      "region_id": "phoenix_southeast",
+      "points": 264,
+      "gaps": 3,
+      "result_sha256": "1b2ca6adccfb3e447c7790603a1aac66e91cba919d03236e48166d9407db5153",
+      "passed": true
+    }
+  ]
+}

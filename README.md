@@ -9,11 +9,18 @@ changed every month from **2003 to 2024**, measured by NASA's Terra/MODIS satell
 The tool tests whether the change is a real trend (seasonal Mann-Kendall test), says how fast
 it is, and explains the result in plain language using only the computed numbers.
 
+Each explanation is an **automatic summary** that code writes from the trend numbers, and the
+dashboard labels it "Automatic summary". The pipeline can optionally ask Google Gemini to word
+it instead (see [Build the results](#build-the-results)), but the committed results use no AI
+text. The dashboard and API only show stored results and never call Gemini.
+
 Result on the real data: every part of the Phoenix study area shows a statistically significant
 warming trend (p < 0.001), from about +0.06 °C per year (northeast) to +0.11 °C per year
 (southeast). The plain trend test misses this because the summer/winter swing hides it.
 
 Scope: the demo covers Phoenix. Extending to the whole United States is a stretch goal.
+
+**Live dashboard:** [estd-frontend.onrender.com](https://estd-frontend.onrender.com)
 
 **Live API:** https://estd-api.onrender.com · interactive docs at
 https://estd-api.onrender.com/docs
@@ -30,14 +37,49 @@ uv run --locked streamlit run app/streamlit_app.py
 ```
 
 The dashboard opens at http://localhost:8501 and reads the live API. To run the API on your
-own machine instead:
+own machine instead, start it in a separate terminal:
 
 ```
 uv run --locked uvicorn earth_system_trend.api.app:app --reload
 ```
 
 Then open http://localhost:8000/docs. It serves mock data unless `USE_MOCK=false`
-(see [Settings](#settings)).
+(see [Settings](#settings)). To point the dashboard at that local API, start Streamlit with:
+
+```sh
+API_URL=http://127.0.0.1:8000 uv run --locked streamlit run app/streamlit_app.py
+```
+
+For a synthetic preview without API requests, use `API_URL=` instead. The preview
+shows **Offline preview** and **Sample data**; it is not the real-data offline backup.
+The dashboard's Python server calls the API, so this setup requires no backend
+browser-origin CORS changes.
+
+Frontend-only installation, port changes, settings and recovery steps are in the
+[tested frontend runbook](docs/frontend_runbook.md). See the
+[freeze checklist and known limits](docs/frontend_demo_freeze.md) before presenting.
+Native Chrome/Safari desktop core interactions were subsequently checked; native
+phone and full screen-reader acceptance remain partial/pending.
+
+For the approved real snapshot without an API, use the
+[FE-14 offline package and rehearsal instructions](docs/frontend_offline.md).
+The Apple silicon bundle includes dependency wheels; it needs preinstalled
+Python 3.12 and macOS 14+. From its extracted folder, run
+`sh START_OFFLINE.command --check`, then `sh START_OFFLINE.command` and open
+http://127.0.0.1:8501. The page labels **Offline snapshot** and verifies all five
+approved result files before showing evidence. Two physical Wi-Fi-off laptop
+rehearsals and saved-clip playback remain pending.
+
+### Dashboard preview
+
+Real Phoenix study-area observations and supplied explanation/source, captured
+from the FE-12 release (the runtime is unchanged in FE-13):
+
+![Real Phoenix monthly nighttime surface-temperature chart, automatic summary and supplied source/method](docs/evidence/frontend/fe12_provenance.jpg)
+
+[Desktop overview](docs/evidence/frontend/fe12_desktop.jpg) ·
+[Phone cards](docs/evidence/frontend/fe12_phone_cards.jpg) ·
+[Phone chart](docs/evidence/frontend/fe12_phone_chart.jpg)
 
 ## How it fits together
 
@@ -81,9 +123,14 @@ uv run --locked python -m earth_system_trend.pipeline.run --all-regions --force
 | `--stub` | Write a fake CSV first if none exists (for testing without data) |
 | `--csv`, `--out` | Other input / output paths |
 
-Without a Gemini key every explanation is the automatic summary
-(`explanation_source: "fallback"`). With `GEMINI_API_KEY` and `GEMINI_MODEL` in `.env`, checked
-AI text is used (`"ai"`). Missing months stay `null`; they are never filled in. If the Data
+By default every explanation is the automatic summary (`explanation_source: "fallback"`), and
+the committed `results/` files were built this way. Gemini is used only when you opt in:
+`GEMINI_API_KEY`, `GEMINI_MODEL` **and** `GEMINI_LIVE=1`. A key alone does nothing. Gemini text
+is kept (`"ai"`, shown as "AI-assisted explanation") only if it passes the automated checks. The
+checks reject wrong numbers, wrong significance wording, causes, forecasts, advice and the wrong
+region. Otherwise the automatic summary is used. Approved replies are cached, so a later rebuild
+without `GEMINI_LIVE` reuses them without calling Gemini. Details: [docs/ai.md](docs/ai.md).
+Missing months stay `null`; they are never filled in. If the Data
 layer's `anomaly*.csv` and `climatology.csv` are in `data/processed/`, each results file also
 gets the region's anomaly series and baseline.
 
@@ -113,7 +160,10 @@ Set in `.env` locally (copy `.env.example`) or in Render's dashboard. Never comm
 | `CORS_ORIGINS` | `http://localhost:8501` | Comma-separated sites allowed to call the API; `*` for any |
 | `REQUEST_TIMEOUT_S` | `10` | Longer requests get 504 |
 | `RATE_LIMIT_PER_MINUTE` | `60` | Requests per visitor per minute; `0` turns it off |
-| `GEMINI_API_KEY`, `GEMINI_MODEL` | empty | AI explanations when building results (pipeline only) |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | empty | Gemini credentials for explanations when building results (pipeline only) |
+| `GEMINI_LIVE` | `0` | `1` lets the pipeline call Gemini; off, only cached approved text is reused |
+| `AI_DAILY_CALL_CAP` | `50` | Gemini requests per UTC day, retries included; `0` turns AI off |
+| `EXPLAIN_CACHE_PATH` | `data/cache/explanations.json` | Cache of approved AI text and the daily call count (git-ignored) |
 | `API_URL` | `https://estd-api.onrender.com` | Which API the dashboard reads |
 
 ## Deploy
@@ -155,6 +205,9 @@ uv run --locked python scripts/backup_run.py
 It starts the API from the committed `results/` files, checks it is serving real data, then
 opens the dashboard pointed at it. No internet is needed. Ctrl+C stops it.
 
+To confirm beforehand that the committed results rebuild with no network and that the demo
+cannot call Gemini, run `uv run --locked python scripts/verify_ai_release.py`.
+
 ## Data and credits
 
 - **Data:** NASA Terra/MODIS MOD11C3 Collection 6.1, monthly land surface temperature
@@ -166,9 +219,12 @@ opens the dashboard pointed at it. No internet is needed. Ctrl+C stops it.
   [quality report](docs/data_quality_report.md).
 - **Method:** seasonal Mann-Kendall test with seasonal Sen's slope (`pymannkendall`).
   Details and limits: [docs/ai.md](docs/ai.md).
-- **AI use:** AI tools helped write code and documentation. Explanations shown in the app are
-  either an automatic summary built from the numbers or Gemini text that passed automated
-  number checks; the label in each answer says which.
+- **AI use:** AI tools helped write code and documentation. Every explanation in the app is
+  an automatic summary written by code from the computed numbers, labeled "Automatic summary".
+  The pipeline can optionally use Google Gemini to word explanations. It keeps that text only if
+  it passes automated checks of numbers, wording and claims, and labels it "AI-assisted
+  explanation". The committed results contain no Gemini text, and nothing calls Gemini while
+  the app runs. Details: [AI submission handoff](docs/ai_submission.md).
 - **Libraries:** FastAPI, pandas, pydantic, pymannkendall, statsmodels, Streamlit, Plotly.
 
 ## AI Climate Detective — guided investigation demo

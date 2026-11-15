@@ -1,0 +1,138 @@
+{
+  "check": "A11 AI release check",
+  "checked_at_utc": "2026-11-15T03:28:55+00:00",
+  "checked_checkout_commit": "6318c556dbb970613798f5d3570cda2093ec24e4",
+  "status": "PASS",
+  "ai_mode": "off: no GEMINI_API_KEY, GEMINI_LIVE=0, AI_DAILY_CALL_CAP=0, empty cache",
+  "network_attempts": 0,
+  "prompt_version": "v2",
+  "explanation_sources": {
+    "fallback": 5
+  },
+  "result_sha256": {
+    "results/results.json": "54e2828bd78cd99eb00970915a6f1237ebf0d3cc8c780d20d229877d89c3dd6c",
+    "results/regions/phoenix_northeast.json": "34e6590b0f87da6f8ee642c5ef5ede9892c75a5e0ff3208d908ad146f03562e8",
+    "results/regions/phoenix_northwest.json": "fdc3f012ee356d4d41000217d3a5171af7e7bec2a12101dd315c582eabfc6e96",
+    "results/regions/phoenix_southeast.json": "1b2ca6adccfb3e447c7790603a1aac66e91cba919d03236e48166d9407db5153",
+    "results/regions/phoenix_southwest.json": "2306e972291abfab965c7c97afdcad4300e280c1dff43e546b42677f38f8b8c5"
+  },
+  "regions": [
+    {
+      "region_id": "phoenix_study_area",
+      "region": "Phoenix study area",
+      "file": "results/results.json",
+      "explanation_source": "fallback",
+      "explanation": "From 2003-01 to 2024-12, nighttime land surface temperature in Phoenix study area rose by about 0.00771 degC per month (0.0926 degC per year). This trend is statistically significant (p < 0.001).",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.0077125000000000015,
+        "slope_unit": "degC/month",
+        "p": 7.022635523002321e-11,
+        "tau": 0.2893217893217893,
+        "trend": "increasing"
+      },
+      "rebuild_differences": [],
+      "explanation_problems": [],
+      "passed": true
+    },
+    {
+      "region_id": "phoenix_northeast",
+      "region": "Phoenix study area northeast",
+      "file": "results/regions/phoenix_northeast.json",
+      "explanation_source": "fallback",
+      "explanation": "From 2003-01 to 2024-12, nighttime land surface temperature in Phoenix study area northeast rose by about 0.00529 degC per month (0.0635 degC per year). This trend is statistically significant (p < 0.001). 2 of 264 months are missing and were left as gaps, not filled in.",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.005289583333333329,
+        "slope_unit": "degC/month",
+        "p": 3.799507330776624e-06,
+        "tau": 0.20615159282314172,
+        "trend": "increasing"
+      },
+      "rebuild_differences": [],
+      "explanation_problems": [],
+      "passed": true
+    },
+    {
+      "region_id": "phoenix_northwest",
+      "region": "Phoenix study area northwest",
+      "file": "results/regions/phoenix_northwest.json",
+      "explanation_source": "fallback",
+      "explanation": "From 2003-01 to 2024-12, nighttime land surface temperature in Phoenix study area northwest rose by about 0.00755 degC per month (0.0906 degC per year). This trend is statistically significant (p < 0.001). 1 of 264 months are missing and were left as gaps, not filled in.",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.0075514705882352845,
+        "slope_unit": "degC/month",
+        "p": 3.275029494158922e-10,
+        "tau": 0.2795347146492185,
+        "trend": "increasing"
+      },
+      "rebuild_differences": [],
+      "explanation_problems": [],
+      "passed": true
+    },
+    {
+      "region_id": "phoenix_southeast",
+      "region": "Phoenix study area southeast",
+      "file": "results/regions/phoenix_southeast.json",
+      "explanation_source": "fallback",
+      "explanation": "From 2003-01 to 2024-12, nighttime land surface temperature in Phoenix study area southeast rose by about 0.00889 degC per month (0.107 degC per year). This trend is statistically significant (p < 0.001). 3 of 264 months are missing and were left as gaps, not filled in.",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.008890624999999985,
+        "slope_unit": "degC/month",
+        "p": 2.7803117595238375e-14,
+        "tau": 0.33985239852398524,
+        "trend": "increasing"
+      },
+      "rebuild_differences": [],
+      "explanation_problems": [],
+      "passed": true
+    },
+    {
+      "region_id": "phoenix_southwest",
+      "region": "Phoenix study area southwest",
+      "file": "results/regions/phoenix_southwest.json",
+      "explanation_source": "fallback",
+      "explanation": "From 2003-01 to 2024-12, nighttime land surface temperature in Phoenix study area southwest rose by about 0.00776 degC per month (0.0931 degC per year). This trend is statistically significant (p < 0.001). 2 of 264 months are missing and were left as gaps, not filled in.",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.007761666666666667,
+        "slope_unit": "degC/month",
+        "p": 2.979982995713438e-10,
+        "tau": 0.2808495056755767,
+        "trend": "increasing"
+      },
+      "rebuild_differences": [],
+      "explanation_problems": [],
+      "passed": true
+    }
+  ],
+  "runtime_isolation": {
+    "entries": [
+      "src/earth_system_trend/api/app.py",
+      "app/streamlit_app.py",
+      "scripts/backup_run.py"
+    ],
+    "scanned": [
+      "app/api_client.py",
+      "app/charts.py",
+      "app/streamlit_app.py",
+      "app/view_model.py",
+      "scripts/backup_run.py",
+      "src/earth_system_trend/__init__.py",
+      "src/earth_system_trend/api/__init__.py",
+      "src/earth_system_trend/api/app.py",
+      "src/earth_system_trend/api/demo.py",
+      "src/earth_system_trend/api/files.py",
+      "src/earth_system_trend/api/middleware.py",
+      "src/earth_system_trend/api/regions.py",
+      "src/earth_system_trend/api/routes.py",
+      "src/earth_system_trend/api/validation.py",
+      "src/earth_system_trend/config.py",
+      "src/earth_system_trend/contract.py",
+      "src/earth_system_trend/live_check.py"
+    ],
+    "violations": []
+  }
+}
