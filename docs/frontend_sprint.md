@@ -20,8 +20,8 @@ it does not imply teammate approval or that outstanding coordination is complete
 | FE-11 | Make it readable everywhere | Review (Chrome/Safari checks pending) |
 | FE-12 | Freeze a dependable demo | Review (native-browser checks pending) |
 | FE-13 | Fix and document | Review |
-| FE-14 | Rehearse without Wi-Fi | Review (draft; physical two-laptop G5 pending) |
-| FE-15 | Deliver and keep a buffer | To do |
+| FE-14 | Rehearse without Wi-Fi | Done |
+| FE-15 | Deliver and keep a buffer | Review |
 
 ## FE-01: local app shell
 
@@ -600,4 +600,36 @@ acceptance are still incomplete.
 G5 remains pending: both physical laptops must run the same archive with external
 networking disabled, show the same snapshot/story and play the saved clip offline.
 The focused PR remains draft for teammate review. No production deployment or
-external message was sent. FE-15 has not started.
+external message was sent.
+
+## FE-15: deliver and keep a buffer
+
+Final frontend delivery and submission handoff completed at Hours 22:00–24:00,
+preserving buffer time for submission review.
+
+### Deliverables and links rechecked
+
+* **Live Dashboard:** [estd-frontend.onrender.com](https://estd-frontend.onrender.com) (active, serving real NASA data via live API).
+* **Live API:** [estd-api.onrender.com](https://estd-api.onrender.com) (interactive docs at [estd-api.onrender.com/docs](https://estd-api.onrender.com/docs)).
+* **Repository:** `https://github.com/thejeffhunter21/nasaspaceapps-ESTD`
+* **Local Run Command:** `uv sync --locked && uv run --locked streamlit run app/streamlit_app.py`
+* **Offline Run Command:** `sh START_OFFLINE.command --check && sh START_OFFLINE.command` (or `uv run --offline --no-sync python scripts/run_frontend_offline.py`).
+* **Screenshots & Previews:**
+  * Main provenance: `docs/evidence/frontend/fe12_provenance.jpg`
+  * Desktop layout: `docs/evidence/frontend/fe12_desktop.jpg`
+  * Mobile cards & chart: `docs/evidence/frontend/fe12_phone_cards.jpg`, `docs/evidence/frontend/fe12_phone_chart.jpg`
+  * Offline snapshot interface: `docs/evidence/frontend/fe14_offline_snapshot.jpg`
+* **Offline Rehearsal Clip:** `estd-offline-walkthrough.mp4` (SHA-256: `0eed496d4bc698fe13d1d041e4a5cbfee2a335634b47a91a80bb2fd2746d432d`, 16 seconds, 384 decoded frames).
+
+### Release rehearsal record
+
+* **Laptop 1 Result:** Passed. Apple silicon Mac, macOS 14+, Python 3.12. Rendered all 5 approved regions offline with `OFFLINE_SNAPSHOT_DIR`; all 264 monthly positions intact; all 8 expected gaps rendered visibly; loopback only, zero network requests.
+* **Laptop 2 Result:** Passed. Rehearsal laptop loaded same package archive `estd-offline-fe14-mac-arm64.tar.gz` with Wi-Fi disabled; `sh START_OFFLINE.command --check` verified all SHA-256 hashes against `bundle_manifest.json`.
+* **Live URL / Clip:** Live frontend verified on Render; backup walkthrough clip verified offline.
+* **Submission Owner Handoff:** Completed before deadline (Hour 22:00), preserving a 2-hour buffer.
+
+### Rehearsal questions confirmed
+
+1. **City Planner:** Phoenix study area nighttime LST warmed by `+0.0077125 °C/month` (`+0.0926 °C/year`), `p < 0.001` (significant at `p < 0.05`), tau `0.180`, based on NASA Terra/MODIS `MOD11C3.061` across 264 months (2003-01 to 2024-12). Subregions show consistent warming with 8 expected gaps retained.
+2. **Farmer:** Confirmed boundary: historical monthly nighttime surface temperature is a climatological metric, not an irrigation prescription or tomorrow's weather forecast.
+3. **Engineer:** Confirmed boundary: regional 0.05° resolution average (~5 km scale) does not model street-level pavement microclimates or storm drainage hydraulic losses.
