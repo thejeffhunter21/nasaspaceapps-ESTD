@@ -133,3 +133,25 @@ def test_broken_ai_falls_back(tmp_path, monkeypatch):
     out = tmp_path / "r.json"
     main(["--stub", "--csv", str(tmp_path / "t.csv"), "--out", str(out)])
     assert load_results(out).explanation_source == "fallback"
+
+
+def test_anomaly_and_baseline_added_when_files_exist(tmp_path):
+    c = tmp_path / "timeseries.csv"
+    make_stub_csv(c)
+    rows = c.read_text().splitlines()
+    (tmp_path / "anomaly.csv").write_text(
+        "\n".join([rows[0]] + [r.split(",")[0] + ",0.25" for r in rows[1:]]) + "\n")
+    (tmp_path / "climatology.csv").write_text(
+        "region,month,mean,count\n" + "".join(f"phoenix,{m},{10 + m},22\n" for m in range(1, 13)))
+    out = tmp_path / "r.json"
+    assert main(["--csv", str(c), "--out", str(out)]) == 0
+    results = load_results(out)
+    assert len(results.anomaly) == len(results.series)
+    assert results.anomaly[0].value == 0.25
+    assert [b.month for b in results.baseline] == list(range(1, 13))
+
+
+def test_no_anomaly_files_means_no_block(tmp_path):
+    out = tmp_path / "r.json"
+    main(["--stub", "--csv", str(tmp_path / "t.csv"), "--out", str(out)])
+    assert load_results(out).anomaly is None

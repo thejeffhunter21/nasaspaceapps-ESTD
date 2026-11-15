@@ -62,8 +62,9 @@ def test_every_endpoint_passes(served):
 def test_answers_match_the_files(served):
     base, out = served
     written = json.loads(out.read_text())
-    if written.get("forecast") is None:
-        written.pop("forecast", None)  # /results leaves out an empty forecast
+    for key in ("forecast", "anomaly", "baseline"):
+        if written.get(key) is None:
+            written.pop(key, None)  # /results leaves out empty optional blocks
     assert requests.get(base + "/results", timeout=10).json() == written
     Results.model_validate(written)
     region = json.loads((out.parent / "regions" / "north_box.json").read_text())

@@ -83,6 +83,14 @@ class Forecast(_Strict):
     note: str = Field(min_length=1, description="caveat shown with the forecast")
 
 
+class BaselineMonth(_Strict):
+    """One calendar month of the anomaly baseline (Data layer's climatology.csv)."""
+
+    month: int = Field(ge=1, le=12)
+    mean: float = Field(description="mean temperature for this calendar month, in units")
+    count: int = Field(ge=0, description="valid years in the mean")
+
+
 class Results(_Strict):
     region_id: str = Field(pattern=r"^[a-z0-9_]+$", description="use in ?region=")
     region: str = Field(min_length=1, description="label shown to people")
@@ -96,6 +104,22 @@ class Results(_Strict):
     source: str = Field(min_length=1, description="where the data came from")
     method: str = Field(min_length=1, description="exact trend test used")
     forecast: Forecast | None = None  # optional, main region only
+    # Optional (Data layer): value minus the same calendar month's 2003-2024 mean, in units.
+    anomaly: list[SeriesPoint] | None = None
+    baseline: list[BaselineMonth] | None = None
+
+    @model_validator(mode="after")
+    def anomaly_lines_up(self) -> Results:
+        if self.anomaly is None:
+            return self
+        if [a.time for a in self.anomaly] != [p.time for p in self.series]:
+            raise ValueError("anomaly must have exactly the same months as series")
+        mismatched = [p.time for p, a in zip(self.series, self.anomaly)
+                      if (p.value is None) != (a.value is None)]
+        if mismatched:
+            raise ValueError(f"anomaly must be null exactly where series is null "
+                             f"(differs at {', '.join(mismatched[:3])})")
+        return self
 
     @model_validator(mode="after")
     def series_matches_period(self) -> Results:

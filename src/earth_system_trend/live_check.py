@@ -22,6 +22,8 @@ CHECKS: list[tuple[str, int, tuple[str, ...]]] = [
     ("/regions", 200, ("regions",)),
     ("/series", 200, ("region_id", "units", "series")),
     ("/trend", 200, ("trend", "explanation", "explanation_source", "source", "method")),
+    ("/demo", 200, ("cases",)),
+    ("/version", 200, ("commit",)),
     ("/series?region=not_a_region", 404, ("detail",)),
     ("/series?region=%3Cscript%3E", 422, ("detail",)),
 ]
@@ -63,6 +65,10 @@ def run_checks(base_url: str, *, expect_real: bool = False, session=None) -> lis
             results.append(_check(session, base_url, f"/series?region={rid}", 200, ("series",)))
     if expect_real:
         results.append(check_real_data(base_url, session=session))
+        for region in (regions or {}).get("regions", []):
+            rid = region.get("region_id")
+            results.append(_check(session, base_url, f"/anomaly?region={rid}", 200,
+                                  ("series", "baseline")))
     return results
 
 

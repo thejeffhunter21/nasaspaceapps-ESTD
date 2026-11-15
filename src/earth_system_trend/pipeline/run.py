@@ -16,6 +16,8 @@ import random
 import sys
 from pathlib import Path
 
+import pandas as pd
+
 # The ONE place the AI layer's functions are imported.
 from ..ai.explain import explain, fallback_text  # A4 (A6 cache + cap inside)
 from ..ai.trend import METHODS, run_trend  # A5
@@ -27,21 +29,24 @@ log = logging.getLogger("pipeline")
 
 METHOD = METHODS["seasonal"]  # run_trend's default method; written to results["method"]
 
-DEFAULTS = {
+DEFAULTS = {  # the Phoenix demo: running with no flags rebuilds the committed results
     "csv": "data/processed/timeseries.csv",
     "out": "results/results.json",
     "regions_file": "data/processed/regions.json",
-    "region_id": "study_area",
-    "region": "Study area",
+    "region_id": "phoenix_study_area",
+    "region": "Phoenix study area",
     "variable": "Nighttime land surface temperature",
     "units": "degC",
-    "source": ("NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid "
-               "(LP DAAC, doi:10.5067/MODIS/MOD11C3.061)"),
+    "source": ("NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature "
+               "(LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; "
+               "data version phoenix-qc-v1.0"),
 }
 
 
 def build(csv: Path, *, region_id: str, region: str, variable: str, units: str,
           source: str, forecast_on: bool = False) -> Results:
+    """One region's results. Anomalies and baseline are added when the Data layer's
+    anomaly CSV and climatology.csv sit next to the input CSV."""
     months, values = load_series(csv)
     log.info("loaded %s: %d months", csv, len(months))
     trend = dict(run_trend(values))
@@ -67,8 +72,32 @@ def build(csv: Path, *, region_id: str, region: str, variable: str, units: str,
     if not text or not text.strip() or source_kind not in ("ai", "fallback"):
         text, source_kind = fallback_text(draft), "fallback"
     log.info("explanation (%s): %d chars", source_kind, len(text))
-    return Results.model_validate({**draft, "explanation": text,
+    extras = anomaly_and_baseline(csv, region_id)
+    return Results.model_validate({**draft, **extras, "explanation": text,
                                    "explanation_source": source_kind})
+
+
+def anomaly_and_baseline(csv: Path, region_id: str) -> dict:
+    """The Data layer's anomaly series and calendar-month baseline for this region, if present.
+
+    timeseries.csv -> anomaly.csv, timeseries_<id>.csv -> anomaly_<id>.csv; the baseline rows
+    come from climatology.csv (the whole area is called "phoenix" there).
+    """
+    extras: dict = {}
+    anomaly_csv = csv.with_name(csv.name.replace("timeseries", "anomaly", 1))
+    if anomaly_csv != csv and anomaly_csv.exists():
+        months, values = load_series(anomaly_csv)
+        extras["anomaly"] = [{"time": t, "value": v} for t, v in zip(months, values)]
+        log.info("anomaly: %s, %d months", anomaly_csv.name, len(months))
+    climatology = csv.with_name("climatology.csv")
+    if climatology.exists():
+        names = {region_id} | ({"phoenix"} if csv.name == "timeseries.csv" else set())
+        rows = [r for r in pd.read_csv(climatology).to_dict("records") if r["region"] in names]
+        if rows:
+            extras["baseline"] = [{"month": int(r["month"]), "mean": round(float(r["mean"]), 4),
+                                   "count": int(r["count"])}
+                                  for r in sorted(rows, key=lambda r: int(r["month"]))]
+    return extras
 
 
 def write(results: Results, out: Path) -> None:
