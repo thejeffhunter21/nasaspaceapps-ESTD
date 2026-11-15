@@ -240,10 +240,13 @@
     const phone = w < 640;
     const ctlBottom = ($("controls").getBoundingClientRect().bottom || 300) + 12;
     const brandH = w < 900 ? (document.querySelector(".brand").offsetHeight || 120) + 70 : 70;
+    const ctlRight = ($("controls").getBoundingClientRect().right || 340) + 16;
     const pad = w > 1100 ? {top: 70, bottom: 70, left: 360, right: 40}
+      : w >= 900 ? {top: 150, bottom: 50, left: ctlRight, right: 20}   // mid-size: map beside the panel
       : {top: ctlBottom, bottom: brandH, left: phone ? 6 : 24, right: phone ? 6 : 24};
     const vp = new WebMercatorViewport({width: w, height: h}).fitBounds([[W, S], [E, N]], {padding: pad});
-    state.view = {longitude: vp.longitude, latitude: vp.latitude + 0.03, zoom: vp.zoom + 0.02,
+    state.view = {longitude: vp.longitude, latitude: vp.latitude + 0.03, zoom: vp.zoom + (w > 1100 || w < 900 ? 0.02 : -0.28),   // mid-size: room for the tilted near edge
+                 
                   pitch: PITCH, bearing: 0, maxPitch: 60};
     return state.view;
   }
