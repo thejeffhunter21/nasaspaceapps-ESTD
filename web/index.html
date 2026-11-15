@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Earth System Trend Detective · Phoenix nighttime surface temperature</title>
+  <meta name="description" content="Explore 22 years of NASA MODIS nighttime land surface temperature over Phoenix, Arizona, and the statistical test behind its warming trend.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#story">Skip the map and read the findings</a>
+
+  <!-- The map stage: one sticky viewport that the scroll track drives (hero, then the split). -->
+  <section class="stage" id="stage" aria-label="Phoenix temperature map">
+    <div class="sticky">
+      <div id="map" class="map" role="img" aria-label="3D map of Phoenix with one column per measured area; taller and warmer-coloured means a hotter night."></div>
+
+      <header class="brand">
+        <p class="eyebrow">NASA Space Apps 2026 · Earth System Trend Detective</p>
+        <h1>Are Phoenix nights getting warmer?</h1>
+        <p class="lede">NASA's Terra satellite measures how warm the ground over Phoenix is at night. Pick a year and month to explore 22 years of it, then scroll.</p>
+      </header>
+
+      <div class="controls" id="controls">
+        <div class="ctl-head">
+          <span class="ctl-title">Nighttime land surface temperature</span>
+          <span class="ctl-period" id="period-label" aria-live="polite">—</span>
+        </div>
+        <label class="ctl-label" for="year">Year <output id="year-out" for="year">—</output></label>
+        <input type="range" id="year" min="2003" max="2024" step="1" value="2024" disabled>
+        <div class="ticks" aria-hidden="true"><span id="year-min">2003</span><span id="year-max">2024</span></div>
+        <div class="ctl-label" id="month-label">Month</div>
+        <div class="months" role="radiogroup" aria-labelledby="month-label" id="months"></div>
+        <div class="legend">
+          <div class="legend-bar" aria-hidden="true"></div>
+          <div class="legend-scale" aria-hidden="true"><span>0 °C</span><span>10</span><span>20</span><span>30</span><span>40 °C</span></div>
+          <p class="legend-note" id="legend-note">Column height and colour use one fixed 0–40 °C scale for every year and month.</p>
+        </div>
+        <p class="status" id="data-status" role="status">Loading NASA results…</p>
+      </div>
+
+      <div class="hint" id="hint" aria-hidden="true">
+        <span>Scroll to split Phoenix into four quarters</span>
+        <span class="hint-line"></span>
+      </div>
+
+      <div class="panels" id="panels" aria-live="polite"></div>
+      <p class="attribution" id="attribution">Basemap © CARTO © OpenStreetMap contributors · Freeways: Natural Earth</p>
+    </div>
+  </section>
+
+  <main id="story" class="story">
+    <section class="block" id="method">
+      <p class="kicker">How we tested it</p>
+      <h2>The seasonal Mann-Kendall test</h2>
+      <div class="two">
+        <div>
+          <p>Phoenix nights swing by about <strong id="swing">25 °C</strong> between winter and summer. A plain trend test sees that yearly wave and can miss a slow change hiding underneath it.</p>
+          <p>The <strong>seasonal Mann-Kendall test</strong> never compares a July with a January. It compares each calendar month only with the same month in other years, July 2003 against July 2004, 2005 and so on, and counts how often later years are warmer. Then it adds up the evidence from all twelve months.</p>
+          <p>The result is a direction (warming or cooling), a <strong>p-value</strong> (how likely a pattern this strong would be by chance alone; below 0.05 counts as significant) and <strong>Sen's slope</strong>, the typical change per month.</p>
+        </div>
+        <figure class="method-fig" aria-label="Diagram: each month compared only with the same month in other years">
+          <svg id="method-svg" viewBox="0 0 360 248" role="img" aria-labelledby="method-cap"></svg>
+          <figcaption id="method-cap">Each row is one calendar month and each dot one year. The test compares dots within a row, never across rows.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="block" id="findings">
+      <p class="kicker">What we found</p>
+      <h2 id="findings-title">Every part of Phoenix warmed</h2>
+      <p id="findings-lede" class="wide">Loading results…</p>
+      <div class="table-wrap">
+        <table class="findings" aria-describedby="findings-note">
+          <thead><tr><th scope="col">Area</th><th scope="col">Trend</th><th scope="col">Per year<span class="th-sub">slope × 12</span></th><th scope="col">Over the period<span class="th-sub">slope × months, an estimate</span></th><th scope="col">Kendall's τ</th><th scope="col">p-value</th></tr></thead>
+          <tbody id="findings-body"></tbody>
+        </table>
+      </div>
+      <p class="note" id="findings-note">Slopes are seasonal Sen's slopes per month from the backend; per-year values multiply by 12. The period figure is a trend-line estimate, not a measured difference between two years.</p>
+    </section>
+
+    <section class="block" id="data">
+      <p class="kicker">The evidence</p>
+      <h2>NASA data, used as delivered</h2>
+      <dl class="facts">
+        <div><dt>Product</dt><dd>Terra MODIS Land Surface Temperature, MOD11C3 version 6.1, monthly, <span class="mono">LST_Night_CMG</span></dd></div>
+        <div><dt>Grid</dt><dd>0.05° cells (about 5 km); the Phoenix window is 16 × 12 = 192 cells, from 112.4° W to 111.6° W and 33.2° N to 33.8° N</dd></div>
+        <div><dt>Quality control</dt><dd>Only cells with good quality flags and an error under 1 K are kept. A regional month needs 80% of its area to pass, otherwise it is left blank, never filled in.</dd></div>
+        <div><dt>Period</dt><dd id="data-period">2003-01 to 2024-12, 264 months</dd></div>
+        <div><dt>Source</dt><dd>NASA LP DAAC, <a href="https://doi.org/10.5067/MODIS/MOD11C3.061">doi:10.5067/MODIS/MOD11C3.061</a></dd></div>
+        <div><dt>Data version</dt><dd class="mono">phoenix-qc-v1.0</dd></div>
+      </dl>
+    </section>
+
+    <section class="block" id="limits">
+      <p class="kicker">Read this before quoting us</p>
+      <h2>What this can and can't tell you</h2>
+      <div class="limits">
+        <article><h3>Surface, not air</h3><p>Satellites measure how warm the ground and rooftops are. That is not the air temperature a weather station or a person feels.</p></article>
+        <article><h3>Nighttime only</h3><p>These are nighttime passes. Hot nights matter because bodies need them to cool down, but daytime heat is a different measurement.</p></article>
+        <article><h3>A trend, not a cause</h3><p>The test shows that warming happened, not why. City growth and climate change are possible reasons that scientists study; we prove neither.</p></article>
+        <article><h3>Not a forecast</h3><p>Slopes describe 2003–2024. They do not predict next month or any future year.</p></article>
+        <article><h3>5 km cells</h3><p>Each column on the map is a roughly 5 km square, so it shows neighbourhood-scale patterns, not individual streets.</p></article>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <p>Built by the Earth System Trend Detective team for NASA Space Apps 2026. Data: NASA LP DAAC MOD11C3 v061. Statistics: seasonal Mann-Kendall test with Sen's slope (pymannkendall). Map: deck.gl; freeways from Natural Earth; basemap © CARTO © OpenStreetMap contributors. AI tools (Claude, Gemini) helped write code and plain-language summaries; every number comes from the analysis.</p>
+      <p><a href="/docs">API documentation</a> · <a href="https://github.com/thejeffhunter21/nasaspaceapps-ESTD">Source code</a></p>
+    </footer>
+  </main>
+
+  <script src="vendor/deck.gl-9.4.1.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
