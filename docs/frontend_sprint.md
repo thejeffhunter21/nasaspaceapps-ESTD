@@ -19,7 +19,7 @@ it does not imply teammate approval or that outstanding coordination is complete
 | FE-10 | Complete the real-data story | To do |
 | FE-11 | Make it readable everywhere | Review (Chrome/Safari checks pending) |
 | FE-12 | Freeze a dependable demo | Review (native-browser checks pending) |
-| FE-13 | Fix and document | To do |
+| FE-13 | Fix and document | Review |
 | FE-14 | Rehearse without Wi-Fi | To do |
 | FE-15 | Deliver and keep a buffer | To do |
 
@@ -543,3 +543,30 @@ was never recorded, so a T+18 wall-clock deadline is not claimed.
 
 Keep core feature work frozen; only agreed, user-authorized bug fixes should alter
 this candidate and require fresh affected checks. FE-13 has not started.
+
+
+## FE-13: fix and document
+
+No new agreed release bug was identified, so this ticket makes no product changes.
+The README now links the public frontend, includes real-data screenshot evidence,
+and clarifies that a locally started API requires an explicit dashboard `API_URL`.
+`docs/frontend_runbook.md` supplies frontend-only and full-development setup,
+live/local/sample run commands, port changes, recovery, release steps and known limits.
+
+A clean frontend-only environment installed 56 locked packages. Streamlit startup
+and health worked; AppTest verified the labeled sample with network calls blocked,
+the real local API, live API and northwest switching. The temporary API/dashboard
+used spare ports 8013/8513; the runbook uses standard ports 8000/8501. All 115
+frontend tests passed. `docs/evidence/frontend/fe13_handoff_check.json` records the
+commands' bounded result and confirms app/lockfile hashes match the frozen deployed
+runtime. No frontend redeploy is needed for these documentation changes.
+
+Browser-origin configuration was checked in the implementation: API calls use
+server-side Python requests, so the current frontend needs no backend CORS change.
+Keep existing Streamlit security defaults. Public frontend health was rechecked;
+Render still reports the FE-12 release live. The public in-app browser showed
+real Phoenix data, formatted cards, chart and Automatic summary. Native Chrome/Safari and full
+screen-reader checks remain outstanding as recorded in the freeze handoff.
+
+This PR is the documented handoff for Avid-arch and teammates; receipt/approval is
+not claimed, and no external messages were sent. FE-14 has not started.

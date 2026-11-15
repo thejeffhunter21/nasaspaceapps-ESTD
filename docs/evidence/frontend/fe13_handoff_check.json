@@ -1,0 +1,58 @@
+{
+  "checked_at_utc": "2026-11-15T02:54:39.947643+00:00",
+  "checked_checkout_commit": "d2085bb26ddf6208d7c51a855e0ca40c6071a972",
+  "status": "PASS",
+  "checks": {
+    "sample": {
+      "passed": true,
+      "region": "Example Region",
+      "cards": {
+        "Slope (\u00b0C/month)": "0.021",
+        "p-value": "0.012",
+        "Direction": "increasing"
+      },
+      "sample_warning": true
+    },
+    "local_api": {
+      "passed": true,
+      "region": "Phoenix study area",
+      "cards": {
+        "Slope (\u00b0C/month)": "0.0077125",
+        "p-value": "p < 0.001",
+        "Direction": "increasing"
+      },
+      "sample_warning": false,
+      "northwest_switch": true
+    },
+    "live_api": {
+      "passed": true,
+      "region": "Phoenix study area",
+      "cards": {
+        "Slope (\u00b0C/month)": "0.0077125",
+        "p-value": "p < 0.001",
+        "Direction": "increasing"
+      },
+      "sample_warning": false,
+      "northwest_switch": true
+    },
+    "local_frontend_health": "ok",
+    "public_frontend_health": "ok"
+  },
+  "runtime_matches_frozen_deployed_commit": "78fae30c4fef0e0d504762ecbc13ad7b9469b5a0",
+  "frontend_install": "fresh frontend group, 56 packages, Python 3.12.15, Streamlit 1.67.0",
+  "public_browser_check": {
+    "passed": true,
+    "browser": "Codex in-app browser",
+    "observed": [
+      "Live API",
+      "Phoenix study area",
+      "2003-01 to 2024-12",
+      "slope 0.0077125 \u00b0C/month",
+      "p < 0.001",
+      "increasing",
+      "monthly chart with accessible description",
+      "Automatic summary and supplied explanation"
+    ],
+    "limitations": "Native Chrome/Safari and full screen-reader checks remain pending."
+  }
+}
