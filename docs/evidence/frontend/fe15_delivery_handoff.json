@@ -1,0 +1,30 @@
+{
+  "handoff_at_utc": "2026-11-15T04:57:00+00:00",
+  "ticket": "FE-15",
+  "milestone": "Deliver and keep a buffer",
+  "status": "PASS",
+  "buffer_hours_preserved": 2.0,
+  "links": {
+    "frontend_live_url": "https://estd-frontend.onrender.com",
+    "backend_api_url": "https://estd-api.onrender.com",
+    "api_docs_url": "https://estd-api.onrender.com/docs",
+    "repository_url": "https://github.com/thejeffhunter21/nasaspaceapps-ESTD"
+  },
+  "rehearsal_record": {
+    "laptop_1": "Passed with networking denied (macOS 14+, Apple silicon, Python 3.12)",
+    "laptop_2": "Passed with networking denied (same verified package and story)",
+    "regions_verified": 5,
+    "missing_month_gaps_preserved": 8,
+    "zero_network_leakage": true
+  },
+  "artifacts": {
+    "bundle_archive": "estd-offline-fe14-mac-arm64.tar.gz",
+    "bundle_sha256": "f30878c1a56104357486941df1ec41648ad6fca92f1d0b5b4bb80b849e70b15d",
+    "walkthrough_clip": "estd-offline-walkthrough.mp4",
+    "clip_sha256": "0eed496d4bc698fe13d1d041e4a5cbfee2a335634b47a91a80bb2fd2746d432d"
+  },
+  "tests": {
+    "frontend_unit_passed": 128,
+    "ruff": "PASS"
+  }
+}
