@@ -9,6 +9,11 @@ changed every month from **2003 to 2024**, measured by NASA's Terra/MODIS satell
 The tool tests whether the change is a real trend (seasonal Mann-Kendall test), says how fast
 it is, and explains the result in plain language using only the computed numbers.
 
+Each explanation is an **automatic summary** that code writes from the trend numbers, and the
+dashboard labels it "Automatic summary". The pipeline can optionally ask Google Gemini to word
+it instead (see [Build the results](#build-the-results)), but the committed results use no AI
+text. The dashboard and API only show stored results and never call Gemini.
+
 Result on the real data: every part of the Phoenix study area shows a statistically significant
 warming trend (p < 0.001), from about +0.06 °C per year (northeast) to +0.11 °C per year
 (southeast). The plain trend test misses this because the summer/winter swing hides it.
@@ -108,9 +113,14 @@ uv run --locked python -m earth_system_trend.pipeline.run --all-regions --force
 | `--stub` | Write a fake CSV first if none exists (for testing without data) |
 | `--csv`, `--out` | Other input / output paths |
 
-Without a Gemini key every explanation is the automatic summary
-(`explanation_source: "fallback"`). With `GEMINI_API_KEY` and `GEMINI_MODEL` in `.env`, checked
-AI text is used (`"ai"`). Missing months stay `null`; they are never filled in. If the Data
+By default every explanation is the automatic summary (`explanation_source: "fallback"`), and
+the committed `results/` files were built this way. Gemini is used only when you opt in:
+`GEMINI_API_KEY`, `GEMINI_MODEL` **and** `GEMINI_LIVE=1`. A key alone does nothing. Gemini text
+is kept (`"ai"`, shown as "AI-assisted explanation") only if it passes the automated checks. The
+checks reject wrong numbers, wrong significance wording, causes, forecasts, advice and the wrong
+region. Otherwise the automatic summary is used. Approved replies are cached, so a later rebuild
+without `GEMINI_LIVE` reuses them without calling Gemini. Details: [docs/ai.md](docs/ai.md).
+Missing months stay `null`; they are never filled in. If the Data
 layer's `anomaly*.csv` and `climatology.csv` are in `data/processed/`, each results file also
 gets the region's anomaly series and baseline.
 
@@ -140,7 +150,10 @@ Set in `.env` locally (copy `.env.example`) or in Render's dashboard. Never comm
 | `CORS_ORIGINS` | `http://localhost:8501` | Comma-separated sites allowed to call the API; `*` for any |
 | `REQUEST_TIMEOUT_S` | `10` | Longer requests get 504 |
 | `RATE_LIMIT_PER_MINUTE` | `60` | Requests per visitor per minute; `0` turns it off |
-| `GEMINI_API_KEY`, `GEMINI_MODEL` | empty | AI explanations when building results (pipeline only) |
+| `GEMINI_API_KEY`, `GEMINI_MODEL` | empty | Gemini credentials for explanations when building results (pipeline only) |
+| `GEMINI_LIVE` | `0` | `1` lets the pipeline call Gemini; off, only cached approved text is reused |
+| `AI_DAILY_CALL_CAP` | `50` | Gemini requests per UTC day, retries included; `0` turns AI off |
+| `EXPLAIN_CACHE_PATH` | `data/cache/explanations.json` | Cache of approved AI text and the daily call count (git-ignored) |
 | `API_URL` | `https://estd-api.onrender.com` | Which API the dashboard reads |
 
 ## Deploy
@@ -182,6 +195,9 @@ uv run --locked python scripts/backup_run.py
 It starts the API from the committed `results/` files, checks it is serving real data, then
 opens the dashboard pointed at it. No internet is needed. Ctrl+C stops it.
 
+To confirm beforehand that the committed results rebuild with no network and that the demo
+cannot call Gemini, run `uv run --locked python scripts/verify_ai_release.py`.
+
 ## Data and credits
 
 - **Data:** NASA Terra/MODIS MOD11C3 Collection 6.1, monthly land surface temperature
@@ -193,7 +209,10 @@ opens the dashboard pointed at it. No internet is needed. Ctrl+C stops it.
   [quality report](docs/data_quality_report.md).
 - **Method:** seasonal Mann-Kendall test with seasonal Sen's slope (`pymannkendall`).
   Details and limits: [docs/ai.md](docs/ai.md).
-- **AI use:** AI tools helped write code and documentation. Explanations shown in the app are
-  either an automatic summary built from the numbers or Gemini text that passed automated
-  number checks; the label in each answer says which.
+- **AI use:** AI tools helped write code and documentation. Every explanation in the app is
+  an automatic summary written by code from the computed numbers, labeled "Automatic summary".
+  The pipeline can optionally use Google Gemini to word explanations. It keeps that text only if
+  it passes automated checks of numbers, wording and claims, and labels it "AI-assisted
+  explanation". The committed results contain no Gemini text, and nothing calls Gemini while
+  the app runs. Details: [AI submission handoff](docs/ai_submission.md).
 - **Libraries:** FastAPI, pandas, pydantic, pymannkendall, statsmodels, Streamlit, Plotly.
