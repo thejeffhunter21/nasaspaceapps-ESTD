@@ -26,7 +26,7 @@
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const PLACES = [["Downtown Phoenix", -112.074, 33.4484], ["Tempe", -111.94, 33.4255],
                   ["Glendale", -112.186, 33.5387], ["Scottsdale", -111.926, 33.4942]];
-  const HIGHLIGHT = {faster: [106, 75, 214], slower: [37, 99, 235], extremes: [217, 70, 39],
+  const HIGHLIGHT = {ask: [236, 72, 153], faster: [106, 75, 214], slower: [37, 99, 235], extremes: [217, 70, 39],
                      anomalies: [217, 119, 6], none: [106, 75, 214]};
   const METRES_PER_DEG_C = 95;                 // column height scale (fixed for every period)
   const PITCH = 42;
@@ -37,13 +37,15 @@
   const CHARS = " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,:+-()°·–/".split("");
 
   // ---------- layer definitions (each with its own scale, units and description) ----------
-  const RAMP_TEMP = [[49, 54, 149], [69, 117, 180], [116, 173, 209], [171, 217, 233], [254, 224, 144],
-                     [253, 174, 97], [244, 109, 67], [215, 48, 39], [165, 0, 38]];
-  const RAMP_DIV = [[33, 102, 172], [103, 169, 207], [209, 229, 240], [247, 247, 247], [253, 219, 199],
-                    [239, 138, 98], [178, 24, 43]];
-  const RAMP_RATE = [[247, 244, 249], [212, 185, 218], [201, 148, 199], [223, 101, 176], [231, 41, 138],
-                     [152, 0, 67]];
-  const RAMP_COV = [[240, 240, 240], [189, 201, 225], [116, 169, 207], [43, 140, 190], [4, 90, 141]];
+  // Vivid ramps: Turbo for temperature, a saturated diverging ramp for anomalies,
+  // Plasma for warming rate, Viridis for coverage (all ordered light/dark monotonic enough to read).
+  const RAMP_TEMP = [[48, 18, 59], [70, 107, 227], [40, 187, 236], [49, 241, 137], [164, 252, 60],
+                     [237, 208, 58], [251, 128, 34], [215, 47, 5], [122, 4, 3]];
+  const RAMP_DIV = [[8, 81, 156], [49, 163, 233], [158, 218, 250], [246, 246, 246], [255, 196, 150],
+                    [250, 104, 64], [190, 18, 60]];
+  const RAMP_RATE = [[13, 8, 135], [106, 0, 168], [177, 42, 144], [225, 100, 98], [252, 166, 54],
+                     [240, 249, 33]];
+  const RAMP_COV = [[68, 1, 84], [59, 82, 139], [33, 145, 140], [94, 201, 98], [253, 231, 37]];
   const LAYERS = {
     temperature: {label: "Temperature", unit: "°C", min: 0, max: 40, ramp: RAMP_TEMP,
       ticks: ["0 °C", "10", "20", "30", "40 °C"],
@@ -84,7 +86,7 @@
     p.set("year", state.year); p.set("month", state.month); p.set("layer", state.layer);
     if (state.region !== "all") p.set("region", state.region);
     if (state.cell) p.set("cell", state.cell);
-    if (state.finding) p.set("finding", state.finding);
+    if (state.finding && state.finding !== "ask") p.set("finding", state.finding);
     p.set("a", `${state.compA.year}-${state.compA.month}`); p.set("b", `${state.compB.year}-${state.compB.month}`);
     history.replaceState(null, "", `#${p.toString()}`);
   }
@@ -290,7 +292,7 @@
           bounds: [boundingBox[0][0], boundingBox[0][1], boundingBox[1][0], boundingBox[1][1]]});
       },
     }));
-    const finding = state.finding && state.discoveries?.findings.find((x) => x.id === state.finding);
+    const finding = currentFinding();
     for (const q of ORDER) {
       const {k, f} = pieceTransform(q, e);
       const [w, s, ea, n] = QUARTERS[q].b;
@@ -420,13 +422,13 @@
 
   function renderLegend() {
     const L = LAYERS[state.layer];
-    const finding = state.finding && state.discoveries?.findings.find((x) => x.id === state.finding);
+    const finding = currentFinding();
     $("legend").innerHTML = `<div class="legend-title">${esc(L.label)} <span>(${esc(L.unit)})</span></div>
       <div class="legend-bar" style="background:${rampCss(L.ramp)}" aria-hidden="true"></div>
       <div class="legend-scale" aria-hidden="true">${L.ticks.map((t) => `<span>${esc(t)}</span>`).join("")}</div>
       <p class="legend-note">${esc(L.note)}</p>
       ${!reduceMotion && state.layer !== "rate" ? '<p class="legend-note">Changes ease between observed frames; only the settled frame is data.</p>' : ""}
-      ${finding ? `<p class="legend-note overlay"><i style="border-color:rgb(${(HIGHLIGHT[finding.highlight] || HIGHLIGHT.none).join(",")})"></i>${esc(finding.title)} (${esc(finding.status)}): ${finding.cells.length} cells outlined.</p>` : ""}`;
+      ${finding ? `<p class="legend-note overlay"><i style="border-color:rgb(${(HIGHLIGHT[finding.highlight] || HIGHLIGHT.none).join(",")})"></i>${finding.id === "ask" ? `Cells from your question: ${finding.cells.length} outlined.` : `${esc(finding.title)} (${esc(finding.status)}): ${finding.cells.length} cells outlined.`}</p>` : ""}`;
   }
 
   function renderStatus() {
@@ -556,7 +558,7 @@
     const rects = bars.map((b, i) => {
       if (b.v == null) return `<rect x="${i * bw + bw * 0.2}" y="${mid - 0.5}" width="${bw * 0.6}" height="1" fill="#cfd4e2"><title>${b.y}: incomplete year</title></rect>`;
       const h = (Math.abs(b.v) / max) * (mid - 2), y = b.v >= 0 ? mid - h : mid;
-      return `<rect x="${i * bw + bw * 0.15}" y="${y}" width="${bw * 0.7}" height="${Math.max(h, 0.8)}" fill="${b.v >= 0 ? "#d9603b" : "#4575b4"}"><title>${b.y}: ${signed(b.v, 2)} °C vs average</title></rect>`;
+      return `<rect x="${i * bw + bw * 0.15}" y="${y}" width="${bw * 0.7}" height="${Math.max(h, 0.8)}" fill="${b.v >= 0 ? "#f97316" : "#3b82f6"}"><title>${b.y}: ${signed(b.v, 2)} °C vs average</title></rect>`;
     }).join("");
     return `<svg viewBox="0 0 ${W2} ${H2}" preserveAspectRatio="none" role="img" aria-label="Yearly mean anomaly bars, 2003 to 2024"><line x1="0" x2="${W2}" y1="${mid}" y2="${mid}" stroke="#cfd4e2"/>${rects}</svg>`;
   }
@@ -573,7 +575,7 @@
       const t = r.trend, st = stats[r.region_id] || {}, perYear = t.slope * 12, sig = t.p < 0.05;
       const isFastest = r === fastest && t.slope > 0 && sig;
       const el = document.createElement("article");
-      el.className = "panel" + (isFastest ? " fastest" : "");
+      el.className = `panel q-${q}` + (isFastest ? " fastest" : "");
       el.id = `panel-${q}`;
       el.tabIndex = 0;
       el.setAttribute("aria-label", `${QUARTERS[q].name} quarter; select to focus this region`);
@@ -750,6 +752,10 @@
   }
 
   // ---------- discovery engine ----------
+  function currentFinding() {
+    if (state.finding === "ask") return state.askFinding || null;
+    return (state.finding && state.discoveries?.findings.find((x) => x.id === state.finding)) || null;
+  }
   const STATUS = {supported: "Statistically supported", exploratory: "Exploratory", not_supported: "Not supported"};
   const ASK_RULES = [
     [/faster|hot ?spot|cluster|pocket|quick/, "local-faster"], [/slower|cool|lag/, "local-slower"],
@@ -765,10 +771,65 @@
     if (f.cells.length && scroll) window.scrollTo({top: 0, behavior: reduceMotion ? "auto" : "smooth"});
     else if (card) card.scrollIntoView({behavior: reduceMotion ? "auto" : "smooth", block: "center"});
   }
+  const EXAMPLES = ["Is Tempe warming faster than Glendale?", "Which cell warmed the most, and where is it?",
+    "How hot was downtown Phoenix in July 2024?", "Do summer nights warm faster than winter nights?",
+    "What was unusual about this month?", "What is land surface temperature?"];
+  function setAskBusy(busy) { $("ask-go").disabled = busy; $("ask-go").textContent = busy ? "Working…" : "Ask"; }
+  const TOOL_NAMES = {cell_trend: "cell trend", all_cell_trends: "all 192 cell trends", localized_differences: "local hot-spot test",
+    seasonal_trend: "seasonal trends", anomalies: "unusual-month scan", region_stats: "region trends",
+    region_difference: "region vs region test", difference_test: "direct difference test", period_values: "map values", region_monthly: "regional record", list_cells: "coverage count"};
+  const KIND_LABEL = {compare: "Comparison", value: "Measurement", ranking: "Ranking", seasons: "Seasons", unusual: "Unusual months",
+    hotspots: "Neighbourhood hot spots", coverage: "Data coverage", background: "Background", forecast: "Not a forecast",
+    cause: "Causes", halves: "Both halves check", cluster: "Clustering", outside_data: "Needs outside data", no_data: "No valid data", answer: "Warming trend", help: "What I can answer", error: "Couldn't answer"};
+  function askAgain(q) { $("ask-input").value = q; askAI(q); }
+  async function askAI(q) {
+    const box = $("ask-result");
+    box.hidden = false; box.className = "answer loading";
+    box.innerHTML = `<p class="answer-q">${esc(q)}</p><div class="dots" aria-label="Working"><i></i><i></i><i></i></div><p class="answer-meta">Running the statistical tests on the NASA cells…</p>`;
+    box.scrollIntoView({behavior: reduceMotion ? "auto" : "smooth", block: "nearest"});
+    setAskBusy(true);
+    let out;
+    try {
+      const r = await fetch(`${API}/ask`, {method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({question: q, context: {year: state.year, month: String(state.month), cell: state.cell, region: state.region}})});
+      out = r.ok ? await r.json() : {status: "error", kind: "error", headline: r.status === 429 ? "Too many questions in a minute. Wait a moment and try again." : `The server answered ${r.status}.`};
+    } catch { out = {status: "error", kind: "error", headline: "Could not reach the server."}; }
+    setAskBusy(false);
+    const cells = (out.cells || []).map((id) => state.cellIndex[id]).filter(Boolean);
+    state.askFinding = cells.length ? {id: "ask", title: "Cells in this answer", status: "answer", highlight: "ask", cells} : null;
+    let opt = $("finding").querySelector('option[value="ask"]');
+    if (cells.length && !opt) { opt = document.createElement("option"); opt.value = "ask"; $("finding").insertBefore(opt, $("finding").options[1] || null); }
+    if (opt) { if (cells.length) opt.textContent = `Your question: ${q.length > 40 ? q.slice(0, 40) + "…" : q}`; else opt.remove(); }
+    if (state.finding === "ask") setState({finding: cells.length ? "ask" : null});
+    const tools = [...new Set((out.tools_used || []).map((t) => TOOL_NAMES[t] || t))];
+    box.className = `answer kind-${esc(out.kind || "answer")}`;
+    box.innerHTML = `
+      <p class="answer-q">${esc(q)}</p>
+      <span class="answer-kind">${esc(KIND_LABEL[out.kind] || "Answer")}</span>
+      <p class="answer-head">${esc(out.headline || "")}</p>
+      ${(out.stats || []).length ? `<div class="answer-stats">${out.stats.map((s, i) => `
+        <div class="tile t${i}"><span class="tile-label">${esc(s.label)}</span><b class="tile-value">${esc(s.value)}</b>${s.sub ? `<span class="tile-sub">${esc(s.sub)}</span>` : ""}</div>`).join("")}</div>` : ""}
+      ${(out.details || []).length ? `<ul class="answer-details">${out.details.map((d) => `<li>${esc(d)}</li>`).join("")}</ul>` : ""}
+      <div class="answer-foot">
+        ${cells.length ? `<button type="button" class="primary small" id="ask-map">Show ${cells.length} cell${cells.length > 1 ? "s" : ""} on the map</button>` : ""}
+        ${out.method ? `<span class="pill">Method: ${esc(out.method)}</span>` : ""}
+        ${tools.length ? `<span class="pill ok">Computed from: ${esc(tools.join(", "))}</span>` : ""}
+      </div>
+      ${out.caveat ? `<p class="answer-meta">${esc(out.caveat)}</p>` : ""}
+      ${(out.suggestions || []).length ? `<div class="chips answer-sugg">${out.suggestions.map((x) => `<button type="button" class="chip">${esc(x)}</button>`).join("")}</div>` : ""}`;
+    box.querySelectorAll(".answer-sugg .chip").forEach((b) => b.addEventListener("click", () => askAgain(b.textContent)));
+    $("ask-map")?.addEventListener("click", () => {
+      setState({finding: "ask", cell: cells.length === 1 ? cells[0].id : state.cell});
+      window.scrollTo({top: 0, behavior: reduceMotion ? "auto" : "smooth"});
+    });
+  }
   function buildDiscoveries() {
     const d = state.discoveries, host = $("discovery-list");
+    $("ask-chips").innerHTML = EXAMPLES.map((q) => `<button type="button" class="chip">${esc(q)}</button>`).join("");
+    $("ask-chips").querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => askAgain(b.textContent)));
+    $("ask").addEventListener("submit", (ev) => { ev.preventDefault(); const q = $("ask-input").value.trim(); if (q) askAI(q); });
     if (!d) {
-      host.innerHTML = '<p class="det-info">The Discovery Engine is unavailable right now (the cell-level analysis service did not answer). Regional results above are unaffected.</p>';
+      host.innerHTML = '<p class="det-info">The AI findings are unavailable right now (the cell-level analysis service did not answer). The map above is unaffected.</p>';
       $("finding-wrap").hidden = true; $("discover").disabled = true; return;
     }
     const sel = $("finding");
@@ -778,92 +839,34 @@
       sel.appendChild(o);
     }
     sel.addEventListener("change", () => setState({finding: sel.value || null}));
-    host.innerHTML = d.findings.map((f) => `
-      <article class="disc ${esc(f.status)}" data-id="${esc(f.id)}">
-        <div class="disc-head"><span class="badge ${esc(f.status)}">${esc(STATUS[f.status])}</span>${f.cells.length ? `<button type="button" data-finding="${esc(f.id)}">Show on map</button>` : ""}</div>
+    host.innerHTML = d.findings.map((f, i) => `
+      <article class="disc ${esc(f.status)} hue-${i % 6}" data-id="${esc(f.id)}">
+        <span class="badge ${esc(f.status)}">${esc(STATUS[f.status])}</span>
         <h3>${esc(f.title)}</h3>
-        <p class="disc-obs">${esc(f.observation)}</p>
-        <dl class="disc-fields">
-          <dt>Location</dt><dd>${esc(f.location)}</dd>
-          <dt>Period</dt><dd>${esc(f.period)}</dd>
-          <dt>Data</dt><dd>${esc(f.source)}; ${esc(f.variable.toLowerCase())}</dd>
+        <p class="disc-obs">${esc(f.summary || f.observation)}</p>
+        <div class="disc-actions">${f.cells.length ? `<button type="button" class="ghost" data-finding="${esc(f.id)}">Show on map</button>` : ""}
+          <button type="button" class="link" data-ask="${esc(f.next_question)}">Ask: ${esc(f.next_question)}</button></div>
+        <details><summary>How we know</summary><dl class="disc-fields">
+          <dt>Where</dt><dd>${esc(f.location)}</dd>
           <dt>Evidence</dt><dd>${esc(f.evidence_text)}</dd>
-          <dt>Confidence</dt><dd>${esc(f.confidence)}</dd>
           <dt>Method</dt><dd>${esc(f.method)}</dd>
-          <dt>Challenge</dt><dd>${esc(f.challenge)}</dd>
-          <dt>Limitations</dt><dd>${esc(f.limitations)}</dd>
-          <dt>Next question</dt><dd>${esc(f.next_question)}</dd>
-        </dl>
+          <dt>Caveat</dt><dd>${esc(f.limitations)}</dd>
+        </dl></details>
       </article>`).join("");
     host.querySelectorAll("button[data-finding]").forEach((b) => b.addEventListener("click", () => showDiscovery(b.dataset.finding)));
+    host.querySelectorAll("button[data-ask]").forEach((b) => b.addEventListener("click", () => {
+      $("ask-input").value = b.dataset.ask;
+      $("ask").scrollIntoView({behavior: reduceMotion ? "auto" : "smooth", block: "center"});
+      askAI(b.dataset.ask);
+    }));
     let next = 0;
     $("discover").addEventListener("click", () => {
       const order = [...d.findings].sort((a, b) => (a.status === "supported" ? 0 : 1) - (b.status === "supported" ? 0 : 1));
-      const f = order[next++ % order.length];
-      $("ask-result").hidden = false;
-      $("ask-result").innerHTML = `<b>${esc(STATUS[f.status])}:</b> ${esc(f.title)}. ${f.cells.length ? "Its cells are outlined on the map." : ""} Next question: ${esc(f.next_question)}`;
-      showDiscovery(f.id, false);
-    });
-    $("ask").addEventListener("submit", (ev) => {
-      ev.preventDefault();
-      const q = $("ask-input").value.toLowerCase();
-      const hit = ASK_RULES.find(([re]) => re.test(q));
-      $("ask-result").hidden = false;
-      if (!hit) {
-        $("ask-result").innerHTML = "The Discovery Engine answers questions it has a tested analysis for: faster or slower neighbourhoods, hidden spread inside averages, seasons, unusual months and how widespread the warming is. For questions about the regions, try the Climate Detective below. It never guesses beyond its tools.";
-        return;
-      }
-      const f = d.findings.find((x) => x.id === hit[1]);
-      $("ask-result").innerHTML = `<b>${esc(STATUS[f.status])}:</b> ${esc(f.observation)}`;
-      showDiscovery(f.id, false);
+      showDiscovery(order[next++ % order.length].id, false);
     });
     $("discovery-caveats").innerHTML = d.caveats.map((c) => `<li>${esc(c)}</li>`).join("");
     const p = d.provenance;
     $("discovery-prov").textContent = `${d.engine}. Data: ${p.cells} grid cells × ${p.months} months (${p.period[0]} to ${p.period[1]}), ${p.data_version}, grid_cells.csv sha256 ${p.sha256.slice(0, 12)}…`;
-  }
-
-  // ---------- story: findings + method figure ----------
-  function buildFindings() {
-    const stats = state.regionStats?.regions || {};
-    const rows = [...state.regions].sort((a, b) => (a.region_id === "phoenix_study_area" ? -1 : b.region_id === "phoenix_study_area" ? 1 : b.trend.slope - a.trend.slope));
-    const fastest = rows.filter((r) => r.region_id !== "phoenix_study_area")[0];
-    const months = state.series[rows[0].region_id]?.times.length || 264, years = months / 12;
-    $("findings-body").innerHTML = rows.map((r) => {
-      const t = r.trend, st = stats[r.region_id] || {};
-      return `<tr class="${r === fastest ? "fastest" : ""}"><td>${esc(r.region)}</td><td>${esc(t.trend)}${t.p < 0.05 ? ", significant" : ", not significant"}</td>
-        <td class="num">${signed(t.slope * 12, 3)} °C</td><td class="num">${st.ci_low_per_year != null ? `${signed(st.ci_low_per_year, 3)} to ${signed(st.ci_high_per_year, 3)}` : "—"}</td>
-        <td class="num">≈ ${signed(t.slope * months, 1)} °C</td><td class="num">${t.tau.toFixed(2)}</td><td class="num">${pText(t.p)}</td><td class="num">${st.valid_months ?? "—"}</td></tr>`;
-    }).join("");
-    const allUp = rows.every((r) => r.trend.trend === "increasing" && r.trend.p < 0.05), whole = rows[0], wst = stats[whole.region_id] || {};
-    $("findings-title").textContent = allUp ? "Every part of Phoenix warmed" : "Results by area";
-    $("findings-lede").textContent = allUp
-      ? `From ${whole.period.start} to ${whole.period.end}, nighttime land surface temperature rose in the whole study area and in all four quarters, and every trend is statistically significant. Across the whole area the trend is ${signed(whole.trend.slope * 12, 3)} °C per year${wst.ci_low_per_year != null ? ` (95% CI ${signed(wst.ci_low_per_year, 3)} to ${signed(wst.ci_high_per_year, 3)})` : ""}, roughly ${signed(whole.trend.slope * months, 1)} °C over ${years} years. The ${fastest.region.replace("Phoenix study area ", "")} quarter warmed fastest.`
-      : "Trend results for the whole study area and each quarter.";
-    $("data-period").textContent = `${whole.period.start} to ${whole.period.end}, ${months} months`;
-  }
-  function buildMethodFigure() {
-    const a = state.quarterIds.whole && state.anomaly[state.quarterIds.whole], svg = $("method-svg");
-    if (!a) { svg.innerHTML = ""; return; }
-    const years = [...new Set(a.times.map((t) => t.slice(0, 4)))];
-    const x0 = 34, y0 = 10, dx = (360 - x0 - 8) / years.length, dy = (230 - y0 - 22) / 12;
-    let html = "";
-    MONTHS.forEach((m, mi) => {
-      const y = y0 + mi * dy + dy / 2, hl = mi === 6;
-      if (hl) html += `<rect x="${x0 - 4}" y="${y - dy / 2 + 1}" width="${360 - x0 - 4}" height="${dy - 2}" rx="4" fill="rgba(106,75,214,.09)" stroke="rgba(106,75,214,.45)"/>`;
-      html += `<text x="${x0 - 8}" y="${y + 3.5}" text-anchor="end" font-size="9.5" fill="${hl ? "#6a4bd6" : "#7a839c"}" font-family="system-ui">${m}</text>`;
-      years.forEach((yr, yi) => {
-        const i = a.times.indexOf(`${yr}-${String(mi + 1).padStart(2, "0")}`), v = i < 0 ? null : a.values[i];
-        const fill = v == null ? "#ffffff" : v >= 0 ? `rgba(217,96,59,${0.25 + 0.75 * Math.min(1, v / 3)})` : `rgba(69,117,180,${0.25 + 0.75 * Math.min(1, -v / 3)})`;
-        html += `<circle cx="${x0 + yi * dx + dx / 2}" cy="${y}" r="${Math.min(dx, dy) * 0.36}" fill="${fill}" stroke="${v == null ? "#cfd4e2" : "none"}"><title>${m} ${yr}: ${v == null ? "missing" : signed(v, 2) + " °C vs usual"}</title></circle>`;
-      });
-    });
-    html += `<text x="${x0}" y="222" font-size="9.5" fill="#7a839c" font-family="system-ui">${years[0]}</text><text x="352" y="222" text-anchor="end" font-size="9.5" fill="#7a839c" font-family="system-ui">${years[years.length - 1]}</text>`;
-    html += `<text x="${x0}" y="240" font-size="9.5" fill="#7a839c" font-family="system-ui">Blue: cooler, orange: warmer than that month's average (whole study area)</text>`;
-    svg.innerHTML = html;
-    if (state.baseline) {
-      const means = state.baseline.map((b) => b.mean);
-      $("swing").textContent = `${Math.round(Math.max(...means) - Math.min(...means))} °C`;
-    }
   }
 
   // ---------- data loading ----------
@@ -901,7 +904,7 @@
       if (state.cell && !state.cellIndex[state.cell]) state.cell = null;
       const times = state.series[state.quarterIds.whole || ids[0]].times;
       const years = [...new Set(times.map((t) => +t.slice(0, 4)))];
-      buildControls(years); buildCompareControls(years); buildPanels(); buildFindings(); buildMethodFigure();
+      buildControls(years); buildCompareControls(years); buildPanels();
       buildDiscoveries(); renderCoverage();
       await showPeriod();
       renderCompare(); renderRegionTest();

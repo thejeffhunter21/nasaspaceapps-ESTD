@@ -13,7 +13,10 @@ import os
 import secrets
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
+from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
+from ..analysis import ask as ask_ai
 from ..analysis import investigator, tools
 from ..analysis.grid import GridError
 
@@ -28,6 +31,7 @@ def warm_cache() -> None:
     def work():
         try:
             investigator.investigate()
+            ask_ai.warm()
         except Exception as exc:  # noqa: BLE001 - grid missing or bad: /discoveries will report it
             logging.getLogger(__name__).warning("discoveries warm-up skipped: %s", exc)
 
@@ -120,6 +124,28 @@ def investigate() -> dict:
 def discoveries() -> dict:
     """Public: findings and cell outlines only (no measurements), for highlighting on the map."""
     return _run(investigator.public_discoveries)
+
+
+class Question(BaseModel):
+    question: str = Field(..., min_length=1, max_length=600)
+    context: dict[str, str | int | None] | None = None
+
+
+@router.get("/ask/status", tags=["ask"])
+def ask_status() -> dict:
+    """The question engine is always on: it runs on the analysis tools, with no language model."""
+    return {"enabled": True, "engine": ask_ai.ENGINE}
+
+
+@router.post("/ask", tags=["ask"])
+async def ask(body: Question) -> dict:
+    """Public: answers a question from the analysis tools (headline, stats, details, method, cells)."""
+    try:
+        return tools.finite(await run_in_threadpool(ask_ai.ask, body.question, body.context))
+    except tools.ToolError as exc:
+        raise HTTPException(422, str(exc)) from None
+    except (GridError, OSError) as exc:
+        raise HTTPException(503, f"Cell data unavailable: {exc}") from None
 
 
 router.include_router(private)

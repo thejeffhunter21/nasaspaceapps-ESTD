@@ -246,7 +246,31 @@ def _computed_details(f: dict) -> dict:
             counts[c["quarter"]] = counts.get(c["quarter"], 0) + 1
         out["location"] = f"{len(f['cells'])} highlighted cells: " + ", ".join(
             f"{q} {n}" for q, n in sorted(counts.items(), key=lambda kv: -kv[1]))
+    out["summary"] = _summary(f)
     return out
+
+
+def _summary(f: dict) -> str:
+    """One plain sentence for the card, built from the same numbers as the statement."""
+    ev, cells = f.get("evidence", {}), f.get("cells", [])
+    if f["id"] == "widespread-warming":
+        cooled = "none show cooling" if ev['significant_cooling'] == 0 else f"{ev['significant_cooling']} show cooling"
+        return f"{ev['significant_warming']} of {ev['tested']} cells show significant nighttime warming; {cooled}."
+    if f["id"] == "hidden-spread" and len(cells) == 2:
+        lo, hi = sorted(c["metric"] for c in cells)
+        return f"The slowest cell warms {lo:+.3f} °C a year, the fastest {hi:+.3f}."
+    if f["id"] in ("local-faster", "local-slower"):
+        word = "faster" if f["id"] == "local-faster" else "slower"
+        return f"{ev['supported']} neighbourhood cells warm {word} than the quarter around them."
+    if f["id"] == "seasons":
+        names = {"DJF": "winter", "MAM": "spring", "JJA": "summer", "SON": "autumn"}
+        fast = max(ev, key=lambda k: ev[k]["slope_per_year"])
+        slow = min(ev, key=lambda k: ev[k]["slope_per_year"])
+        return (f"{names[fast].capitalize()} nights: {ev[fast]['slope_per_year']:+.3f} °C a year; "
+                f"{names[slow]} nights: {ev[slow]['slope_per_year']:+.3f}.")
+    if f["id"] == "unusual-months":
+        return f"{ev['count']} cell-months were far outside normal: leads to check, not findings."
+    return f["statement"]
 
 
 def _enrich(f: dict) -> dict:
@@ -285,7 +309,7 @@ def public_discoveries() -> dict:
     report = investigate()
     keep = ("id", "title", "hypothesis", "status", "statement", "observation", "challenge", "highlight", "cells",
             "location", "period", "source", "variable", "evidence_text", "confidence", "method", "limitations",
-            "next_question", "sample_size")
+            "next_question", "sample_size", "summary")
     return {"engine": report["engine"], "caveats": report["caveats"], "rules": report["rules"],
             "provenance": {k: report["provenance"][k] for k in ("sha256", "data_version", "cells", "months", "period")},
             "findings": [{k: f[k] for k in keep} for f in report["findings"]]}

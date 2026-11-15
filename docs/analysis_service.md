@@ -54,6 +54,29 @@ Set the token in Render. If it is unset the service answers 503; a wrong token g
 | `/analysis/region-stats`, `/analysis/region-difference?a=&b=` | Same as the public endpoints, as tools |
 | `/analysis/investigate` | Full investigation report with all evidence |
 
+## Ask the Climate Detective (`POST /ask`)
+
+`analysis/ask.py` answers a visitor's free-text question **without a language model** (the AI
+layer's release check guarantees the live demo never calls Gemini, and that check still
+passes). It reads the question for places (21 Phoenix landmarks mapped to their nearest cell),
+cell ids, quarters, years, months, seasons and the cell or period selected on the map, routes it
+to an intent, and runs the same tools the investigator uses:
+
+| Intent | Example | Tools |
+| --- | --- | --- |
+| Trend | "Is Mesa getting warmer?" | `cell_trend` / `region_stats`, `all_cell_trends` (rank) |
+| Compare two places | "Is Tempe warming faster than Glendale?" | direct seasonal MK + Sen's slope on the monthly difference |
+| Compare two periods | "How did 2024 compare to 2003?" | regional series / cell values |
+| Measurement | "How hot was downtown in July 2024?" | `/map-frame` values and anomalies |
+| Rankings | "Which cell warmed the most?", "Which quarter is warming fastest?" | `all_cell_trends`, `region_stats` |
+| Seasons | "Do summer nights warm faster than winter?" | `seasonal_trend`; gap trend for "summer minus winter" |
+| Unusual months, hot spots, halves, clustering, coverage | | `anomalies`, `localized_differences`, `cell_trend` halves |
+| Background | "What is land surface temperature?" | fixed glossary, labelled as background |
+| Forecast / cause / outside data | "Will it be hotter in 2050?", "Are the slow cells parks?" | says plainly what the data cannot answer, then shows what it can |
+
+Every number in an answer is formatted from a tool result. Missing months stay missing ("no
+valid value… never filled"). A yes/no question is answered from the test, not from its wording.
+
 ## AI investigator
 
 `analysis/investigator.py` works through one hypothesis at a time:

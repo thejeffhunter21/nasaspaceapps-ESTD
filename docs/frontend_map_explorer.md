@@ -38,18 +38,23 @@ Light Gray basemap (no key). Without it the map still shows the grid, freeways (
    **Region test:** a direct seasonal Mann-Kendall test on the monthly difference between two
    quarters (`/region-compare`).
 7. **Coverage.** Valid cell-months per cell across all 264 months (50,276 of 50,688, 99.2%).
-8. **Discoveries.** The AI investigator's findings are shown as cards. Each card has:
-   - Title, status, observation and location.
-   - Period, source, variable, method, evidence, sample size and confidence.
-   - Limitations and the next question to ask.
-   Choosing a finding outlines its cells on the map.
-   "Discover something new" cycles through the verified findings. The question box matches
-   keywords to existing findings. It never generates new claims.
-9. **Share and export.** All view state is kept in the URL hash: year, month, layer, region,
-   cell, finding and the compare periods, so a copied link reopens the same view. "Download
-   CSV" exports the current frame with a metadata line.
-10. **Story.** Method, findings table (now with CI and valid months), data facts, limits, and
-    the AI team's Climate Detective.
+8. **Ask the Climate Detective.** A question box (with example chips) sends the question to
+   `POST /ask`. The answer card shows a large headline, up to four coloured stat tiles, short
+   details, the method, which tools computed it, and a button that outlines the answer's cells
+   on the map. No language model runs: see `docs/analysis_service.md`.
+9. **What the AI found on its own.** Compact cards (status, title, one-line summary, "Show on
+   map", "Ask: <next question>"). Evidence, method and caveats fold away under "How we know".
+10. **Share and export.** All view state is kept in the URL hash: year, month, layer, region,
+    cell, finding and the compare periods, so a copied link reopens the same view. "Download
+    CSV" exports the current frame with a metadata line.
+11. **Footer.** One line of limits (not a forecast; surface, not air, temperature; annual mean
+    only with 12 months; gaps never filled) and credits. The older story sections (method,
+    findings table, data facts, limits) and the separate Climate Detective block were removed
+    to keep the page focused; their numbers remain available through the question box and API.
+
+Colours: Turbo ramp for temperature, a saturated diverging ramp for anomalies, Plasma for
+warming rate, Viridis for coverage; one colour per quarter (NW teal, NE violet, SW amber,
+SE pink) and a blue–violet–pink–orange accent gradient.
 
 ## Endpoints the page uses
 
@@ -60,7 +65,8 @@ Light Gray basemap (no key). Without it the map still shows the grid, freeways (
 | `/map-static` | Per cell: id, centre, quarter, footprint, trend, CI, p, q, direction, valid months |
 | `/region-stats` | Published quarter slopes with Sen's slope 95% CI and valid months |
 | `/region-compare?a=&b=` | Direct test on the monthly difference A − B |
-| `/discoveries` | Verified findings with full fields; no raw series |
+| `/discoveries` | Verified findings with full fields plus a one-line `summary`; no raw series |
+| `POST /ask` | Answer to a free-text question: `headline`, `stats`, `details`, `method`, `caveat`, `cells`, `tools_used`, `kind` |
 
 ## Data rules
 
