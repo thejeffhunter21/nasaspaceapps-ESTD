@@ -227,37 +227,50 @@ cannot call Gemini, run `uv run --locked python scripts/verify_ai_release.py`.
   the app runs. Details: [AI submission handoff](docs/ai_submission.md).
 - **Libraries:** FastAPI, pandas, pydantic, pymannkendall, statsmodels, Streamlit, Plotly.
 
-## AI Climate Detective
+## AI Scientific Discovery Engine
 
-The dashboard includes a **Guided Investigation Demo**, using real committed NASA MOD11C3
-observations and deterministic explanations. Select a suggested question, then **Investigate**:
+The dashboard's deterministic prototype demonstrates **Question → Retrieval → Investigation →
+Statistical validation → Discovery → Visualization**. It runs without Gemini, internet access,
+embeddings, or a vector database. Python performs all numerical calculations; the workflow and
+explanation structure are predefined. This represents the planned scientific retrieval architecture,
+not an operational autonomous RAG system.
 
-- Rank the four Phoenix subregions by stored seasonal warming rate.
-- Compare Northeast and Southwest observations and trend evidence.
-- Examine the Phoenix study area's historical warming significance.
-- Challenge acceleration since 2014 with two historical charts and newly computed seasonal
-  trends for 2003–2013 and 2014–2024.
+Select a suggested question, then **Investigate**:
 
-Question interpretation uses predefined patterns, not Gemini or RAG. The acceleration verdict
-is **inconclusive**: comparing descriptive slopes does not test a change in warming rate.
-Regional ranking likewise does not establish significant differences. Missing observations
-remain gaps; land surface temperature is not air temperature, a forecast, or evidence of causes.
-No dependencies or backend endpoints were added. Existing pipeline Gemini configuration remains
-unchanged and is not used by this feature.
+- **Find a hidden warming pattern:** verify the local grid CSV against its provenance manifest,
+  calculate seasonal trends for eligible cells, and surface the largest estimated cell-minus-
+  containing-region slope difference.
+- **Which region is warming fastest?** rank the four regions using stored seasonal statistics.
+- **Compare a local observation with its regional average:** show the selected real MODIS cell,
+  coordinates, containing region, observations, slopes, p-values, tau, coverage, and estimated difference.
+- **Has Phoenix warming accelerated?** recompute seasonal trends for 2003–2013 and 2014–2024,
+  with an explicit **inconclusive** acceleration verdict because no slope-change test is implemented.
 
-The investigation always uses the repository's approved local results, independently of the
-main dashboard's API/sample/snapshot selector. It runs before API loading, so it remains available
-when the API fails. For an offline launch (the original dashboard below shows its labeled sample):
+Cell selection is exploratory, with no multiple-comparison or spatial-dependence correction.
+A cell and its regional average overlap; separate trend p-values do not test their difference.
+Selecting the largest estimate does not prove a significant local departure. Missing measurements
+remain gaps; surface temperature is not air temperature, a forecast, or evidence of causes.
+If grid data is absent, invalid, or ineligible, a visible message explains the regional fallback;
+no cells or measurements are fabricated.
+
+**Retrieved Evidence** records the source, granularity, real retrieval counts, period, method,
+and snapshot hash. **Investigation Tools** lists operations actually performed. A visible disclosure
+identifies deterministic routing and the planned nature of AI orchestration. No dependencies or
+backend endpoints were added, and existing pipeline Gemini settings are unchanged.
+
+The discovery engine reads the repository's local evidence independently of the main dashboard's
+API/sample/snapshot selection. It remains accessible above an API failure. To launch offline:
 
 ```bash
 API_URL='' uv run --locked streamlit run app/streamlit_app.py
 ```
 
-For a fully real-data offline dashboard, use the existing offline snapshot launcher or
-`uv run --locked python scripts/backup_run.py`.
+The original dashboard below labels its synthetic sample separately. Use the existing offline
+snapshot launcher or `uv run --locked python scripts/backup_run.py` for a real-data dashboard.
 
-**60-second demo:** rank regions (15 seconds), compare Northeast and Southwest (15 seconds),
-challenge acceleration and explain the inconclusive verdict (20 seconds), then open
-“How was this calculated?” to show provenance and scope (10 seconds).
+**60-second demo:** find a hidden pattern (20 seconds), show the cell/region slopes and challenge
+(15 seconds), challenge acceleration and explain why the verdict is inconclusive (15 seconds),
+then open Retrieved Evidence and Investigation Tools to show provenance and actual operations
+(10 seconds).
 
 Verify with `uv run --locked pytest tests/frontend/test_climate_detective.py`.
