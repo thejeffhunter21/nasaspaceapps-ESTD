@@ -1,0 +1,26 @@
+{
+  "service_url": "https://estd-frontend.onrender.com",
+  "service_id": "srv-dbsfr5rl550s738bm9s0",
+  "deploy_id": "dep-dbsfr63l550s738bman0",
+  "workspace": "earth system trend",
+  "status": "live",
+  "finished_at_utc": "2026-11-15T00:33:49.179756Z",
+  "release_commit": "b762e921b857fb0df8ece44316c1b15b67c3f626",
+  "branch": "main",
+  "auto_deploy": "off",
+  "plan": "free",
+  "platform_readiness": "default TCP",
+  "public_http_health": "ok",
+  "browser_checks": [
+    "main real-data chart/cards, 2003-01 to 2024-12",
+    "Live API and no sample warning",
+    "all five region options",
+    "northwest switch updates chart/cards/explanation",
+    "refresh completes",
+    "Automatic summary and supplied source/seasonal method"
+  ],
+  "limitations": [
+    "Public browser check covers main and northwest; all-five explanation consistency is recorded separately.",
+    "Blueprint is a reference, not linked to this directly created service."
+  ]
+}
