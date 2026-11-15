@@ -15,7 +15,7 @@ it does not imply teammate approval or that outstanding coordination is complete
 | FE-06 | Explain what people see | Review |
 | FE-07 | Design every state | Review |
 | FE-08 | Test the whole interaction | Review |
-| FE-09 | Verify the real snapshot | To do |
+| FE-09 | Verify the real snapshot | Review |
 | FE-10 | Complete the real-data story | To do |
 | FE-11 | Make it readable everywhere | To do |
 | FE-12 | Freeze a dependable demo | To do |
@@ -396,3 +396,72 @@ This is API/frontend agreement, not independent dataset QC or a hosting deployme
 FE-09 retains real-snapshot verification. No backend, AI, shared contract,
 dependency or hosting changes are included. Teammate review remains pending;
 FE-09 has not started.
+
+## FE-09: verify the real snapshot
+
+The read-only command `scripts/verify_frontend_snapshot.py` checks the delivered
+`phoenix-qc-v1.0` handoff before comparing saved results, API responses and the page.
+The handoff uses `data/processed/manifest.json` and `data_quality_manifest.json`;
+there is no `docs/data_manifest.json` in this delivery.
+
+The command verifies all five CSV SHA-256 hashes, agreement between the two
+manifests, and the coverage/data-card/quality-report hashes. It checks the full
+2003-01 through 2024-12 calendar for each region and all 1,320 unique coverage
+records. Coverage below the documented 80% weighted-area threshold must correspond
+exactly to a missing observation. Data ID `phoenix` explicitly maps to the API's
+`phoenix_study_area`; subregion IDs are unchanged.
+
+| API region ID | Calendar positions | Valid observations | Missing months |
+| --- | ---: | ---: | --- |
+| phoenix_study_area | 264 | 264 | None |
+| phoenix_northwest | 264 | 263 | 2024-05 |
+| phoenix_northeast | 264 | 262 | 2007-07, 2023-07 |
+| phoenix_southwest | 264 | 262 | 2007-07, 2010-07 |
+| phoenix_southeast | 264 | 261 | 2012-07, 2017-07, 2024-06 |
+
+### Precision and provenance boundary
+
+The CSVs retain full precision; the existing pipeline rounds temperature inputs
+to four decimals before trend calculation and JSON output. This is documented in
+`docs/monthly_trend_verification.md`, not a new frontend operation. The verifier
+independently requires every result value to equal that rounded CSV value within
+1e-12, retaining nulls. Observed maximum raw-CSV/API differences were below
+0.00005 °C in every region. No CSV value, trend, explanation or API file is changed.
+
+Real-result checks reject mock/example markers and require the supplied source to
+identify the qc-v1 version, MOD11C3.061, LST_Night_CMG and dataset DOI. Variable and
+units must identify nighttime surface temperature in degC, with degC/month slopes.
+Saved and live statistics and method must agree. The page must plot exactly the
+API times/values with gaps, show matching cards and supplied explanation/provenance,
+and carry no Sample data warning.
+
+### Reproduce
+
+Local files and saved results only (no network):
+
+```sh
+uv run --locked python scripts/verify_frontend_snapshot.py --out /tmp/fe09-local.json
+```
+
+All five live API regions plus Streamlit AppTest rendering:
+
+```sh
+uv run --locked python scripts/verify_frontend_snapshot.py --api-url https://estd-api.onrender.com --out /tmp/fe09-live.json
+```
+
+The command writes its report and exits nonzero on a mismatch. Ordinary frontend
+tests remain offline. Ten verifier tests cover the approved snapshot and rejection
+of changed file bytes, changed calendar/gap/value, mock source, units and period.
+
+Observed on November 14, 2026: local and live verification passed for all five
+regions; 103 frontend tests, 403 total repository tests, lint and whitespace checks
+passed. `docs/evidence/frontend/fe09_snapshot_check.json` records the timestamp,
+checked checkout, verifier hash, source checkout reference, snapshot ID, manifests,
+CSV/sidecar hashes, per-region sample values, rounding differences and frontend
+agreement checks. All eight approved missing observations remained gaps.
+
+This verifies the approved processed handoff through the frontend. It does not
+rerun NASA retrieval or pixel-level QC, approve causal interpretation, or prove a
+deployment commit (the API does not expose code provenance). No dashboard behavior,
+backend, AI, shared contract, dependencies or hosting is changed. Teammate review
+remains pending; FE-10 has not started.

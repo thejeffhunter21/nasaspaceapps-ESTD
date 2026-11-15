@@ -1,0 +1,398 @@
+{
+  "checked_at_utc": "2026-11-15T00:04:50.297330+00:00",
+  "status": "PASS",
+  "checked_checkout_commit": "17b1897718e35b40661ac3610fb7ae0256a0eb30",
+  "verifier_sha256": "fe3cbab2dccca8e2bbcc4754f7348062123cf0c6a541fb8ac4b64ee85360923c",
+  "api_url": "https://estd-api.onrender.com",
+  "scope": "Approved processed snapshot, saved/API results and frontend; no raw NASA/pixel QC rerun",
+  "snapshot": {
+    "data_version": "phoenix-qc-v1.0",
+    "source_reference": "PR #59; source checkout aef91f193d5a3b0f7c89e8107821cd564e6f1e20; bytes verified against docs/evidence/day17/freeze_manifest.json",
+    "manifest_sha256": "55be3d7f548b175a846cd83a9474da8db88bd64ea1c9e2928e7497a5fe3eb66a",
+    "quality_manifest_sha256": "d88e800ab9ca938703283dd485f93ba42921704f6695bbb60922278b3bc619ed",
+    "file_hashes": {
+      "data/processed/timeseries.csv": "040b7e413bd33c08662127192e0a642e9311a4ddbc52c592bc57a46218c5b31a",
+      "data/processed/timeseries_phoenix_northeast.csv": "459ed07e87b6c2649bfdd8c5f532be53fd8f1c7279b04e2c36ec35e6b042ae48",
+      "data/processed/timeseries_phoenix_northwest.csv": "4ed003958411f8dd785d7a1e15fe724f911a20143884b59fdc6414cb4535ed1a",
+      "data/processed/timeseries_phoenix_southeast.csv": "3762b21d0eaf4ce53dffdd9df9cf32107ec6e3235f64e7e0c758d0a7d8892102",
+      "data/processed/timeseries_phoenix_southwest.csv": "6a481a4323bdb738b8de14ce985a09421f2a5b1c46ad7b94b0e5c395fa5fb8a2",
+      "data/processed/coverage.csv": "eb282a0fed6bfb87a2fc3242a1b842c9feef9c379d8712ea8626e12407947080",
+      "docs/data_card.md": "fe1c5394e18cb6651a2ffdbce89e471b750391bc2e4fdaff0579cba7438f28fe",
+      "docs/data_quality_report.md": "d7e78a97e21e22dd14bf7708621c4238a96955f531a8fbaf6eb3bb9bf8004797"
+    },
+    "coverage_records": 1320,
+    "regions": {
+      "phoenix_study_area": {
+        "csv": "timeseries.csv",
+        "positions": 264,
+        "valid_months": 264,
+        "missing_dates": []
+      },
+      "phoenix_northwest": {
+        "csv": "timeseries_phoenix_northwest.csv",
+        "positions": 264,
+        "valid_months": 263,
+        "missing_dates": [
+          "2024-05"
+        ]
+      },
+      "phoenix_northeast": {
+        "csv": "timeseries_phoenix_northeast.csv",
+        "positions": 264,
+        "valid_months": 262,
+        "missing_dates": [
+          "2007-07",
+          "2023-07"
+        ]
+      },
+      "phoenix_southwest": {
+        "csv": "timeseries_phoenix_southwest.csv",
+        "positions": 264,
+        "valid_months": 262,
+        "missing_dates": [
+          "2007-07",
+          "2010-07"
+        ]
+      },
+      "phoenix_southeast": {
+        "csv": "timeseries_phoenix_southeast.csv",
+        "positions": 264,
+        "valid_months": 261,
+        "missing_dates": [
+          "2012-07",
+          "2017-07",
+          "2024-06"
+        ]
+      }
+    }
+  },
+  "regions": [
+    {
+      "region_id": "phoenix_study_area",
+      "region": "Phoenix study area",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "positions": 264,
+      "valid_months": 264,
+      "missing_dates": [],
+      "units": "degC",
+      "slope_unit": "degC/month",
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.0077125000000000015,
+        "slope_unit": "degC/month",
+        "p": 7.02263552300232e-11,
+        "tau": 0.2893217893217893,
+        "trend": "increasing"
+      },
+      "csv_to_api_rule": "round(value, 4), preserving nulls (documented pipeline preprocessing)",
+      "csv_to_api_max_abs_difference": 4.9668975211858424e-05,
+      "api_matches_rounded_csv": true,
+      "sample_values": [
+        {
+          "time": "2003-01",
+          "csv_value": 7.761905300373255,
+          "result_value": 7.7619
+        },
+        {
+          "time": "2014-01",
+          "csv_value": 6.34667526394898,
+          "result_value": 6.3467
+        },
+        {
+          "time": "2024-12",
+          "csv_value": 8.571696477144183,
+          "result_value": 8.5717
+        }
+      ],
+      "saved_result_sha256": "c63a7c5b79cb82ad6e79bccbd91754645918eb6d5a94316d175d5d66dfcbcf39",
+      "live": {
+        "api_matches_rounded_csv": true,
+        "statistics_and_method_match_saved": true,
+        "csv_to_api_max_abs_difference": 4.9668975211858424e-05,
+        "series_sha256": "5532e5ae6a63e14b586cef62a204ae80e20cb80c9a774402e4fb6a982f9d3162"
+      },
+      "frontend": {
+        "plotted_series_matches_api": true,
+        "gaps_preserved": true,
+        "statistics_match_api": true,
+        "explanation_and_provenance_match_api": true
+      }
+    },
+    {
+      "region_id": "phoenix_northwest",
+      "region": "Phoenix study area northwest",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "positions": 264,
+      "valid_months": 263,
+      "missing_dates": [
+        "2024-05"
+      ],
+      "units": "degC",
+      "slope_unit": "degC/month",
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.0075514705882352845,
+        "slope_unit": "degC/month",
+        "p": 3.2750294941589206e-10,
+        "tau": 0.2795347146492185,
+        "trend": "increasing"
+      },
+      "csv_to_api_rule": "round(value, 4), preserving nulls (documented pipeline preprocessing)",
+      "csv_to_api_max_abs_difference": 4.99830579592242e-05,
+      "api_matches_rounded_csv": true,
+      "sample_values": [
+        {
+          "time": "2003-01",
+          "csv_value": 8.13889135015579,
+          "result_value": 8.1389
+        },
+        {
+          "time": "2014-01",
+          "csv_value": 6.624845984352828,
+          "result_value": 6.6248
+        },
+        {
+          "time": "2024-05",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2024-12",
+          "csv_value": 8.7502044018816,
+          "result_value": 8.7502
+        }
+      ],
+      "saved_result_sha256": "bec9c42d61d21ece48622cb96a39d932c51ccb57830c19a7d6ebfce62569f231",
+      "live": {
+        "api_matches_rounded_csv": true,
+        "statistics_and_method_match_saved": true,
+        "csv_to_api_max_abs_difference": 4.99830579592242e-05,
+        "series_sha256": "d5cdd2c04764796bd5eb9df1236df9e2a63a020cf9f93c7ea232ebe76c734e9f"
+      },
+      "frontend": {
+        "plotted_series_matches_api": true,
+        "gaps_preserved": true,
+        "statistics_match_api": true,
+        "explanation_and_provenance_match_api": true
+      }
+    },
+    {
+      "region_id": "phoenix_northeast",
+      "region": "Phoenix study area northeast",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "positions": 264,
+      "valid_months": 262,
+      "missing_dates": [
+        "2007-07",
+        "2023-07"
+      ],
+      "units": "degC",
+      "slope_unit": "degC/month",
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.005289583333333329,
+        "slope_unit": "degC/month",
+        "p": 3.799507330776624e-06,
+        "tau": 0.20615159282314172,
+        "trend": "increasing"
+      },
+      "csv_to_api_rule": "round(value, 4), preserving nulls (documented pipeline preprocessing)",
+      "csv_to_api_max_abs_difference": 4.9692414327395795e-05,
+      "api_matches_rounded_csv": true,
+      "sample_values": [
+        {
+          "time": "2003-01",
+          "csv_value": 8.290685824165182,
+          "result_value": 8.2907
+        },
+        {
+          "time": "2007-07",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2014-01",
+          "csv_value": 6.646244169390677,
+          "result_value": 6.6462
+        },
+        {
+          "time": "2023-07",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2024-12",
+          "csv_value": 8.838349692414328,
+          "result_value": 8.8383
+        }
+      ],
+      "saved_result_sha256": "df8b663ac226602de7d17f7ce880c663f2a4d61e2742de13801a55ecf3011c88",
+      "live": {
+        "api_matches_rounded_csv": true,
+        "statistics_and_method_match_saved": true,
+        "csv_to_api_max_abs_difference": 4.9692414327395795e-05,
+        "series_sha256": "be47f0f3132b174f37f9ce826bcde4738db5446b66a4f87f34a8a71115563914"
+      },
+      "frontend": {
+        "plotted_series_matches_api": true,
+        "gaps_preserved": true,
+        "statistics_match_api": true,
+        "explanation_and_provenance_match_api": true
+      }
+    },
+    {
+      "region_id": "phoenix_southwest",
+      "region": "Phoenix study area southwest",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "positions": 264,
+      "valid_months": 262,
+      "missing_dates": [
+        "2007-07",
+        "2010-07"
+      ],
+      "units": "degC",
+      "slope_unit": "degC/month",
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.007761666666666667,
+        "slope_unit": "degC/month",
+        "p": 2.9799829957134377e-10,
+        "tau": 0.2808495056755767,
+        "trend": "increasing"
+      },
+      "csv_to_api_rule": "round(value, 4), preserving nulls (documented pipeline preprocessing)",
+      "csv_to_api_max_abs_difference": 4.9553418524084236e-05,
+      "api_matches_rounded_csv": true,
+      "sample_values": [
+        {
+          "time": "2003-01",
+          "csv_value": 7.392830323586921,
+          "result_value": 7.3928
+        },
+        {
+          "time": "2007-07",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2010-07",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2014-01",
+          "csv_value": 6.043062215656093,
+          "result_value": 6.0431
+        },
+        {
+          "time": "2024-12",
+          "csv_value": 8.281400593858345,
+          "result_value": 8.2814
+        }
+      ],
+      "saved_result_sha256": "71603571f057602fd9dbfb9dcda8b3ed88298bf2b3d128f959b8c7479a9ecae4",
+      "live": {
+        "api_matches_rounded_csv": true,
+        "statistics_and_method_match_saved": true,
+        "csv_to_api_max_abs_difference": 4.9553418524084236e-05,
+        "series_sha256": "221ccff75a8f27567377e16deff05a0bb667fc0114013a78f23a264731238706"
+      },
+      "frontend": {
+        "plotted_series_matches_api": true,
+        "gaps_preserved": true,
+        "statistics_match_api": true,
+        "explanation_and_provenance_match_api": true
+      }
+    },
+    {
+      "region_id": "phoenix_southeast",
+      "region": "Phoenix study area southeast",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "positions": 264,
+      "valid_months": 261,
+      "missing_dates": [
+        "2012-07",
+        "2017-07",
+        "2024-06"
+      ],
+      "units": "degC",
+      "slope_unit": "degC/month",
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.008890624999999985,
+        "slope_unit": "degC/month",
+        "p": 2.780311759523836e-14,
+        "tau": 0.33985239852398524,
+        "trend": "increasing"
+      },
+      "csv_to_api_rule": "round(value, 4), preserving nulls (documented pipeline preprocessing)",
+      "csv_to_api_max_abs_difference": 4.96600137118719e-05,
+      "api_matches_rounded_csv": true,
+      "sample_values": [
+        {
+          "time": "2003-01",
+          "csv_value": 7.228347327766268,
+          "result_value": 7.2283
+        },
+        {
+          "time": "2012-07",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2014-01",
+          "csv_value": 6.074547456184004,
+          "result_value": 6.0745
+        },
+        {
+          "time": "2017-07",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2024-06",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2024-12",
+          "csv_value": 8.41837131668294,
+          "result_value": 8.4184
+        }
+      ],
+      "saved_result_sha256": "fc50b120e619447e473d4c069bffae9b8a52221367e34a1cc4d270c7bc441461",
+      "live": {
+        "api_matches_rounded_csv": true,
+        "statistics_and_method_match_saved": true,
+        "csv_to_api_max_abs_difference": 4.96600137118719e-05,
+        "series_sha256": "3a6e0c1f72e5ded4666cafed3ca239f32d5921a84a83d437b70a63efb4f76082"
+      },
+      "frontend": {
+        "plotted_series_matches_api": true,
+        "gaps_preserved": true,
+        "statistics_match_api": true,
+        "explanation_and_provenance_match_api": true
+      }
+    }
+  ]
+}
