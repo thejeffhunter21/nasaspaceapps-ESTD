@@ -277,3 +277,21 @@ continuing to reject model clients and SDKs. It does not permit runtime Gemini r
 Offline rebuild comparison permits only relative p-value differences up to 1e-14 (no absolute
 tolerance), accounting for machine precision across SciPy/platform versions; every other
 statistical field remains exact. Rounding a tiny p-value to zero still fails verification.
+
+### Discovery prototype: individual observations
+
+`app/discovery_evidence.py` verifies `grid_cells.csv` against `grid_cells_manifest.json`,
+checks columns, finite measurements, cell metadata, Phoenix quarter assignments, and complete
+monthly calendars. Cached retrieval keys include the exact CSV and manifest bytes; cached
+statistics include the retrieved observations. Each eligible cell is evaluated by the same
+seasonal `run_trend` function as the regional pipeline. Missing months retain their positions.
+The deterministic example is the eligible cell with the greatest estimated slope minus its
+containing region's stored slope, with stable ordering for ties. Coordinates and counts come
+from the verified data rather than generated text.
+
+This extreme selection is exploratory and subject to selection effects, multiple comparisons,
+and spatial dependence. The cell contributes to its containing average, so the series are not
+independent. Individual monotonic-trend p-values do not establish a difference in slopes. The
+prototype explicitly reports these limits and performs no comparative significance test.
+Missing/invalid grid evidence produces a disclosed regional demonstration. No live retrieval,
+LLM interpretation, vector index, or autonomous discovery is claimed.

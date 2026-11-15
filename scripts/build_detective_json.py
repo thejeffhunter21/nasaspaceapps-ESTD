@@ -1,7 +1,7 @@
 """Save the AI Climate Detective's guided investigations for the web explorer.
 
 Runs the AI layer's own code (app/climate_detective.py: interpret_question, load_evidence,
-investigate) for each suggested question and writes the exact findings, evidence rows and chart
+run_discovery) for each suggested question and writes the exact findings, evidence rows and chart
 series to web/data/detective.json. Nothing is re-derived here, and Gemini is not used.
 tests/web/test_detective_json.py fails if the committed file drifts from what the code produces.
 
@@ -26,7 +26,8 @@ def build() -> dict:
     investigations = []
     for label, question in cd.QUESTIONS.items():
         intent = cd.interpret_question(question)
-        figure, finding, rows = cd.investigate(intent, evidence)
+        result = cd.run_discovery(intent, evidence)
+        figure, finding, rows = result["figure"], result["finding"], result["rows"]
         fig = json.loads(figure.to_json())
         layout = fig.get("layout", {})
         # Subplot titles are annotations too; skip the shared source note at the bottom.
@@ -38,6 +39,9 @@ def build() -> dict:
             "intent": intent,
             "title": layout.get("title", {}).get("text", ""),
             "finding": finding,
+            "metadata": result["metadata"], "tools": result["tools"],
+            "challenge": result["challenge"], "conclusion": result["conclusion"],
+            "matters": result["matters"],
             "rows": rows,
             "x_title": (layout.get("xaxis", {}).get("title") or {}).get("text", ""),
             "y_title": (layout.get("yaxis", {}).get("title") or {}).get("text", ""),
@@ -48,13 +52,14 @@ def build() -> dict:
         })
     return {
         "generated_by": "scripts/build_detective_json.py from app/climate_detective.py",
-        "mode": "Guided Investigation Demo: predefined workflows, local approved NASA results, "
-                "deterministic explanations. Gemini is not used.",
+        "mode": "Prototype Discovery Engine: deterministic workflows; Gemini is not used. "
+                "Python computed these exported results in advance; the browser selects them.",
+        "disclosure": cd.DISCLOSURE,
         "source": evidence["phoenix_study_area"]["source"],
         "limits": cd.LIMITS,
         "unsupported_message": (
-            "This demonstration supports regional warming comparisons, historical trend analysis, "
-            "and selected hypothesis investigations. Try a suggested question. Only Phoenix, "
+            "This prototype supports hidden-pattern discovery, regional ranking, local-versus-regional "
+            "comparison and acceleration investigations. Try a suggested question. Only Phoenix, "
             "2003–2024 is supported. Hottest is different from fastest warming."),
         "method_note": (
             "Ranking and comparison use stored seasonal Mann–Kendall / seasonal Sen's slope results. "
