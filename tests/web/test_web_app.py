@@ -183,3 +183,25 @@ def test_discovery_engine_scripts_the_workflow_but_never_the_numbers():
     # no result typed in: no cell ids and no trend-sized decimals (0.0xx / 0.1xx) appear in the engine code
     assert not re.search(r"r\d{2}_c\d{2}", engine)
     assert not re.search(r"[+−-]0\.[01]\d{2}", engine)
+
+
+def test_surprise_me_shuffles_three_existing_findings_without_touching_the_map():
+    js = (ROOT / "web/app.js").read_text()
+    block = js[js.index('// "Surprise me"'):js.index('$("discovery-caveats")')]
+    assert "Math.min(3, d.findings.length)" in block and "Math.random()" in block     # three, drawn fairly
+    assert "shuffling" in block and "btn.disabled = true" in block                     # no double draws on fast clicks
+    assert "setState" not in block and "fetch" not in block and "getJSON" not in block  # no new findings, map state kept
+
+
+def test_area_graphs_enlarge_from_the_same_data_and_the_panel_animates_once():
+    html = (ROOT / "web/index.html").read_text()
+    js = (ROOT / "web/app.js").read_text()
+    css = (ROOT / "web/styles.css").read_text()
+    assert 'id="zoom" hidden role="dialog"' in html and 'id="zoom-close"' in html
+    assert 'data-zoom="temp"' in js and 'data-zoom="pval"' in js
+    assert "pvalSvg(rid, false)" in js and "pvalSvg(rid, true)" in js       # compact and large p-value views share one builder
+    big = js[js.index("function tempBigSvg"):js.index("let zoomFrom")]
+    assert "state.series[rid]" in big and "getJSON" not in big and "fetch" not in big   # same series as the compact graph
+    assert "function closeZoom" in js and 'ev.key !== "Escape"' in js
+    assert "@keyframes ins-pop" in css and "prefers-reduced-motion" in css
+    assert js.count('id="inspector"') == 0 and html.count('id="inspector"') == 1        # one panel, never stacked

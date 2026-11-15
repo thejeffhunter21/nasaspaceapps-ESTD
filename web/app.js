@@ -522,7 +522,12 @@
     $("tb-legend").addEventListener("click", () => setState({legend: !state.legend}, {skipUrl: true}));
     $("tb-reset").addEventListener("click", resetView);
     document.querySelectorAll("[data-drawer-close]").forEach((b) => b.addEventListener("click", closeDrawer));
-    document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && state.drawer && !document.body.classList.contains("touring")) closeDrawer(); });
+    $("zoom-close").addEventListener("click", closeZoom);
+    $("zoom").addEventListener("click", (ev) => { if (ev.target === $("zoom")) closeZoom(); });
+    document.addEventListener("keydown", (ev) => {
+      if (ev.key !== "Escape" || document.body.classList.contains("touring")) return;
+      if (!$("zoom").hidden) { ev.stopPropagation(); closeZoom(); } else if (state.drawer) closeDrawer();
+    });
   }
 
   function renderStatus() {
@@ -554,7 +559,7 @@
     if (d === undefined) {
       cellYears[id] = null;
       getJSON(`${API}/cell-years?id=${encodeURIComponent(id)}`, true)
-        .then((res) => { cellYears[id] = res; if (state.cell === id) renderInspector(); })
+        .then((res) => { cellYears[id] = res || {error: true}; if (state.cell === id) renderInspector(); })
         .catch(() => { cellYears[id] = {error: true}; if (state.cell === id) renderInspector(); });
     }
     if (!d) return '<p class="ins-note">Loading the yearly record…</p>';
@@ -576,9 +581,20 @@
       <text x="${pad}" y="${H2 + 11}" font-size="9" fill="#6b5d40">${ys[0].year}</text><text x="${W2 - pad}" y="${H2 + 11}" font-size="9" fill="#6b5d40" text-anchor="end">${ys[n - 1].year}</text>
       <text x="${W2 - pad}" y="10" font-size="9" fill="#6b5d40" text-anchor="end">±${m.toFixed(1)} °C</text></svg>`;
   }
+  let insSig = "", insKey = "";
   function renderInspector() {
     const box = $("inspector");
-    if (!state.cell || !state.cellIndex[state.cell]) { renderRegionPanel(box); return; }
+    const isCell = !!(state.cell && state.cellIndex[state.cell]);
+    const key = isCell ? `cell:${state.cell}` : state.region !== "all" && state.regions ? `region:${state.region}` : "";
+    const cy = isCell ? cellYears[state.cell] : null;
+    const sig = [key, state.year, state.month, state.layer, state.frame ? state.frame.period : "", cy ? (cy.error ? "err" : "ok") : "wait", !!state.cells, !!state.regionStats].join("|");
+    if (sig === insSig) return;
+    insSig = sig;
+    if (key !== insKey) {   // a new subject: fade and rise in (one panel only, never stacked)
+      insKey = key;
+      if (key && !reduceMotion) { box.classList.remove("pop"); void box.offsetWidth; box.classList.add("pop"); }
+    }
+    if (!isCell) { renderRegionPanel(box); return; }
     const r = cellRecord(state.cell);
     box.hidden = false; box.dataset.mode = "cell";
     const sigCell = r.q != null && r.significant_fdr, up = r.slope_per_year > 0;
@@ -626,6 +642,115 @@
       <text x="${pad}" y="${H2 + 11}" font-size="9" fill="#6b5d40">${s.times[0].slice(0, 4)}</text><text x="${W2 - pad}" y="${H2 + 11}" font-size="9" fill="#6b5d40" text-anchor="end">${s.times[n - 1].slice(0, 4)}</text>
       <text x="${W2 / 2}" y="${H2 + 11}" font-size="9" fill="#6b5d40" text-anchor="middle">${fmt(lo, 1)} to ${fmt(hi, 1)} °C</text></svg>`;
   }
+  // Strength of evidence: the published p-value of each area on one scale (further right = stronger).
+  // Same numbers in the compact and the large view; nothing is recomputed.
+  const SUP = {"-": "⁻", 0: "⁰", 1: "¹", 2: "²", 3: "³", 4: "⁴", 5: "⁵", 6: "⁶", 7: "⁷", 8: "⁸", 9: "⁹"};
+  const pow10 = (k) => "10" + String(k).split("").map((ch) => SUP[ch]).join("");
+  const pExact = (p) => { const [m, e] = p.toExponential(1).split("e"); return +e > -3 ? String(+p.toPrecision(2)) : `${m} × ${pow10(+e)}`; };
+  function pvalRows() {
+    return [state.quarterIds.whole, ...ORDER.map((q) => state.quarterIds[q])].map((id) => state.regions.find((r) => r.region_id === id)).filter(Boolean)
+      .map((r) => ({id: r.region_id, name: r.region_id === state.quarterIds.whole ? "Whole study area" : areaName(quarterOfRegion(r.region_id)), p: r.trend.p}));
+  }
+  function pvalSvg(rid, big) {
+    const rows = pvalRows(), L10 = (p) => -Math.log10(Math.max(p, 1e-300));
+    const maxX = Math.max(4, Math.ceil(Math.max(...rows.map((r) => L10(r.p))) + 1));
+    const ticks = [[0, "1"], [L10(0.05), "0.05"], [3, "0.001"]]; for (let k = 6; k <= maxX; k += 3) ticks.push([k, pow10(-k)]);
+    if (!big) {
+      const W2 = 260, H2 = 58, x0 = 8, x1 = W2 - 8, X = (v) => x0 + (v / maxX) * (x1 - x0), tx = X(L10(0.05));
+      return `<svg viewBox="0 0 ${W2} ${H2}" role="img" aria-label="Strength of evidence for each area; all values are listed in the enlarged view">
+        <rect x="${x0}" y="14" width="${(tx - x0).toFixed(1)}" height="20" fill="#d9c9a0"/><line x1="${x0}" x2="${x1}" y1="24" y2="24" stroke="#b9a67c"/>
+        <line x1="${tx.toFixed(1)}" x2="${tx.toFixed(1)}" y1="8" y2="40" stroke="#2a2418" stroke-dasharray="3 3"/>
+        ${rows.map((r) => `<circle cx="${X(L10(r.p)).toFixed(1)}" cy="24" r="${r.id === rid ? 6 : 4}" fill="${r.id === rid ? "#b3261e" : "#7a6a45"}" stroke="#f6edd5" stroke-width="1.5"><title>${esc(r.name)}: ${pText(r.p)}</title></circle>`).join("")}
+        <text x="${x0}" y="53" font-size="9" fill="#6b5d40">could be chance</text><text x="${x1}" y="53" font-size="9" fill="#6b5d40" text-anchor="end">stronger evidence →</text></svg>`;
+    }
+    const W2 = 900, rowH = 46, x0 = 210, x1 = W2 - 150, top = 30, H2 = top + rows.length * rowH + 70, X = (v) => x0 + (v / maxX) * (x1 - x0), tx = X(L10(0.05));
+    return `<svg viewBox="0 0 ${W2} ${H2}" role="img" aria-label="p-value of the warming trend for each area on a logarithmic axis, with the 0.05 threshold marked">
+      <rect x="${x0}" y="${top - 8}" width="${(tx - x0).toFixed(1)}" height="${rows.length * rowH + 8}" fill="#2a2620"/>
+      <line x1="${tx.toFixed(1)}" x2="${tx.toFixed(1)}" y1="${top - 8}" y2="${top + rows.length * rowH}" stroke="#e0a43a" stroke-dasharray="5 4"/>
+      <text x="${(tx + 8).toFixed(1)}" y="${top - 14}" font-size="12" fill="#e0a43a">threshold p = 0.05 (left of this line could be chance)</text>
+      ${rows.map((r, i) => { const y = top + i * rowH + rowH / 2, on = r.id === rid; return `
+        <text x="${x0 - 14}" y="${y + 5}" font-size="14" fill="${on ? "#efe6d2" : "#cfc4ad"}" text-anchor="end" font-weight="${on ? 700 : 400}">${esc(r.name)}</text>
+        <line x1="${x0}" x2="${X(L10(r.p)).toFixed(1)}" y1="${y}" y2="${y}" stroke="${on ? "#c8372d" : "#7a6a45"}" stroke-width="3"/>
+        <circle cx="${X(L10(r.p)).toFixed(1)}" cy="${y}" r="${on ? 8 : 6}" fill="${on ? "#c8372d" : "#9c927d"}"/>
+        <text x="${(X(L10(r.p)) + 14).toFixed(1)}" y="${y + 5}" font-size="13" fill="#efe6d2">p = ${pExact(r.p)}</text>`; }).join("")}
+      <line x1="${x0}" x2="${x1}" y1="${top + rows.length * rowH}" y2="${top + rows.length * rowH}" stroke="#6b6557"/>
+      ${ticks.map(([v, l]) => `<line x1="${X(v).toFixed(1)}" x2="${X(v).toFixed(1)}" y1="${top + rows.length * rowH}" y2="${top + rows.length * rowH + 6}" stroke="#6b6557"/><text x="${X(v).toFixed(1)}" y="${top + rows.length * rowH + 22}" font-size="12" fill="#9c927d" text-anchor="middle">${l}</text>`).join("")}
+      <text x="${(x0 + x1) / 2}" y="${H2 - 12}" font-size="13" fill="#cfc4ad" text-anchor="middle">p-value: smaller (further right) means stronger evidence</text></svg>`;
+  }
+  // Large temperature graph: the same monthly measurements as the compact one, with axes and yearly averages.
+  function tempBigSvg(rid) {
+    const s = state.series[rid];
+    if (!s) return "";
+    const W2 = 900, H2 = 440, x0 = 64, x1 = W2 - 20, y0 = 20, y1 = H2 - 64, n = s.times.length;
+    const vals = s.values.filter((v) => v != null), lo = Math.floor(Math.min(...vals) / 5) * 5, hi = Math.ceil(Math.max(...vals) / 5) * 5;
+    const X = (i) => x0 + (i / (n - 1)) * (x1 - x0), Y = (v) => y1 - ((v - lo) / (hi - lo || 1)) * (y1 - y0);
+    let d = "", pen = false;
+    s.values.forEach((v, i) => { if (v == null) { pen = false; return; } d += `${pen ? "L" : "M"}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`; pen = true; });
+    const years = [...new Set(s.times.map((t) => +t.slice(0, 4)))];
+    const yTicks = []; for (let v = lo; v <= hi; v += 5) yTicks.push(v);
+    const grid = yTicks.map((v) => `<line x1="${x0}" x2="${x1}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="#34322d"/><text x="${x0 - 10}" y="${(Y(v) + 4).toFixed(1)}" font-size="12" fill="#9c927d" text-anchor="end">${v}</text>`).join("");
+    const xt = years.filter((y) => (y - years[0]) % 3 === 0).map((y) => { const i = s.times.indexOf(`${y}-01`); return i < 0 ? "" : `<line x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${y1}" y2="${y1 + 6}" stroke="#6b6557"/><text x="${X(i).toFixed(1)}" y="${y1 + 22}" font-size="12" fill="#9c927d" text-anchor="middle">${y}</text>`; }).join("");
+    const gaps = s.values.map((v, i) => (v == null ? `<line x1="${X(i).toFixed(1)}" x2="${X(i).toFixed(1)}" y1="${y0}" y2="${y1}" stroke="#e0a43a" stroke-dasharray="2 4" opacity=".7"><title>${s.times[i]}: no reliable reading</title></line>` : "")).join("");
+    const pts = s.values.map((v, i) => (v == null ? "" : `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="5" fill="transparent"><title>${s.times[i]}: ${fmt(v, 2)} °C</title></circle>`)).join("");
+    const yr = years.map((y) => ({y, v: periodValue(s.times, s.values, y, "avg"), i: s.times.indexOf(`${y}-07`)})).filter((o) => o.v != null && o.i >= 0);
+    const yrLine = yr.map((o, k) => `${k ? "L" : "M"}${X(o.i).toFixed(1)} ${Y(o.v).toFixed(1)}`).join("");
+    const yrDots = yr.map((o) => `<circle cx="${X(o.i).toFixed(1)}" cy="${Y(o.v).toFixed(1)}" r="4.5" fill="#c8372d" stroke="#141518" stroke-width="1.5"><title>${o.y} yearly average: ${fmt(o.v, 2)} °C</title></circle>`).join("");
+    let dot = "";
+    if (state.month !== "avg") { const i = s.times.indexOf(`${state.year}-${String(state.month).padStart(2, "0")}`); if (i >= 0 && s.values[i] != null) dot = `<circle cx="${X(i).toFixed(1)}" cy="${Y(s.values[i]).toFixed(1)}" r="6" fill="none" stroke="#e0a43a" stroke-width="2.5"><title>${esc(periodLabel())}: ${fmt(s.values[i], 2)} °C (the month on the map)</title></circle>`; }
+    return `<svg viewBox="0 0 ${W2} ${H2}" role="img" aria-label="Monthly night-time ground temperature, ${s.times[0]} to ${s.times[n - 1]}, in degrees Celsius, with yearly averages">
+      ${grid}${gaps}<line x1="${x0}" x2="${x1}" y1="${y1}" y2="${y1}" stroke="#6b6557"/>${xt}
+      <path d="${d}" fill="none" stroke="#9c927d" stroke-width="1.3"/><path d="${yrLine}" fill="none" stroke="#c8372d" stroke-width="2.5"/>${yrDots}${dot}${pts}
+      <text x="16" y="${(y0 + y1) / 2}" font-size="13" fill="#cfc4ad" text-anchor="middle" transform="rotate(-90 16 ${(y0 + y1) / 2})">Ground temperature at night (°C)</text>
+      <text x="${(x0 + x1) / 2}" y="${H2 - 18}" font-size="13" fill="#cfc4ad" text-anchor="middle">Year</text></svg>
+      <p class="eng-key"><i style="background:#9c927d"></i>each month's measurement<i style="background:#c8372d"></i>yearly average (full years only)<i style="background:#e0a43a"></i>month with no reliable reading</p>`;
+  }
+  let zoomFrom = null;
+  function zoomBody(kind, rid) {
+    const q = quarterOfRegion(rid), r = state.regions.find((x) => x.region_id === rid), t = r.trend, st = state.regionStats?.regions?.[rid] || {};
+    const s = state.series[rid], months = s ? s.times.length : 264, name = q ? areaName(q) : "Whole study area";
+    const tiles = (rows) => `<div class="answer-stats">${rows.map((x, i) => `<div class="tile t${i}"><span class="tile-label">${esc(x[0])}</span><b class="tile-value">${esc(x[1])}</b><span class="tile-sub">${esc(x[2])}</span></div>`).join("")}</div>`;
+    if (kind === "temp") {
+      return `<h2 id="zoom-title">${esc(name)}: how hot the ground is at night</h2>
+        <figure class="eng-viz">${tempBigSvg(rid)}</figure>
+        ${tiles([["Change each year", `${signed(t.slope * 12, 3)} °C`, "on average (Sen's slope)"], ["Likely range", st.ci_low_per_year != null ? `${signed(st.ci_low_per_year, 3)} to ${signed(st.ci_high_per_year, 3)}` : "—", "°C a year, 95% confidence"],
+          ["Over the whole period", `≈ ${signed(t.slope * months, 1)} °C`, "yearly change × years"], ["How sure", sureShort(t.p), `${pText(t.p)}, τ ${t.tau.toFixed(2)}`]])}
+        <p class="zoom-text">The grey line is every monthly measurement: it goes up each summer and down each winter. The red line joins the yearly averages, so you can see the slow rise underneath. Hover a point for its exact value. ${st.valid_months != null ? `${st.valid_months} of ${st.months ?? months} months have a reliable reading; ` : ""}missing months are left empty, never filled in.</p>
+        <p class="note">The long-term change is tested with a seasonal Mann-Kendall test, which compares each month only with the same month in other years. The published result is a yearly rate, so no fitted line is drawn here.</p>`;
+    }
+    return `<h2 id="zoom-title">How strong is the evidence?</h2>
+      <figure class="eng-viz">${pvalSvg(rid, true)}</figure>
+      ${tiles([[name, pExact(t.p), "its p-value"], ["Threshold", "0.05", "below this counts as a real pattern"], ["Verdict", sureShort(t.p), t.p < 0.05 ? "unlikely to be chance" : "could be chance"]])}
+      <p class="zoom-text">A p-value answers one question: if nothing were really changing, how often would we see a pattern this strong just by luck? A small p-value means "almost never", so the warming is very unlikely to be an accident. Anything left of the dashed line (above 0.05) could be chance. The scale is stretched (each step is 1,000 times smaller) because these values are tiny.</p>
+      <p class="note">p-values come from the seasonal Mann-Kendall test on each area's monthly averages, as published by the project's analysis. A small p-value shows the warming is real; it does not show how large it is or what causes it.</p>`;
+  }
+  function openZoom(kind, rid, fromEl) {
+    const layer = $("zoom"), box = $("zoom-box");
+    state.zoom = {kind, rid}; zoomFrom = fromEl;
+    $("zoom-body").innerHTML = zoomBody(kind, rid);
+    layer.hidden = false;
+    const a = fromEl.getBoundingClientRect(), b = box.getBoundingClientRect();
+    if (!reduceMotion && b.width) {   // grow from where the small graph sits
+      box.style.transition = "none"; box.style.transformOrigin = "top left";
+      box.style.transform = `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width}, ${a.height / b.height})`; box.style.opacity = "0.4";
+      void box.offsetWidth;
+      box.style.transition = ""; box.style.transform = ""; box.style.opacity = "";
+    }
+    requestAnimationFrame(() => layer.classList.add("open"));
+    $("zoom-close").focus({preventScroll: true});
+  }
+  function closeZoom() {
+    const layer = $("zoom"), box = $("zoom-box");
+    if (layer.hidden) return;
+    const from = zoomFrom && document.body.contains(zoomFrom) ? zoomFrom : document.querySelector(`.zoomable[data-zoom="${state.zoom?.kind}"]`);
+    layer.classList.remove("open");
+    const done = () => { layer.hidden = true; box.style.transform = ""; box.style.opacity = ""; state.zoom = null; from?.focus({preventScroll: true}); };
+    if (reduceMotion || !from) { done(); return; }
+    const a = from.getBoundingClientRect(), b = box.getBoundingClientRect();
+    box.style.transformOrigin = "top left";
+    box.style.transform = `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width}, ${a.height / b.height})`; box.style.opacity = "0";
+    setTimeout(done, 360);
+  }
+
   function renderRegionPanel(box) {
     const q = state.region, rid = q !== "all" && state.quarterIds[q];
     const r = rid && state.regions?.find((x) => x.region_id === rid);
@@ -649,8 +774,8 @@
       <p class="ins-main">That adds up to about <b>${signed(t.slope * months, 1)} °C</b> over ${years} years (${s ? s.times[0].slice(0, 4) : 2003}–${s ? s.times[months - 1].slice(0, 4) : 2024}).</p>
       <p class="ins-sure"><b>How sure are we?</b> ${esc(sureText(t.p))}${st.ci_low_per_year != null ? ` The yearly change is most likely between ${signed(st.ci_low_per_year, 3)} and ${signed(st.ci_high_per_year, 3)} °C.` : ""}</p>
       <p class="ins-main">${val == null ? `No reliable average for ${esc(periodLabel())}.` : `In ${esc(periodLabel())} the ground here averaged <b>${fmt(val, 1)} °C</b> at night.`}</p>
-      <figure class="ins-chart">${monthlySvg(rid)}<figcaption>Every month since 2003. The big swings are summer and winter. Dashed lines mark months with no reliable reading; the red dot is the month on the map.</figcaption></figure>
-      <figure class="ins-chart">${sparkSVG(rid)}<figcaption>Each bar is one year: red was warmer than usual for this area, blue cooler.</figcaption></figure>
+      <button type="button" class="ins-chart zoomable" data-zoom="temp" aria-label="Enlarge the temperature graph for ${esc(areaName(q))}">${monthlySvg(rid)}<span class="zoom-cap"><b>Temperature, every month since 2003.</b> The big swings are summer and winter. <i>Click to enlarge</i></span></button>
+      <button type="button" class="ins-chart zoomable" data-zoom="pval" aria-label="Enlarge the strength-of-evidence graph">${pvalSvg(rid, false)}<span class="zoom-cap"><b>How strong is the evidence?</b> Further right is stronger. The red dot is this area. <i>Click to enlarge</i></span></button>
       <details class="ins-tech"><summary>Technical details</summary><dl>
         <dt>Sen's slope</dt><dd>${signed(perYear, 3)} °C/yr</dd>
         <dt>95% CI</dt><dd>${st.ci_low_per_year != null ? `${signed(st.ci_low_per_year, 3)} to ${signed(st.ci_high_per_year, 3)}` : "—"}</dd>
@@ -663,6 +788,7 @@
       </dl>
       <p class="ins-note">Seasonal Mann-Kendall test with seasonal Sen's slope on the area's monthly averages (${inQ.length || 48} grid cells). "Over the period" is a trend-line estimate, not a measured difference.</p></details>
       <p class="ins-actions"><button type="button" id="ins-compare">Compare with another area</button><button type="button" id="ins-method">How we know</button></p>`;
+    box.querySelectorAll(".zoomable").forEach((b) => b.addEventListener("click", () => openZoom(b.dataset.zoom, rid, b)));
     $("ins-compare").addEventListener("click", () => {
       state.rtA = rid; if (state.rtB === rid) state.rtB = state.quarterIds.whole;
       $("rt-a").value = state.rtA; $("rt-b").value = state.rtB;
@@ -893,6 +1019,7 @@
   function onMapKey(ev) {
     const steps = {ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1]};
     if (ev.key === "Escape") {
+      if (!$("zoom").hidden) return;
       if (state.cell) { setState({cell: null}); $("cell-live").textContent = "Cell closed."; }
       else if (state.region !== "all") { setState({region: "all"}); $("cell-live").textContent = "Region closed."; }
       return;
@@ -1394,10 +1521,37 @@
       $("ask").scrollIntoView({behavior: reduceMotion ? "auto" : "smooth", block: "center"});
       ask(b.dataset.ask);
     }));
-    let next = 0;
-    $("discover").addEventListener("click", () => {
-      const order = [...d.findings].sort((a, b) => (a.status === "supported" ? 0 : 1) - (b.status === "supported" ? 0 : 1));
-      showDiscovery(order[next++ % order.length].id, false);
+    // "Surprise me": show three of the findings at a time and shuffle to a different three.
+    // Only which cards are visible changes: the findings themselves, and the map state, are untouched.
+    const SHOW = Math.min(3, d.findings.length), btn = $("discover");
+    const pick = () => {   // Fisher-Yates: every finding has the same chance, no repeats within a draw
+      const ids = d.findings.map((f) => f.id);
+      for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+      return ids.slice(0, SHOW);
+    };
+    const apply = (ids) => {
+      state.discShown = ids;
+      for (const card of host.querySelectorAll(".disc")) card.classList.toggle("off", !ids.includes(card.dataset.id));
+      ids.forEach((id) => host.appendChild(host.querySelector(`.disc[data-id="${id}"]`)));   // shown cards, in drawn order
+    };
+    const initial = () => {
+      const family = (f) => f.id.split("-")[0], seen = new Set(), out = [];
+      const ranked = [...d.findings].sort((a, b) => (a.status === "supported" ? 0 : 1) - (b.status === "supported" ? 0 : 1));   // stable: backend order within a status
+      for (const f of ranked) { if (out.length < SHOW && !seen.has(family(f))) { seen.add(family(f)); out.push(f.id); } }
+      for (const f of ranked) { if (out.length < SHOW && !out.includes(f.id)) out.push(f.id); }
+      return out;
+    };
+    apply(initial());
+    btn.disabled = d.findings.length <= SHOW;
+    let shuffling = false;
+    btn.addEventListener("click", () => {
+      if (shuffling || d.findings.length <= SHOW) return;
+      shuffling = true; btn.disabled = true;
+      const before = [...state.discShown].sort().join();
+      let ids = pick();
+      for (let tries = 0; tries < 20 && [...ids].sort().join() === before; tries++) ids = pick();   // always a different three
+      const swap = () => { apply(ids); host.classList.remove("swapping"); setTimeout(() => { shuffling = false; btn.disabled = false; }, reduceMotion ? 0 : 180); };
+      if (reduceMotion) swap(); else { host.classList.add("swapping"); setTimeout(swap, 170); }
     });
     $("discovery-caveats").innerHTML = d.caveats.map((c) => `<li>${esc(c)}</li>`).join("");
     const p = d.provenance;
