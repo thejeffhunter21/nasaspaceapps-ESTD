@@ -133,10 +133,10 @@ with evidence.container():
     st.caption(f"{view.variable} ({view.display_units}) | {view.period_label}")
 
     st.subheader("Trend summary")
-    with st.container(horizontal=True):
-        st.metric(f"Slope ({view.display_slope_unit})", str(view.slope), border=True)
-        st.metric("p-value", view.display_p, border=True)
-        st.metric("Direction", view.direction, border=True)
+    slope_card, p_card, direction_card = st.columns(3)
+    slope_card.metric(f"Slope ({view.display_slope_unit})", view.display_slope, border=True)
+    p_card.metric("p-value", view.display_p, border=True)
+    direction_card.metric("Direction", view.direction, border=True)
     st.caption(
         "Statistically significant (p < 0.05)."
         if view.significant
@@ -149,7 +149,11 @@ with evidence.container():
         width="stretch",
         alt=(
             f"Monthly {view.variable.lower()} in {view.region_label}, {view.period_label}, "
-            f"in {view.display_units}. Gaps indicate missing observations."
+            f"in {view.display_units}. Direction: {view.direction}; "
+            f"slope {view.display_slope} {view.display_slope_unit}; "
+            f"{'statistically significant' if view.significant else 'not statistically significant'} "
+            f"at p < 0.05. Missing months: {sum(value is None for value in view.values)}; "
+            "gaps indicate missing observations."
         ),
     )
     st.caption("Gaps indicate missing observations.")

@@ -22,9 +22,11 @@ def monthly_chart(view: ResultsView) -> go.Figure:
         hovertemplate=f"%{{x|%Y-%m}}<br>%{{y}} {escape(view.display_units)}<extra></extra>",
     ))
     figure.update_layout(
-        xaxis={"title": "Month", "type": "date", "tickformat": "%Y-%m"},
-        yaxis={"title": f"{view.variable} ({view.display_units})"},
+        xaxis={"title": "Month", "type": "date", "tickformat": "%Y-%m",
+               "nticks": 4, "automargin": True},
+        yaxis={"title": f"{view.variable} ({view.display_units})", "automargin": True},
         showlegend=False,
-        margin={"t": 20},
+        margin={"t": 20, "b": 60},
+        font={"size": 14},
     )
     return figure

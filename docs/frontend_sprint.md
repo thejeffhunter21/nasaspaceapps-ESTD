@@ -16,8 +16,8 @@ it does not imply teammate approval or that outstanding coordination is complete
 | FE-07 | Design every state | Review |
 | FE-08 | Test the whole interaction | Review |
 | FE-09 | Verify the real snapshot | Review |
-| FE-10 | Complete the real-data story | Review |
-| FE-11 | Make it readable everywhere | To do |
+| FE-10 | Complete the real-data story | To do |
+| FE-11 | Make it readable everywhere | Review (Chrome/Safari checks pending) |
 | FE-12 | Freeze a dependable demo | To do |
 | FE-13 | Fix and document | To do |
 | FE-14 | Rehearse without Wi-Fi | To do |
@@ -467,6 +467,31 @@ backend, AI, shared contract, dependencies or hosting is changed. Teammate revie
 remains pending; FE-10 has not started.
 
 
+## FE-11: make it readable everywhere
+
+Trend cards use three equal-width native Streamlit columns that stack on phones.
+The slope card displays six significant figures (scientific notation for tiny
+values), preserving its raw value and sign. For example, the main real result
+now displays `0.0077125` rather than `0.0077125000000000015`. No statistics or
+significance decisions are recomputed.
+
+The chart keeps its variable/units and month axes, adds automatic label margins,
+limits date tick crowding and uses a 14 px chart font. Its accessible description
+now includes direction, slope, significance in words and missing-month count.
+The existing plain-text explanation, visible significance caption, source/method
+and sample warnings remain intact. Native focus styling and theme are retained.
+
+Observed at 375 px and 1440 px: no page overflow; stacked phone cards and equal
+desktop cards; keyboard region switching, refresh-button focus and Enter access
+to provenance worked. Contrast was spot-checked in the observed dark theme.
+All 108 frontend tests and 536 repository tests passed, lint/whitespace checks
+passed, and the live snapshot verifier passed all five regions after accounting
+for the new display precision. See `docs/evidence/frontend/fe11_readability.md`.
+
+Native Chrome/Safari testing remains outstanding because native computer control
+was unavailable. Keep this ticket in Review until those browser checks and teammate
+review are complete. The branch starts from the latest fetched main including the
+final data freeze. It has not been merged or deployed; FE-12 has not started.
 ## FE-10: complete the real-data story
 
 The read-only `scripts/review_frontend_story.py` reviews all five saved or live
