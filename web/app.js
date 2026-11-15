@@ -223,6 +223,9 @@
     return out;
   }
   const freeways = {NW: [], NE: [], SW: [], SE: []};
+  // Phoenix metro outline (Natural Earth urban area, MODIS c. 2002-2003): shapes the map base.
+  // Visual only: every cell is still drawn and analysed; cells outside it are faded.
+  const urban = {parts: null, inside: null};
 
   // ---------- deck ----------
   const deckgl = new Deck({
@@ -297,11 +300,17 @@
       const {k, f} = pieceTransform(q, e);
       const [w, s, ea, n] = QUARTERS[q].b;
       const dim = state.region !== "all" && state.region !== q;
-      layers.push(new PolygonLayer({
-        id: `piece-${q}`, data: [{poly: rect(w, s, ea, n)}], getPolygon: (d) => d.poly.map(f),
-        getFillColor: [28, 29, 33, Math.round(150 + 90 * e)],
-        getLineColor: state.region === q ? [200, 55, 45, 255] : [120, 108, 84, 220],
-        lineWidthUnits: "pixels", getLineWidth: state.region === q ? 2.5 : 1, stroked: true, filled: true,
+      const shaped = urban.parts && urban.parts[q] && urban.parts[q].length;
+      layers.push(new PathLayer({   // the study window (the NASA grid is rectangular): a faint frame
+        id: `frame-${q}`, data: [rect(w, s, ea, n)], getPath: (d) => [...d, d[0]].map(f),
+        getColor: state.region === q ? [200, 55, 45, 200] : [120, 108, 84, shaped ? 90 : 220], widthUnits: "pixels",
+        getWidth: state.region === q ? 2 : 1, updateTriggers: {getPath: e, getColor: state.region, getWidth: state.region},
+      }));
+      layers.push(new PolygonLayer({   // the base, cut to the Phoenix metro outline
+        id: `piece-${q}`, data: shaped ? urban.parts[q].map((poly) => ({poly})) : [{poly: rect(w, s, ea, n)}],
+        getPolygon: (d) => d.poly.map(f), getFillColor: shaped ? [44, 40, 32, Math.round(170 + 70 * e)] : [28, 29, 33, Math.round(150 + 90 * e)],
+        getLineColor: state.region === q ? [200, 55, 45, 255] : [224, 164, 58, 200],
+        lineWidthUnits: "pixels", getLineWidth: state.region === q ? 2.5 : 1.4, stroked: true, filled: true,
         updateTriggers: {getPolygon: e, getFillColor: e, getLineColor: state.region, getLineWidth: state.region},
       }));
       layers.push(new PathLayer({id: `roads-${q}`, data: freeways[q], getPath: (d) => d.map(f),
@@ -319,7 +328,9 @@
           updateTriggers: {getPolygon: e, getLineColor: dim},
         }));
         const colour = (r) => {
-          const a = state.layer === "rate" && !r.significant_fdr ? Math.round(alpha * 0.35) : alpha;
+          let a = state.layer === "rate" && !r.significant_fdr ? Math.round(alpha * 0.35) : alpha;
+          if (urban.inside && !urban.inside.has(r.id)) a = Math.round(a * 0.42);   // outside the metro outline: faded
+
           return layerColor(state.layer, layerValue(r), a);
         };
         if (state.layer === "temperature") {
@@ -329,7 +340,7 @@
             getPosition: (c) => f([c.lon, c.lat]), getElevation: (c) => Math.max(0, c.value) * METRES_PER_DEG_C,
             elevationScale: k, getFillColor: colour, autoHighlight: true, highlightColor: [200, 55, 45, 200],
             material: {ambient: 0.55, diffuse: 0.55, shininess: 24}, transitions: trans,
-            updateTriggers: {getPosition: e, getElevation: state.frame, getFillColor: [state.frame, state.region]},
+            updateTriggers: {getPosition: e, getElevation: state.frame, getFillColor: [state.frame, state.region, !!urban.inside]},
           }));
         } else {
           layers.push(new PolygonLayer({
@@ -427,6 +438,7 @@
       <div class="legend-bar" style="background:${rampCss(L.ramp)}" aria-hidden="true"></div>
       <div class="legend-scale" aria-hidden="true">${L.ticks.map((t) => `<span>${esc(t)}</span>`).join("")}</div>
       <p class="legend-note">${esc(L.note)}</p>
+      ${urban.inside ? '<p class="legend-note"><i class="ua-key"></i>Bright: inside the Phoenix urban area (Natural Earth, MODIS c. 2002). Faded: rest of the NASA study window, same data.</p>' : ""}
       ${!reduceMotion && state.layer !== "rate" ? '<p class="legend-note">Changes ease between observed frames; only the settled frame is data.</p>' : ""}
       ${finding ? `<p class="legend-note overlay"><i style="border-color:rgb(${(HIGHLIGHT[finding.highlight] || HIGHLIGHT.none).join(",")})"></i>${finding.id === "ask" ? `Cells from your question: ${finding.cells.length} outlined.` : `${esc(finding.title)} (${esc(finding.status)}): ${finding.cells.length} cells outlined.`}</p>` : ""}`;
   }
@@ -454,6 +466,34 @@
     el.innerHTML = `<b>${shown} of ${state.frame.cells.length}</b> cells have a valid measurement for ${esc(periodLabel())}.${state.month === "avg" ? " An annual average needs all 12 months." : ""}`;
   }
 
+  const cellYears = {};   // cell id -> /cell-years result (derived yearly values), fetched on demand
+  function cellYearsSvg(id) {
+    const d = cellYears[id];
+    if (d === undefined) {
+      cellYears[id] = null;
+      getJSON(`${API}/cell-years?id=${encodeURIComponent(id)}`, true)
+        .then((res) => { cellYears[id] = res; if (state.cell === id) renderInspector(); })
+        .catch(() => { cellYears[id] = {error: true}; if (state.cell === id) renderInspector(); });
+    }
+    if (!d) return '<p class="ins-note">Loading the yearly record…</p>';
+    if (d.error) return '<p class="ins-note">Yearly record unavailable right now.</p>';
+    const W2 = 260, H2 = 92, pad = 4, ys = d.years, n = ys.length, bw = (W2 - 2 * pad) / n;
+    const vals = ys.map((y) => y.anomaly).filter((v) => v != null);
+    const m = Math.max(1, ...vals.map(Math.abs)), mid = H2 / 2, sc = (H2 / 2 - 6) / m;
+    const bars = ys.map((y, i) => {
+      const x = pad + i * bw;
+      if (y.anomaly == null) return `<rect x="${x + bw * 0.3}" y="${mid - 0.5}" width="${bw * 0.4}" height="1" fill="#9c927d"><title>${y.year}: incomplete year (${y.valid_months} of 12 months)</title></rect>`;
+      const h = Math.abs(y.anomaly) * sc;
+      return `<rect x="${x + bw * 0.15}" y="${y.anomaly >= 0 ? mid - h : mid}" width="${bw * 0.7}" height="${Math.max(h, 0.8)}" fill="${y.anomaly >= 0 ? "#b3261e" : "#4f6f8f"}"><title>${y.year}: ${fmt(y.value, 2)} °C (${signed(y.anomaly, 2)} vs usual)</title></rect>`;
+    }).join("");
+    const t = d.trend_line, X = (yr) => pad + (yr - ys[0].year + 0.5) * bw, Y = (a) => mid - a * sc;
+    const a0 = t.intercept + t.slope_per_year * (ys[0].year - t.centre_year), a1 = t.intercept + t.slope_per_year * (ys[n - 1].year - t.centre_year);
+    return `<svg viewBox="0 0 ${W2} ${H2 + 14}" role="img" aria-label="Yearly mean anomaly bars for cell ${esc(id)}, ${ys[0].year} to ${ys[n - 1].year}">
+      <line x1="0" x2="${W2}" y1="${mid}" y2="${mid}" stroke="#b9a67c"/>${bars}
+      <line x1="${X(ys[0].year)}" y1="${Y(a0)}" x2="${X(ys[n - 1].year)}" y2="${Y(a1)}" stroke="#2a2418" stroke-width="1.6" stroke-dasharray="4 3"/>
+      <text x="${pad}" y="${H2 + 11}" font-size="9" fill="#6b5d40">${ys[0].year}</text><text x="${W2 - pad}" y="${H2 + 11}" font-size="9" fill="#6b5d40" text-anchor="end">${ys[n - 1].year}</text>
+      <text x="${W2 - pad}" y="10" font-size="9" fill="#6b5d40" text-anchor="end">±${m.toFixed(1)} °C</text></svg>`;
+  }
   function renderInspector() {
     const box = $("inspector");
     if (!state.cell || !state.cellIndex[state.cell]) { box.hidden = true; return; }
@@ -470,7 +510,9 @@
         <dt>95% CI</dt><dd>${signed(r.ci_low_per_year, 3)} to ${signed(r.ci_high_per_year, 3)}</dd>
         <dt>Significance</dt><dd>${r.q == null ? "—" : `${r.significant_fdr ? "significant" : "not significant"} (q = ${r.q.toPrecision(2)})`}</dd>
         <dt>Valid months overall</dt><dd>${r.valid_months} of ${r.months}</dd>
+        ${urban.inside ? `<dt>Phoenix urban area (c. 2002)</dt><dd>${urban.inside.has(r.id) ? "inside" : "outside"}</dd>` : ""}
       </dl>
+      <figure class="ins-chart">${cellYearsSvg(r.id)}<figcaption>Yearly mean vs this cell's usual (complete years only); line: its Sen's slope trend.</figcaption></figure>
       <p class="ins-note">q is the p-value corrected for testing all ${state.cells.length} cells (Benjamini-Hochberg). Seasonal Mann-Kendall and Sen's slope on this cell's own QC'd months.</p>`;
   }
 
@@ -869,12 +911,72 @@
     $("discovery-prov").textContent = `${d.engine}. Data: ${p.cells} grid cells × ${p.months} months (${p.period[0]} to ${p.period[1]}), ${p.data_version}, grid_cells.csv sha256 ${p.sha256.slice(0, 12)}…`;
   }
 
+  function buildFindings() {
+    const stats = state.regionStats?.regions || {};
+    const rows = [...state.regions].sort((a, b) => (a.region_id === "phoenix_study_area" ? -1 : b.region_id === "phoenix_study_area" ? 1 : b.trend.slope - a.trend.slope));
+    const fastest = rows.filter((r) => r.region_id !== "phoenix_study_area")[0];
+    const months = state.series[rows[0].region_id]?.times.length || 264, years = months / 12;
+    $("findings-body").innerHTML = rows.map((r) => {
+      const t = r.trend, st = stats[r.region_id] || {};
+      return `<tr class="${r === fastest ? "fastest" : ""}"><td>${esc(r.region)}</td><td>${esc(t.trend)}${t.p < 0.05 ? ", significant" : ", not significant"}</td>
+        <td class="num">${signed(t.slope * 12, 3)} °C</td><td class="num">${st.ci_low_per_year != null ? `${signed(st.ci_low_per_year, 3)} to ${signed(st.ci_high_per_year, 3)}` : "—"}</td>
+        <td class="num">≈ ${signed(t.slope * months, 1)} °C</td><td class="num">${t.tau.toFixed(2)}</td><td class="num">${pText(t.p)}</td><td class="num">${st.valid_months ?? "—"}</td></tr>`;
+    }).join("");
+    const allUp = rows.every((r) => r.trend.trend === "increasing" && r.trend.p < 0.05), whole = rows[0], wst = stats[whole.region_id] || {};
+    $("findings-title").textContent = allUp ? "Every part of Phoenix warmed" : "Results by area";
+    $("findings-lede").textContent = allUp
+      ? `From ${whole.period.start} to ${whole.period.end}, nighttime land surface temperature rose in the whole study area and in all four quarters, and every trend is statistically significant. Across the whole area the trend is ${signed(whole.trend.slope * 12, 3)} °C per year${wst.ci_low_per_year != null ? ` (95% CI ${signed(wst.ci_low_per_year, 3)} to ${signed(wst.ci_high_per_year, 3)})` : ""}, roughly ${signed(whole.trend.slope * months, 1)} °C over ${years} years. The ${fastest.region.replace("Phoenix study area ", "")} quarter warmed fastest.`
+      : "Trend results for the whole study area and each quarter.";
+    $("data-period").textContent = `${whole.period.start} to ${whole.period.end}, ${months} months`;
+  }
+  function buildMethodFigure() {
+    const a = state.quarterIds.whole && state.anomaly[state.quarterIds.whole], svg = $("method-svg");
+    if (!a) { svg.innerHTML = ""; return; }
+    const years = [...new Set(a.times.map((t) => t.slice(0, 4)))];
+    const x0 = 34, y0 = 10, dx = (360 - x0 - 8) / years.length, dy = (230 - y0 - 22) / 12;
+    let html = "";
+    MONTHS.forEach((m, mi) => {
+      const y = y0 + mi * dy + dy / 2, hl = mi === 6;
+      if (hl) html += `<rect x="${x0 - 4}" y="${y - dy / 2 + 1}" width="${360 - x0 - 4}" height="${dy - 2}" rx="4" fill="rgba(106,75,214,.09)" stroke="rgba(106,75,214,.45)"/>`;
+      html += `<text x="${x0 - 8}" y="${y + 3.5}" text-anchor="end" font-size="9.5" fill="${hl ? "#b3261e" : "#9c927d"}" font-family="Courier Prime, monospace">${m}</text>`;
+      years.forEach((yr, yi) => {
+        const i = a.times.indexOf(`${yr}-${String(mi + 1).padStart(2, "0")}`), v = i < 0 ? null : a.values[i];
+        const fill = v == null ? "#1c1d21" : v >= 0 ? `rgba(200,55,45,${0.25 + 0.75 * Math.min(1, v / 3)})` : `rgba(90,130,170,${0.25 + 0.75 * Math.min(1, -v / 3)})`;
+        html += `<circle cx="${x0 + yi * dx + dx / 2}" cy="${y}" r="${Math.min(dx, dy) * 0.36}" fill="${fill}" stroke="${v == null ? "#4a463e" : "none"}"><title>${m} ${yr}: ${v == null ? "missing" : signed(v, 2) + " °C vs usual"}</title></circle>`;
+      });
+    });
+    html += `<text x="${x0}" y="222" font-size="9.5" fill="#9c927d" font-family="Courier Prime, monospace">${years[0]}</text><text x="352" y="222" text-anchor="end" font-size="9.5" fill="#9c927d" font-family="Courier Prime, monospace">${years[years.length - 1]}</text>`;
+    html += `<text x="${x0}" y="240" font-size="9.5" fill="#9c927d" font-family="Courier Prime, monospace">Blue: cooler, red: warmer than that month's usual</text>`;
+    svg.innerHTML = html;
+    if (state.baseline) {
+      const means = state.baseline.map((b) => b.mean);
+      $("swing").textContent = `${Math.round(Math.max(...means) - Math.min(...means))} °C`;
+    }
+  }
+
+  function buildProvenance() {
+    const d = state.discoveries?.provenance, st = state.mapStatic;
+    const rows = [
+      ["Product", "NASA Terra MODIS Land Surface Temperature, MOD11C3 version 6.1 (monthly), variable LST_Night_CMG"],
+      ["Archive", '<a href="https://doi.org/10.5067/MODIS/MOD11C3.061">NASA LP DAAC, doi:10.5067/MODIS/MOD11C3.061</a>'],
+      ["Grid", `0.05° cells (about 5 km); 16 × 12 = ${state.cells?.length ?? 192} cells, 112.4°–111.6° W, 33.2°–33.8° N`],
+      ["Period", st ? `${st.period[0]} to ${st.period[1]}` : "2003-01 to 2024-12"],
+      ["Quality control", "Good-quality flags and estimated error under 1 K only; failed months stay missing, never filled"],
+      ["Data version", d ? `<span class="mono">${esc(d.data_version)}</span>` : "phoenix-qc-v1.0"],
+      ["Cell file fingerprint", d ? `<span class="mono">grid_cells.csv sha256 ${esc(d.sha256.slice(0, 16))}…</span>` : "—"],
+      ["Statistics", "pymannkendall seasonal Mann-Kendall and Sen's slope; Sen's slope 95% CI (Gilbert 1987); Benjamini-Hochberg FDR"],
+      ["Map outline", "Natural Earth urban areas (public domain, MODIS c. 2002–2003): visual only"],
+    ];
+    $("provenance").innerHTML = rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join("");
+  }
   // ---------- data loading ----------
   async function load() {
     Object.assign(state, readUrl());
     try {
       const fw = await getJSON("assets/phoenix_freeways.json", true).catch(() => null);
       if (fw) for (const q of ORDER) freeways[q] = fw.paths.flatMap((p) => clipPolyline(p.path, QUARTERS[q].b));
+      const ua = await getJSON("assets/phoenix_urban_area.json", true).catch(() => null);
+      if (ua) { urban.parts = ua.quarters; urban.inside = new Set(ua.inside_cells); }
       const regions = (await getJSON(`${API}/regions`)).regions;
       state.regions = regions;
       state.quarterIds.whole = regions.find((r) => r.region_id.endsWith("_study_area"))?.region_id;
@@ -898,13 +1000,14 @@
       });
       state.regionStats = stats; state.discoveries = discoveries;
       if (mapStatic) {
+        state.mapStatic = mapStatic;
         state.cells = mapStatic.cells;
         state.cellIndex = Object.fromEntries(mapStatic.cells.map((c) => [c.id, c]));
       }
       if (state.cell && !state.cellIndex[state.cell]) state.cell = null;
       const times = state.series[state.quarterIds.whole || ids[0]].times;
       const years = [...new Set(times.map((t) => +t.slice(0, 4)))];
-      buildControls(years); buildCompareControls(years); buildPanels();
+      buildControls(years); buildCompareControls(years); buildPanels(); buildFindings(); buildMethodFigure(); buildProvenance();
       buildDiscoveries(); renderCoverage();
       await showPeriod();
       renderCompare(); renderRegionTest();

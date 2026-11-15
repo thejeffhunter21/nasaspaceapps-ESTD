@@ -58,6 +58,24 @@ CDN), rubber-stamp status badges and an "EVIDENCE" stamp on answers, evidence-re
 Map: Esri World Dark Gray basemap; Inferno-like ramp for temperature, a diverging blue–red ramp
 for anomalies, Plasma for warming rate, Viridis for coverage.
 
+## Added for the judged demo
+
+- **Phoenix-shaped map base.** The dark base under the columns follows the Phoenix metro urban
+  area (Natural Earth 1:10m urban areas, public domain, mapped from MODIS c. 2002–2003; built by
+  `scripts/build_phoenix_outline.py` into `web/assets/phoenix_urban_area.json`). The 88 cells
+  inside are drawn bright; the other 104 stay on the map, faded. Visual only: every statistic
+  still uses all 192 cells, and the study-window frame is still drawn.
+- **Cell yearly chart.** The cell details box shows the cell's yearly mean versus its usual
+  (complete years only) with its Sen's slope trend line, from `GET /cell-years?id=`.
+- **Methodology explorer.** Nine plain-language questions, each with a "Technical detail" that
+  states what the code does; the seasonal-comparison figure; an evidence log of NASA data
+  provenance (product, DOI, grid, period, QC, data version, cell-file fingerprint, statistics);
+  and the results-at-a-glance table.
+- **Guided tour** (`web/tour.js`). Six skippable steps (scene, time, region, compare, ask, keep
+  your evidence). Shown once per browser (localStorage), not when a shared link is opened,
+  replayable from the header and footer; Esc closes it. Step 6 points to share links and CSV
+  because there is no notebook yet.
+
 ## Endpoints the page uses
 
 | Endpoint | Returns |
@@ -67,6 +85,7 @@ for anomalies, Plasma for warming rate, Viridis for coverage.
 | `/map-static` | Per cell: id, centre, quarter, footprint, trend, CI, p, q, direction, valid months |
 | `/region-stats` | Published quarter slopes with Sen's slope 95% CI and valid months |
 | `/region-compare?a=&b=` | Direct test on the monthly difference A − B |
+| `/cell-years?id=` | One cell's yearly means (complete years only), anomalies and trend line: derived values, not the monthly record |
 | `/discoveries` | Verified findings with full fields plus a one-line `summary`; no raw series |
 | `POST /ask` | Answer to a free-text question: `headline`, `stats`, `details`, `method`, `caveat`, `cells`, `tools_used`, `kind` |
 
@@ -78,5 +97,5 @@ for anomalies, Plasma for warming rate, Viridis for coverage.
 - Transitions between frames are eased for readability; only the settled frame is data.
 - No secrets in the page or the URL. The private `/analysis/*` service is never called from
   the browser.
-- Not built yet (deliberately not faked): notebook, PDF export, onboarding tour, and 1 km cells
+- Not built yet (deliberately not faked): notebook, PDF and PNG export, and 1 km cells
   (see `docs/data_request_1km.md`).

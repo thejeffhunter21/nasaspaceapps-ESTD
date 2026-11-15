@@ -114,3 +114,35 @@ def region_stats() -> dict:
 @router.get("/region-compare")
 def region_compare(a: str = Query(..., max_length=40), b: str = Query(..., max_length=40)) -> dict:
     return _guard(tools.region_difference, a, b)
+
+
+@lru_cache(maxsize=256)
+def _cell_years(sha: str, cell_id: str) -> dict:
+    """One cell's yearly means (complete years only) and anomalies: derived values for a chart,
+    not the monthly record (which stays on the server)."""
+    grid = load_grid()
+    if cell_id not in grid.cells:
+        raise tools.ToolError(f"unknown cell {cell_id!r}")
+    c = grid.cells[cell_id]
+    base = _baselines(sha)[cell_id]["annual"]
+    years = []
+    for year in sorted({t[:4] for t in grid.months}):
+        vals = [v for t, v in zip(grid.months, c.values) if t[:4] == year]
+        valid = sum(v is not None for v in vals)
+        mean = sum(vals) / 12 if valid == 12 else None
+        years.append({"year": int(year), "value": mean, "valid_months": valid,
+                      "anomaly": None if mean is None or base is None else mean - base})
+    slope = tools.cell_trend(cell_id)["slope_per_year"]
+    mid = (years[0]["year"] + years[-1]["year"]) / 2
+    resid = sorted(y["anomaly"] - slope * (y["year"] - mid) for y in years if y["anomaly"] is not None)
+    intercept = resid[len(resid) // 2] if len(resid) % 2 else (resid[len(resid) // 2 - 1] + resid[len(resid) // 2]) / 2
+    return {"id": cell_id, "units": "degC", "baseline": "mean of this cell's complete-year annual averages, 2003–2024",
+            "annual_rule": "A year is shown only when all 12 months are valid.",
+            "trend_line": {"slope_per_year": slope, "centre_year": mid, "intercept": intercept,
+                           "method": "Seasonal Sen's slope through the median residual of the yearly anomalies"},
+            "years": years}
+
+
+@router.get("/cell-years")
+def cell_years(id: str = Query(..., pattern=r"^r\d{2}_c\d{2}$")) -> dict:
+    return _guard(lambda: _cell_years(load_grid().sha256, id))

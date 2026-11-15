@@ -68,3 +68,21 @@ def test_region_compare_is_a_direct_test(client):
     r = client.get("/region-compare", params={"a": "phoenix_southeast", "b": "phoenix_northeast"}).json()
     assert r["significant"] and "difference" in r["method"]
     assert client.get("/region-compare", params={"a": "phoenix_southeast", "b": "phoenix_southeast"}).status_code == 422
+
+
+def test_cell_years_are_complete_year_means_of_the_export(client):
+    import csv
+    r = client.get("/cell-years?id=r10_c03")
+    assert r.status_code == 200
+    body = r.json()
+    with open("data/processed/grid_cells.csv") as fh:
+        rows = [x for x in csv.DictReader(fh) if x["cell_id"] == "r10_c03"]
+    for y in body["years"]:
+        vals = [float(x["value"]) for x in rows if x["date"].startswith(str(y["year"])) and x["value"]]
+        assert y["valid_months"] == len(vals)
+        assert (y["value"] is None) == (len(vals) < 12)
+        if y["value"] is not None:
+            assert abs(y["value"] - sum(vals) / 12) < 1e-9
+    assert client.get("/cell-years?id=r99_c99").status_code == 422
+    assert client.get("/cell-years?id=../x").status_code == 422
+    assert "series" not in body and len(body["years"]) == 22

@@ -125,3 +125,15 @@ def test_page_reads_one_frame_at_a_time_and_never_the_raw_file():
 def test_share_links_never_carry_secrets():
     js = (ROOT / "web/app.js").read_text()
     assert "ANALYSIS_TOKEN" not in js and "X-Analysis-Token" not in js
+
+
+def test_tour_methodology_and_outline_are_wired():
+    html = (ROOT / "web/index.html").read_text()
+    assert 'src="tour.js"' in html and "data-tour-start" in html
+    assert 'id="method"' in html and 'id="provenance"' in html and "doi:10.5067" not in html  # DOI is built in app.js
+    tour = (ROOT / "web/tour.js").read_text()
+    assert tour.count("title:") == 6 and "There is no saved notebook yet" in tour
+    import json
+    outline = json.loads((ROOT / "web/assets/phoenix_urban_area.json").read_text())
+    assert set(outline["quarters"]) == {"NW", "NE", "SW", "SE"} and len(outline["inside_cells"]) == 88
+    assert "visual" in outline["note"].lower()
