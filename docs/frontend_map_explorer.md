@@ -11,7 +11,7 @@ USE_MOCK=false uv run --locked uvicorn earth_system_trend.api.app:app --port 800
 ```
 
 Every merge to `main` deploys it with the API. The only request outside the API is the Esri World
-Light Gray basemap (no key). Without it the map still shows the grid, freeways (Natural Earth,
+Dark Gray basemap (no key). Without it the map still shows the grid, freeways (Natural Earth,
 `web/assets/`) and all data.
 
 ## What it shows
@@ -52,9 +52,11 @@ Light Gray basemap (no key). Without it the map still shows the grid, freeways (
     findings table, data facts, limits) and the separate Climate Detective block were removed
     to keep the page focused; their numbers remain available through the question box and API.
 
-Colours: Turbo ramp for temperature, a saturated diverging ramp for anomalies, Plasma for
-warming rate, Viridis for coverage; one colour per quarter (NW teal, NE violet, SW amber,
-SE pink) and a blue–violet–pink–orange accent gradient.
+Theme ("Case File", detective noir): dark desk background, manila-folder panels, Special Elite
+headings and Courier Prime text (both bundled in `web/vendor/fonts/`, Apache 2.0 / OFL 1.1, no
+CDN), rubber-stamp status badges and an "EVIDENCE" stamp on answers, evidence-red accents.
+Map: Esri World Dark Gray basemap; Inferno-like ramp for temperature, a diverging blue–red ramp
+for anomalies, Plasma for warming rate, Viridis for coverage.
 
 ## Endpoints the page uses
 

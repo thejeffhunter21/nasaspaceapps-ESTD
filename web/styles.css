@@ -443,3 +443,84 @@ button.link:hover { text-decoration: underline; }
 button.primary.small { font-size: 13.5px; padding: 7px 14px; border-radius: 999px; }
 .answer-sugg { margin: 12px 0 0; }
 @media (max-width: 640px) { .answer { padding: 16px; } .tile-value { font-size: 19px; } .answer-stats { grid-template-columns: 1fr 1fr; } }
+
+/* =====================================================================
+   Case File theme (detective noir). Overrides the colourful theme above.
+   Fonts are bundled in web/vendor/fonts (no CDN).
+   ===================================================================== */
+@font-face { font-family: "Special Elite"; src: url("vendor/fonts/special-elite-latin-400-normal.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Courier Prime"; src: url("vendor/fonts/courier-prime-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Courier Prime"; src: url("vendor/fonts/courier-prime-latin-700-normal.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+:root { --bg:#141518; --bg-2:#1c1d21; --ink:#efe6d2; --ink-2:#cfc4ad; --ink-3:#9c927d; --line:#34322d; --line-2:#4a463e;
+  --blue:#c8372d; --violet:#c8372d; --pink:#c8372d; --orange:#e0a43a; --teal:#8fae8b;
+  --grad: linear-gradient(90deg,#c8372d,#e0a43a); --manila:#e9dbb8; --manila-ink:#2a2418; --stamp:#b3261e;
+  --sans: "Courier Prime", ui-monospace, monospace; --mono: "Courier Prime", ui-monospace, monospace; }
+body { background: radial-gradient(1200px 700px at 30% 0%, rgba(224,164,58,.10), transparent 60%), #141518 !important; color: var(--ink); }
+.kicker, .eyebrow { background:none !important; -webkit-background-clip:initial !important; color:#e0a43a !important; font-family:"Courier Prime",monospace; letter-spacing:.2em; }
+.brand h1, .block h2 { background:none !important; -webkit-background-clip:initial !important; color:var(--ink) !important; font-family:"Special Elite",monospace; font-weight:400; letter-spacing:0; }
+.brand h1::after { content:""; display:block; width:120px; height:3px; background:#c8372d; margin:10px 0 0 auto; }
+.lede, .wide, .block p { color: var(--ink-2); }
+.block::before { background: repeating-linear-gradient(90deg,#c8372d 0 14px,transparent 14px 22px) !important; opacity:.6 !important; height:2px !important; }
+/* control panel = manila folder */
+.controls, .inspector, .panel { background: var(--manila) !important; color: var(--manila-ink) !important; border: 0 !important; border-radius: 3px !important;
+  box-shadow: 0 18px 40px rgba(0,0,0,.55), inset 0 0 0 1px rgba(0,0,0,.08) !important; }
+.controls::before { content:"CASE FILE · ESTD-2026"; display:block; font:700 11px "Courier Prime",monospace; letter-spacing:.18em; color:#7a6a45;
+  border-bottom:1px dashed #b9a67c; padding-bottom:6px; margin-bottom:8px; }
+.controls *, .inspector *, .panel * { color: var(--manila-ink); }
+.controls .ctl-title { font-family:"Special Elite",monospace; font-size:14px; }
+.controls select, .controls button, .months button, .timeline button { background:#f6edd5 !important; border-color:#b9a67c !important; color:var(--manila-ink) !important; font-family:"Courier Prime",monospace; }
+.months button[aria-checked=true], #layers button[aria-checked=true], #play { background:#2a2418 !important; color:#f6edd5 !important; border-color:#2a2418 !important; }
+#year { accent-color:#c8372d; } #year-out, .ctl-period { color:#b3261e !important; }
+.panel h3 { color:#2a2418 !important; font-family:"Special Elite",monospace; } .panel { border-top: 0 !important; }
+.panel .rate, .panel .rate * { color:#b3261e !important; }
+.tag { background:transparent !important; color:#b3261e !important; border:2px solid #b3261e; transform:rotate(-4deg); font-family:"Courier Prime",monospace; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
+.hint, .attribution, .attribution * { color:#9c927d !important; }
+/* Ask = interrogation typewriter */
+.ask-box { background:#1c1d21 !important; background-image:none !important; border:1px solid #4a463e !important; border-radius:4px !important; box-shadow:none !important; }
+.ask-box input { color:var(--ink); font-family:"Courier Prime",monospace; }
+.ask-box input::placeholder { color:#8a806c; }
+button.primary { background:#c8372d !important; box-shadow:none !important; border-radius:3px !important; font-family:"Courier Prime",monospace; text-transform:uppercase; letter-spacing:.1em; }
+.chip { background:transparent !important; color:var(--ink-2) !important; border:1px dashed #5a5448 !important; border-radius:3px !important; font-family:"Courier Prime",monospace; }
+.answer { background: var(--manila) !important; border:0 !important; border-radius:3px !important; color:var(--manila-ink); position:relative;
+  box-shadow: 0 22px 50px rgba(0,0,0,.55) !important; }
+.answer::after { content:"EVIDENCE"; position:absolute; right:26px; top:18px; transform:rotate(8deg); font:700 18px "Courier Prime",monospace; letter-spacing:.2em;
+  color:#b3261e; border:3px solid #b3261e; padding:2px 10px; opacity:.75; }
+.answer-q, .answer-q::before { color:#7a6a45 !important; }
+.answer-kind { background:#2a2418 !important; border-radius:2px !important; font-family:"Courier Prime",monospace; }
+.answer-head { color:#1f1a10 !important; font-family:"Special Elite",monospace; font-weight:400 !important; }
+.tile { background:#f6edd5 !important; border-left:0 !important; border-top:4px solid #2a2418; border-radius:2px !important; box-shadow:none !important; }
+.tile-value { color:#b3261e !important; font-family:"Courier Prime",monospace; }
+.tile-label, .tile-sub, .answer-details, .answer-meta { color:#4a3f2a !important; }
+.pill { background:#f6edd5 !important; color:#4a3f2a !important; border-color:#b9a67c !important; border-radius:2px !important; }
+.pill.ok { background:#2a2418 !important; color:#f6edd5 !important; }
+/* discovery cards = case files with stamps */
+.disc-bar h3 { color:var(--ink); font-family:"Special Elite",monospace; font-weight:400; }
+.disc { background: var(--manila) !important; border-radius:2px !important; box-shadow:0 14px 30px rgba(0,0,0,.5) !important; }
+.disc::before { background: #2a2418 !important; height:3px !important; }
+.disc h3 { color:#1f1a10 !important; font-family:"Special Elite",monospace; font-weight:400; }
+.disc-obs { color:#3b3222 !important; } .disc summary { color:#6b5d40 !important; }
+.badge { background:transparent !important; border:2px solid currentColor; border-radius:2px !important; transform:rotate(-3deg); display:inline-block;
+  font-family:"Courier Prime",monospace; text-transform:uppercase; letter-spacing:.12em; font-weight:700; }
+.badge.supported { color:#b3261e !important; } .badge.exploratory { color:#8a6a1e !important; }
+button.ghost { background:transparent !important; border:1.5px solid #2a2418 !important; color:#2a2418 !important; border-radius:2px !important; font-family:"Courier Prime",monospace; }
+button.link { color:#b3261e !important; font-family:"Courier Prime",monospace; }
+.det-how { border-color:#34322d; color:var(--ink-2); }
+.foot, .foot * { color:#8a806c !important; }
+.compare-maps figure, .compare-stats, .region-test, .cov-fig { background:#1c1d21; border-color:#34322d !important; }
+/* Case File: contrast fixes */
+.controls .status, .controls .status b, #data-status, #data-status b { color: #2a2418 !important; }
+.controls .legend-note, .controls .ctl-label, .ticks, .ticks * { color: #6b5d40 !important; }
+.seg { background: #f6edd5 !important; border-color: #b9a67c !important; }
+.disc-bar button.ghost, .block > button.ghost { border-color: #cfc4ad !important; color: #efe6d2 !important; }
+.answer button.ghost, .disc button.ghost { border-color: #2a2418 !important; color: #2a2418 !important; }
+.inspector h3 { font-family: "Special Elite", monospace; font-weight: 400; }
+.inspector dd, .panel dd { font-family: "Courier Prime", monospace; }
+.ctl-toggle { background: #f6edd5 !important; border-color: #b9a67c !important; color: #2a2418 !important; }
+::selection { background: #c8372d; color: #fff; }
+a { color: #e0a43a; }
+#compare select, .region-test select, #compare button { background: #1c1d21 !important; color: #efe6d2 !important; border: 1px solid #4a463e !important; font-family: "Courier Prime", monospace; }
+#compare option { background: #1c1d21; color: #efe6d2; }
+.mini, .mini th, .mini td, table { color: var(--ink-2); border-color: #34322d !important; }
+@media (max-width: 640px) { .answer::after { font-size: 12px; right: 12px; top: 10px; } .brand h1::after { margin-left: 0; } }
+.answer-q { padding-right: 150px; }
+@media (max-width: 640px) { .answer::after { display: none; } .answer-q { padding-right: 0; } .tile-value { font-size: 16px !important; } }

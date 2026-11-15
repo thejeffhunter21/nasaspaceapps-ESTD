@@ -26,8 +26,8 @@
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const PLACES = [["Downtown Phoenix", -112.074, 33.4484], ["Tempe", -111.94, 33.4255],
                   ["Glendale", -112.186, 33.5387], ["Scottsdale", -111.926, 33.4942]];
-  const HIGHLIGHT = {ask: [236, 72, 153], faster: [106, 75, 214], slower: [37, 99, 235], extremes: [217, 70, 39],
-                     anomalies: [217, 119, 6], none: [106, 75, 214]};
+  const HIGHLIGHT = {ask: [230, 60, 50], faster: [230, 60, 50], slower: [110, 170, 230], extremes: [255, 255, 255],
+                     anomalies: [255, 255, 255], none: [230, 60, 50]};   // evidence-string red, steel blue, chalk white
   const METRES_PER_DEG_C = 95;                 // column height scale (fixed for every period)
   const PITCH = 42;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -37,10 +37,10 @@
   const CHARS = " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,:+-()°·–/".split("");
 
   // ---------- layer definitions (each with its own scale, units and description) ----------
-  // Vivid ramps: Turbo for temperature, a saturated diverging ramp for anomalies,
+  // Case-file theme ramps: Inferno for temperature, a saturated diverging ramp for anomalies,
   // Plasma for warming rate, Viridis for coverage (all ordered light/dark monotonic enough to read).
-  const RAMP_TEMP = [[48, 18, 59], [70, 107, 227], [40, 187, 236], [49, 241, 137], [164, 252, 60],
-                     [237, 208, 58], [251, 128, 34], [215, 47, 5], [122, 4, 3]];
+  const RAMP_TEMP = [[20, 11, 52], [66, 10, 104], [120, 28, 109], [171, 51, 95], [214, 84, 60],
+                     [243, 128, 30], [250, 180, 40], [252, 230, 120], [252, 255, 190]];   // Inferno-like: dark desk, hot = bright
   const RAMP_DIV = [[8, 81, 156], [49, 163, 233], [158, 218, 250], [246, 246, 246], [255, 196, 150],
                     [250, 104, 64], [190, 18, 60]];
   const RAMP_RATE = [[13, 8, 135], [106, 0, 168], [177, 42, 144], [225, 100, 98], [252, 166, 54],
@@ -264,13 +264,13 @@
 
   function getTooltip({object}) {
     if (!object) return null;
-    const style = {backgroundColor: "#fff", color: "#141a2b", border: "1px solid #cfd4e2", borderRadius: "8px",
+    const style = {backgroundColor: "#e9dbb8", color: "#2a2418", border: "1px solid #b9a67c", borderRadius: "3px", fontFamily: "\"Courier Prime\", monospace",
                    fontSize: "12px", boxShadow: "0 6px 16px rgba(20,26,43,.12)", padding: "8px 10px"};
     if (object.kind === "cell") {
       const v = layerValue(object), L = LAYERS[state.layer];
       const shown = v == null ? "no valid measurement" : state.layer === "rate" ? `${signed(v, 3)} °C/yr` :
         state.layer === "anomaly" ? `${signed(v, 2)} °C vs usual` : state.layer === "coverage" ? `${v} of 12 months` : `${fmt(v, 2)} °C`;
-      return {style, html: `<b>Cell ${esc(object.id)}</b> · ${esc(QUARTERS[object.quarter].name)}<br>${esc(L.label)}${state.layer === "rate" ? "" : `, ${esc(periodLabel())}`}: <b>${shown}</b><br><span style="color:#7a839c">Click for details</span>`};
+      return {style, html: `<b>Cell ${esc(object.id)}</b> · ${esc(QUARTERS[object.quarter].name)}<br>${esc(L.label)}${state.layer === "rate" ? "" : `, ${esc(periodLabel())}`}: <b>${shown}</b><br><span style="color:#7a6a45">Click for details</span>`};
     }
     if (object.kind === "quarter") {
       return {style, html: `<b>${esc(object.label)}</b><br>Quarter average, ${esc(periodLabel())}: <b>${object.value == null ? "no valid value" : fmt(object.value, 2) + " °C"}</b>`};
@@ -282,9 +282,9 @@
     const e = state.eased, layers = [];
     const trans = reduceMotion ? {} : {getElevation: {duration: 450, easing: easeInOut}, getFillColor: {duration: 450, easing: easeInOut}};
     layers.push(new TileLayer({
-      // Esri World Light Gray Canvas: no API key needed.
+      // Esri World Dark Gray Canvas: no API key needed.
       id: "basemap", minZoom: 0, maxZoom: 16, tileSize: 256, opacity: 1 - 0.9 * e,
-      data: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+      data: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
       onTileError: () => {}, maxRequests: 8,
       renderSubLayers: (props) => {
         const {boundingBox} = props.tile;
@@ -299,13 +299,13 @@
       const dim = state.region !== "all" && state.region !== q;
       layers.push(new PolygonLayer({
         id: `piece-${q}`, data: [{poly: rect(w, s, ea, n)}], getPolygon: (d) => d.poly.map(f),
-        getFillColor: [255, 255, 255, Math.round(70 + 170 * e)],
-        getLineColor: state.region === q ? [106, 75, 214, 255] : [120, 132, 168, 200],
+        getFillColor: [28, 29, 33, Math.round(150 + 90 * e)],
+        getLineColor: state.region === q ? [200, 55, 45, 255] : [120, 108, 84, 220],
         lineWidthUnits: "pixels", getLineWidth: state.region === q ? 2.5 : 1, stroked: true, filled: true,
         updateTriggers: {getPolygon: e, getFillColor: e, getLineColor: state.region, getLineWidth: state.region},
       }));
       layers.push(new PathLayer({id: `roads-${q}`, data: freeways[q], getPath: (d) => d.map(f),
-        getColor: [96, 108, 140, 150], widthUnits: "pixels", getWidth: 1.2, updateTriggers: {getPath: e}}));
+        getColor: [150, 126, 84, 130], widthUnits: "pixels", getWidth: 1.2, updateTriggers: {getPath: e}}));
 
       if (state.cells) {
         const recs = state.cells.filter((c) => c.quarter === q).map((c) => cellRecord(c.id));
@@ -314,7 +314,7 @@
         layers.push(new PolygonLayer({   // missing cells: outline only, never a value
           id: `missing-${q}`, data: missing, pickable: true,
           getPolygon: (c) => c.footprint.map((p) => [c.lon + (p[0] - c.lon) * 0.84, c.lat + (p[1] - c.lat) * 0.84]).map(f),
-          getFillColor: [255, 255, 255, 0], getLineColor: [150, 158, 184, dim ? 90 : 220], lineWidthUnits: "pixels",
+          getFillColor: [255, 255, 255, 0], getLineColor: [120, 108, 84, dim ? 70 : 200], lineWidthUnits: "pixels",
           getLineWidth: 1, stroked: true, filled: true,
           updateTriggers: {getPolygon: e, getLineColor: dim},
         }));
@@ -327,7 +327,7 @@
             id: `cells-${q}`, data: has, pickable: true, extruded: true, diskResolution: 4, angle: 45,
             radius: 0.05 * 0.3 * 111320 * Math.SQRT2 * Math.cos(33.5 * Math.PI / 180) * k,
             getPosition: (c) => f([c.lon, c.lat]), getElevation: (c) => Math.max(0, c.value) * METRES_PER_DEG_C,
-            elevationScale: k, getFillColor: colour, autoHighlight: true, highlightColor: [106, 75, 214, 170],
+            elevationScale: k, getFillColor: colour, autoHighlight: true, highlightColor: [200, 55, 45, 200],
             material: {ambient: 0.55, diffuse: 0.55, shininess: 24}, transitions: trans,
             updateTriggers: {getPosition: e, getElevation: state.frame, getFillColor: [state.frame, state.region]},
           }));
@@ -352,7 +352,7 @@
         if (state.cell && state.cellIndex[state.cell]?.quarter === q) {
           const c = state.cellIndex[state.cell];
           layers.push(new PathLayer({id: `sel-${q}`, data: [c], getPath: (d) => [...d.footprint, d.footprint[0]].map(f),
-            getColor: [20, 26, 43, 255], widthUnits: "pixels", getWidth: 3, parameters: {depthTest: false},
+            getColor: [239, 230, 210, 255], widthUnits: "pixels", getWidth: 3, parameters: {depthTest: false},
             updateTriggers: {getPath: [e, state.cell]}}));
         }
       } else {
@@ -368,7 +368,7 @@
         id: `qname-${q}`, data: [{t: QUARTERS[q].name.toUpperCase()}], characterSet: CHARS,
         getPosition: () => f([q.endsWith("W") ? w + 0.012 : ea - 0.012, n - 0.012]),
         getTextAnchor: q.endsWith("W") ? "start" : "end", getAlignmentBaseline: "top",
-        getText: (d) => d.t, getSize: 11, getColor: state.region === q ? [106, 75, 214, 255] : [74, 84, 112, 230],
+        getText: (d) => d.t, getSize: 11, getColor: state.region === q ? [200, 55, 45, 255] : [224, 164, 58, 230],
         fontWeight: 700, fontFamily: "system-ui, -apple-system, Segoe UI, Arial", parameters: {depthTest: false},
         updateTriggers: {getPosition: e, getColor: state.region},
       }));
@@ -376,7 +376,7 @@
     const placeAlpha = Math.round(230 * (1 - clamp(e * 3)));
     layers.push(new TextLayer({
       id: "places", data: PLACES, characterSet: CHARS, getPosition: (d) => [d[1], d[2], 4200],
-      getText: (d) => d[0], getSize: 12, getColor: [20, 26, 43, placeAlpha], fontWeight: 600,
+      getText: (d) => d[0], getSize: 12, getColor: [239, 230, 210, placeAlpha], fontWeight: 600,
       fontFamily: "system-ui, -apple-system, Segoe UI, Arial", outlineWidth: 3, outlineColor: [255, 255, 255, placeAlpha],
       fontSettings: {sdf: true}, visible: placeAlpha > 4, parameters: {depthTest: false}, updateTriggers: {getColor: placeAlpha},
     }));
@@ -558,7 +558,7 @@
     const rects = bars.map((b, i) => {
       if (b.v == null) return `<rect x="${i * bw + bw * 0.2}" y="${mid - 0.5}" width="${bw * 0.6}" height="1" fill="#cfd4e2"><title>${b.y}: incomplete year</title></rect>`;
       const h = (Math.abs(b.v) / max) * (mid - 2), y = b.v >= 0 ? mid - h : mid;
-      return `<rect x="${i * bw + bw * 0.15}" y="${y}" width="${bw * 0.7}" height="${Math.max(h, 0.8)}" fill="${b.v >= 0 ? "#f97316" : "#3b82f6"}"><title>${b.y}: ${signed(b.v, 2)} °C vs average</title></rect>`;
+      return `<rect x="${i * bw + bw * 0.15}" y="${y}" width="${bw * 0.7}" height="${Math.max(h, 0.8)}" fill="${b.v >= 0 ? "#b3261e" : "#4f6f8f"}"><title>${b.y}: ${signed(b.v, 2)} °C vs average</title></rect>`;
     }).join("");
     return `<svg viewBox="0 0 ${W2} ${H2}" preserveAspectRatio="none" role="img" aria-label="Yearly mean anomaly bars, 2003 to 2024"><line x1="0" x2="${W2}" y1="${mid}" y2="${mid}" stroke="#cfd4e2"/>${rects}</svg>`;
   }
