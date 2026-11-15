@@ -271,7 +271,17 @@
     const pad = w > 1100 ? {top: 70, bottom: 70, left: 360, right: 40}
       : w >= 900 ? {top: 150, bottom: 50, left: ctlRight, right: 20}   // mid-size: map beside the panel
       : {top: ctlBottom, bottom: brandH, left: phone ? 6 : 24, right: phone ? 6 : 24};
-    const vp = new WebMercatorViewport({width: w, height: h}).fitBounds([[W, S], [E, N]], {padding: pad});
+    // Small or short windows: the paddings must always leave room for the map, or fitBounds throws
+    // and nothing draws. Prefer the space beside the panel; otherwise shrink the paddings to fit.
+    if (w < 900 && h - pad.top - pad.bottom < 200 && w - ctlRight >= 260) {
+      pad.top = 64; pad.bottom = Math.min(brandH, Math.max(40, h - 64 - 220)); pad.left = ctlRight; pad.right = 12;
+    }
+    const minW = Math.min(160, w * 0.5), minH = Math.min(160, h * 0.5);
+    if (pad.top + pad.bottom > h - minH) { const k = Math.max(0, h - minH) / (pad.top + pad.bottom); pad.top = Math.floor(pad.top * k); pad.bottom = Math.floor(pad.bottom * k); }
+    if (pad.left + pad.right > w - minW) { const k = Math.max(0, w - minW) / (pad.left + pad.right); pad.left = Math.floor(pad.left * k); pad.right = Math.floor(pad.right * k); }
+    let vp;
+    try { vp = new WebMercatorViewport({width: w, height: h}).fitBounds([[W, S], [E, N]], {padding: pad}); }
+    catch (err) { console.warn("fitView: falling back to an unpadded fit", err); vp = new WebMercatorViewport({width: Math.max(w, 2), height: Math.max(h, 2)}).fitBounds([[W, S], [E, N]], {padding: 0}); }
     state.view = {longitude: vp.longitude, latitude: vp.latitude + 0.03, zoom: vp.zoom + (w > 1100 || w < 900 ? 0.02 : -0.28),   // mid-size: room for the tilted near edge
                  
                   pitch: PITCH, bearing: 0, maxPitch: 60};

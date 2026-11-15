@@ -205,3 +205,11 @@ def test_area_graphs_enlarge_from_the_same_data_and_the_panel_animates_once():
     assert "function closeZoom" in js and 'ev.key !== "Escape"' in js
     assert "@keyframes ins-pop" in css and "prefers-reduced-motion" in css
     assert js.count('id="inspector"') == 0 and html.count('id="inspector"') == 1        # one panel, never stacked
+
+
+def test_map_fit_never_crashes_in_a_small_window():
+    """A narrow, short window once made fitBounds throw, so no columns drew. The paddings are clamped."""
+    js = (ROOT / "web/app.js").read_text()
+    fit = js[js.index("function fitView"):js.index("function cellRecord")]
+    assert "pad.top + pad.bottom > h - minH" in fit and "pad.left + pad.right > w - minW" in fit
+    assert "try {" in fit and "catch" in fit and "padding: 0" in fit
