@@ -15,6 +15,7 @@ from __future__ import annotations
 import logging
 import time
 from collections.abc import Callable, Mapping
+from dataclasses import dataclass
 from importlib.resources import files
 from typing import Any
 
@@ -31,6 +32,17 @@ PROMPT_VERSION = "v1"
 FALLBACK_UNAVAILABLE = "An automatic summary is not available for this result."
 
 
+@dataclass(frozen=True)
+class ExplainOutcome:
+    """What explain() decided and why. reply is Gemini's raw text, if one was received."""
+
+    text: str
+    source: str  # "ai" | "fallback"
+    reason: str  # "accepted", "cached", "rejected by checks", "no text", ...
+    reply: str | None = None
+    problems: tuple[str, ...] = ()
+
+
 def explain(
     results: Any,
     *,
@@ -38,26 +50,46 @@ def explain(
     sleep: Callable[[float], None] = time.sleep,
 ) -> dict[str, str]:
     """Return {"text", "source"}; source is "ai" only for a reply that passed the A3 checks."""
-    fallback = {"text": fallback_text(results), "source": "fallback"}
+    outcome = explain_detailed(results, policy=policy, sleep=sleep)
+    return {"text": outcome.text, "source": outcome.source}
+
+
+def explain_detailed(
+    results: Any,
+    *,
+    policy: RetryPolicy | None = None,
+    sleep: Callable[[float], None] = time.sleep,
+    use_cache: bool = True,
+) -> ExplainOutcome:
+    """explain() with the reason, raw reply and check problems (A9). Never raises.
+
+    use_cache=False skips the cache lookup (a fresh reply) but still stores approved text.
+    """
+    fallback_words = fallback_text(results)
+
+    def fallback(reason: str, reply: str | None = None,
+                 problems: tuple[str, ...] = ()) -> ExplainOutcome:
+        return ExplainOutcome(fallback_words, "fallback", reason, reply, problems)
+
     try:
         messages = build_messages(results)
     except Exception:  # noqa: BLE001 - incomplete results: nothing safe to ask the model
         logger.warning("explain: results incomplete; using fallback")
-        return fallback
+        return fallback("results incomplete")
 
     store = ExplanationStore.from_env()
     key = cache_key(messages, PROMPT_VERSION)
-    cached = _cached_text(store, key, results)
+    cached = _cached_text(store, key, results) if use_cache else None
     if cached:
-        return {"text": cached, "source": "ai"}
+        return ExplainOutcome(cached, "ai", "cached", cached)
 
     try:
         client = build_client()
     except GeminiSetupError as exc:
         logger.error("explain: Gemini setup error (%s); using fallback", exc)
-        return fallback
+        return fallback(f"setup error: {exc}")
     if client is None:
-        return fallback  # AI disabled (no GEMINI_API_KEY)
+        return fallback("AI disabled (no GEMINI_API_KEY)")
 
     try:
         capped = CappedClient(client, store)
@@ -65,19 +97,22 @@ def explain(
         text = _reply_text(reply)
         if not text:
             logger.warning("explain: Gemini returned no text; using fallback")
-            return fallback
+            return fallback("no text")
         check = check_explanation(text, results)
         if not check.ok:
             logger.warning("explain: AI text rejected by checks: %s", "; ".join(check.problems))
-            return fallback
+            return fallback("rejected by checks", text, check.problems)
         store.put(key, text, model=client.model, prompt_version=PROMPT_VERSION)
-        return {"text": text, "source": "ai"}
-    except (GeminiSetupError, GeminiUnavailableError) as exc:
+        return ExplainOutcome(text, "ai", "accepted", text)
+    except GeminiSetupError as exc:
         logger.warning("explain: %s; using fallback", exc)
-        return fallback
+        return fallback(f"setup error: {exc}")
+    except GeminiUnavailableError as exc:
+        logger.warning("explain: %s; using fallback", exc)
+        return fallback(f"Gemini unavailable: {exc}")
     except Exception as exc:  # noqa: BLE001 - explain must never raise
         logger.warning("explain: unexpected %s; using fallback", type(exc).__name__)
-        return fallback
+        return fallback(f"unexpected {type(exc).__name__}")
     finally:
         client.close()
 

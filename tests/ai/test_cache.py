@@ -222,6 +222,14 @@ def test_requests_are_counted_even_when_they_fail(gemini, monkeypatch):
     assert json.loads(cache_file().read_text())["usage"]["calls"] == 3
 
 
-def test_tests_never_write_the_real_cache():
+def test_tests_never_write_the_real_cache(gemini):
+    """During tests the cache resolves to a temp folder; the real file (which may exist from a
+    local pipeline or trial run) is never read or written."""
+    real = ROOT / ai_cache.DEFAULT_CACHE_PATH
+    before = real.read_bytes() if real.exists() else None
+    assert ExplanationStore.from_env().path.resolve() != real.resolve()
     assert "ai_cache" in os.environ["EXPLAIN_CACHE_PATH"]
-    assert not (ROOT / "data" / "cache" / "explanations.json").exists()
+    gemini(completion(GOOD))
+    run()  # writes an approved reply to the cache
+    assert cache_file().exists()  # ...in the temp folder
+    assert (real.read_bytes() if real.exists() else None) == before
