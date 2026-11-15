@@ -32,13 +32,14 @@ class Cell:
     lon: float
     quarter: str
     values: tuple[float | None, ...]  # aligned with Grid.months; None = failed QC
+    size: float = CELL  # cell edge in degrees (0.05 for MOD11C3; ~0.0083 for a 1 km product)
 
     @property
     def region_id(self) -> str:
         return QUARTER_REGION[self.quarter]
 
     def footprint(self) -> list[list[float]]:
-        h = CELL / 2
+        h = self.size / 2
         return [[self.lon - h, self.lat - h], [self.lon + h, self.lat - h],
                 [self.lon + h, self.lat + h], [self.lon - h, self.lat + h]]
 
@@ -57,8 +58,13 @@ class Grid:
     data_version: str
     provenance: dict = field(default_factory=dict)
 
+    @property
+    def cell_size_deg(self) -> float:
+        return next(iter(self.cells.values())).size if self.cells else CELL
+
     def describe(self) -> dict:
         return {"file": self.path, "sha256": self.sha256, "data_version": self.data_version,
+                "cell_size_deg": self.cell_size_deg,
                 "cells": len(self.cells), "months": len(self.months),
                 "period": [self.months[0], self.months[-1]], "source": self.provenance}
 
@@ -72,7 +78,7 @@ def months_between(start: str, end: str) -> list[str]:
     return out
 
 
-def read_cells(path: Path) -> tuple[list[str], dict]:
+def read_cells(path: Path, cell_size: float = CELL) -> tuple[list[str], dict]:
     """Parse and validate. Returns (months, {cell_id: {"lat","lon","quarter","v": {date: value}}})."""
     cells: dict[str, dict] = {}
     with open(path, newline="", encoding="utf-8") as handle:
@@ -108,9 +114,9 @@ def read_cells(path: Path) -> tuple[list[str], dict]:
         if not (WEST < lon < EAST and SOUTH < lat < NORTH):
             raise GridError(f"{cid} centre {lat},{lon} is outside the study window")
         for value, origin in ((lon, WEST), (lat, SOUTH)):
-            offset = (value - origin) / CELL - 0.5
+            offset = (value - origin) / cell_size - 0.5
             if abs(offset - round(offset)) > 0.02:
-                raise GridError(f"{cid} centre {lat},{lon} is not on the 0.05 degree grid")
+                raise GridError(f"{cid} centre {lat},{lon} is not on the {cell_size} degree grid")
         expected = ("N" if lat > MID_LAT else "S") + ("W" if lon < MID_LON else "E")
         if cell["quarter"] != expected:
             raise GridError(f"{cid} is labelled {cell['quarter']} but sits in {expected}")
@@ -165,10 +171,19 @@ def _load(path: str, manifest: str, results_dir: str, main_file: str) -> Grid:
         meta = json.loads(Path(manifest).read_text(encoding="utf-8"))
         if meta.get("sha256") and meta["sha256"] != digest:
             raise GridError("grid_cells.csv does not match its manifest sha256; refusing to analyse")
-    months, raw = read_cells(p)
-    # Results files store values rounded to 4 decimals, so allow 5e-5 + float noise.
-    compare_with_regions(months, raw, _published_from_results(Path(results_dir), Path(main_file)), 1e-4)
-    cells = {cid: Cell(cid, c["lat"], c["lon"], c["quarter"], tuple(c["v"][d] for d in months))
+    cell_size = float(meta.get("cell_size_deg", CELL))
+    months, raw = read_cells(p, cell_size)
+    # The 0.05 degree export must reproduce the published regional series (results files store
+    # 4 decimals, so 1e-4). A different product (e.g. 1 km MOD11A2) cannot, by design: its
+    # manifest says so with "reproduces_regional_series": false and the comparison is reported
+    # as not applicable instead of being skipped silently.
+    if meta.get("reproduces_regional_series", True):
+        regional_check = compare_with_regions(
+            months, raw, _published_from_results(Path(results_dir), Path(main_file)), 1e-4)
+    else:
+        regional_check = {"status": "not applicable: different product/resolution from the regional series"}
+    meta = {**meta, "source": {**meta.get("source", {}), "regional_check": regional_check}}
+    cells = {cid: Cell(cid, c["lat"], c["lon"], c["quarter"], tuple(c["v"][d] for d in months), cell_size)
              for cid, c in sorted(raw.items())}
     return Grid(tuple(months), cells, digest, path, meta.get("data_version", "unknown"),
                 meta.get("source", {}))

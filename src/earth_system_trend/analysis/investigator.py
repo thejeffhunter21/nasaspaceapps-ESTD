@@ -156,10 +156,110 @@ def h6_anomalies() -> dict:
     }
 
 
+PERIOD = "2003-01 to 2024-12 (264 months)"
+SOURCE = "NASA Terra MODIS MOD11C3 v061 LST_Night_CMG, qc-v1, 0.05° grid cells"
+DETAILS = {
+    "widespread-warming": {
+        "title": "Warming shows up in individual cells, not only in the averages",
+        "location": "All 192 cells of the Phoenix study window",
+        "method": "Seasonal Mann-Kendall + seasonal Sen's slope per cell; Benjamini-Hochberg FDR across 192 cells; "
+                  "challenge: slope sign in each half of the record",
+        "limitations": "A significant trend in every cell does not mean every cell warms at the same rate; serial "
+                       "correlation makes q-values optimistic.",
+        "next_question": "Which cells lose their warming in one half of the record, and is that a data gap or a real change?"},
+    "hidden-spread": {
+        "title": "Regional averages hide a wide range of cell warming rates",
+        "location": "Slowest and fastest cells (highlighted)",
+        "method": "Per-cell seasonal Sen's slope compared with each quarter's published slope",
+        "limitations": "Describes spread; does not test whether any two particular cells differ.",
+        "next_question": "Do the fastest cells cluster together, and do they share land-cover change?"},
+    "local-faster": {
+        "title": "Pockets of Phoenix warm faster than their own quarter",
+        "location": "Highlighted cells",
+        "method": "Seasonal Mann-Kendall on each cell minus its quarter's published series; Benjamini-Hochberg FDR; "
+                  "same-direction challenge in both halves",
+        "limitations": "Adjacent cells are correlated, so a cluster is one pattern, not many independent discoveries. "
+                       "No cause (for example new development) is established.",
+        "next_question": "Do these cells coincide with areas that urbanised after 2003?"},
+    "local-slower": {
+        "title": "Some neighbourhoods warm more slowly than their quarter",
+        "location": "Highlighted cells",
+        "method": "Seasonal Mann-Kendall on each cell minus its quarter's published series; Benjamini-Hochberg FDR; "
+                  "same-direction challenge in both halves",
+        "limitations": "Slower is still warming in every case; the difference is relative to the quarter average.",
+        "next_question": "Are the slower cells parks, farmland or mountain terrain?"},
+    "seasons": {
+        "title": "Nights warm at different rates in different seasons",
+        "location": "Whole Phoenix study area",
+        "method": "Mann-Kendall + Sen's slope on yearly seasonal means (complete seasons only); Benjamini-Hochberg "
+                  "across the four seasons",
+        "limitations": "The seasonal slopes are compared descriptively; no direct test of summer minus winter yet.",
+        "next_question": "Is the summer-minus-winter difference itself a significant trend?"},
+    "unusual-months": {
+        "title": "A few cell-months sit far outside their normal range",
+        "location": "Cells and months listed in the evidence",
+        "method": "Robust z-score against each cell's calendar-month median (median absolute deviation)",
+        "limitations": "Screening only. Unusual months may reflect real events or residual data artefacts.",
+        "next_question": "Do the most extreme months line up with known heat waves or sensor issues?"},
+}
+
+
+def _confidence(f: dict) -> str:
+    if f["status"] == "supported":
+        return "Statistically supported: significant after correction and survived its challenge"
+    if f["status"] == "exploratory":
+        return "Exploratory: interesting, but not corrected-significant or did not survive its challenge"
+    return "Not supported by the tests run"
+
+
+def _evidence_text(f: dict) -> str:
+    e = f.get("evidence", {})
+    if f["id"] == "seasons":
+        return "; ".join(f"{k}: {v['slope_per_year']:+.3f} °C/yr (q = {v['q']:.2g}, {v['years']} years)" for k, v in e.items())
+    if f["id"] == "hidden-spread":
+        return "; ".join(f"{k.replace('phoenix_', '')}: cells {v['min']:+.3f} to {v['max']:+.3f}, quarter "
+                         f"{v['regional_slope_per_year']:+.3f} °C/yr" for k, v in e.items())
+    if f["id"] == "unusual-months":
+        return "; ".join(f"{x['id']} {x['month']}: {x['value']:.1f} °C vs usual {x['calendar_month_median']:.1f} "
+                         f"(z = {x['robust_z']:+.1f})" for x in e.get("examples", [])[:5])
+    return ", ".join(f"{k.replace('_', ' ')}: {v}" for k, v in e.items())
+
+
+def _computed_details(f: dict) -> dict:
+    """Parts of titles/locations that depend on the numbers are computed, never hard-coded."""
+    out = {}
+    if f["id"] == "hidden-spread" and len(f["cells"]) == 2:
+        lo, hi = sorted(c["metric"] for c in f["cells"])
+        if lo > 0:
+            out["title"] = f"Regional averages hide a {hi / lo:.1f}-fold range of cell warming rates"
+    if f["id"] == "seasons":
+        ev = f["evidence"]
+        names = {"DJF": "winter", "MAM": "spring", "JJA": "summer", "SON": "autumn"}
+        fast = max(ev, key=lambda k: ev[k]["slope_per_year"])
+        slow = min(ev, key=lambda k: ev[k]["slope_per_year"])
+        if ev[slow]["slope_per_year"] > 0:
+            ratio = ev[fast]["slope_per_year"] / ev[slow]["slope_per_year"]
+            out["title"] = f"{names[fast].capitalize()} nights are warming {ratio:.1f}× as fast as {names[slow]} nights"
+    if f["id"] in ("local-faster", "local-slower") and f["cells"]:
+        counts = {}
+        for c in f["cells"]:
+            counts[c["quarter"]] = counts.get(c["quarter"], 0) + 1
+        out["location"] = f"{len(f['cells'])} highlighted cells: " + ", ".join(
+            f"{q} {n}" for q, n in sorted(counts.items(), key=lambda kv: -kv[1]))
+    return out
+
+
+def _enrich(f: dict) -> dict:
+    return {**f, **DETAILS[f["id"]], **_computed_details(f), "period": PERIOD, "source": SOURCE, "variable": "Nighttime land surface temperature",
+            "observation": f["statement"], "confidence": _confidence(f), "evidence_text": _evidence_text(f),
+            "sample_size": f.get("evidence", {}).get("tested", len(f.get("cells", [])))}
+
+
 @lru_cache(maxsize=1)
 def _investigate(sha: str) -> dict:
     grid = load_grid()
-    findings = [h1_widespread(), h2_heterogeneity(), _localized(+1), _localized(-1), h5_seasons(), h6_anomalies()]
+    findings = [_enrich(f) for f in (h1_widespread(), h2_heterogeneity(), _localized(+1), _localized(-1),
+                                     h5_seasons(), h6_anomalies())]
     return tools.finite({
         "engine": "Deterministic AI investigator (hypothesis -> tools -> challenge); no language model at run time",
         "provenance": grid.describe(),
@@ -183,7 +283,9 @@ def investigate() -> dict:
 def public_discoveries() -> dict:
     """Only what the public page needs: statements, statuses and cell outlines. No time series."""
     report = investigate()
-    keep = ("id", "hypothesis", "status", "statement", "challenge", "highlight", "cells")
+    keep = ("id", "title", "hypothesis", "status", "statement", "observation", "challenge", "highlight", "cells",
+            "location", "period", "source", "variable", "evidence_text", "confidence", "method", "limitations",
+            "next_question", "sample_size")
     return {"engine": report["engine"], "caveats": report["caveats"], "rules": report["rules"],
             "provenance": {k: report["provenance"][k] for k in ("sha256", "data_version", "cells", "months", "period")},
             "findings": [{k: f[k] for k in keep} for f in report["findings"]]}

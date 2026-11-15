@@ -100,6 +100,16 @@ def region_vs_cells(region: str = Query(..., max_length=40)) -> dict:
     return _run(tools.region_vs_cells, region)
 
 
+@private.get("/region-stats")
+def region_stats() -> dict:
+    return _run(tools.region_stats)
+
+
+@private.get("/region-difference")
+def region_difference(a: str = Query(..., max_length=40), b: str = Query(..., max_length=40)) -> dict:
+    return _run(tools.region_difference, a, b)
+
+
 @private.get("/investigate")
 def investigate() -> dict:
     """The full investigation report, with every piece of evidence."""

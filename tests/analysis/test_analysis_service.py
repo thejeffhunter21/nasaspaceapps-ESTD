@@ -56,7 +56,10 @@ def test_public_discoveries_have_statuses_and_no_measurements(client):
     assert {f["status"] for f in d["findings"]} <= {"supported", "exploratory", "not_supported"}
     assert any(f["status"] == "exploratory" for f in d["findings"])  # discoveries are labelled, not all "true"
     for f in d["findings"]:
-        assert set(f) == {"id", "hypothesis", "status", "statement", "challenge", "highlight", "cells"}
+        for field in ("title", "location", "period", "observation", "evidence_text", "confidence", "method",
+                      "limitations", "next_question", "source", "variable"):
+            assert f[field], (f["id"], field)
+        assert "series" not in f and "values" not in f
         for cell in f["cells"]:
             assert set(cell) <= {"id", "lat", "lon", "quarter", "footprint", "metric", "q", "month"}
     local = next(f for f in d["findings"] if f["id"] == "local-faster")
@@ -72,3 +75,12 @@ def test_supported_local_cells_pass_correction_and_challenge():
 def test_data_files_are_never_line_ending_converted():
     rules = (Path(__file__).resolve().parents[2] / ".gitattributes").read_text()
     assert "data/processed/*.csv -text" in rules
+
+
+def test_private_region_tools_match_public_endpoints(client):
+    c, headers = client, TOKEN
+    assert c.get("/analysis/region-stats", headers=headers).json() == c.get("/region-stats").json()
+    a, b = "phoenix_southeast", "phoenix_northeast"
+    priv = c.get(f"/analysis/region-difference?a={a}&b={b}", headers=headers)
+    assert priv.status_code == 200 and priv.json() == c.get(f"/region-compare?a={a}&b={b}").json()
+    assert c.get("/analysis/region-stats").status_code in (401, 503)

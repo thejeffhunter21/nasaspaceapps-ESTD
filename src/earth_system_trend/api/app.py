@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from ..config import get_settings
 from .analysis import router as analysis_router
 from .analysis import warm_cache
+from .explorer import router as explorer_router
 from .middleware import add_protection
 from .routes import router
 
@@ -62,6 +63,7 @@ def version() -> dict:
 
 app.include_router(router)
 app.include_router(analysis_router)
+app.include_router(explorer_router)
 
 # The map explorer (web/): a static page that reads the endpoints above from the same server.
 WEB_DIR = Path(os.getenv("WEB_DIR", "web"))

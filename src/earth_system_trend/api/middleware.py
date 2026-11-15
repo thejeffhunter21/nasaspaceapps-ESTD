@@ -21,7 +21,7 @@ from ..config import get_settings
 
 EXEMPT = {"/health", "/", "/version"}
 # The grid-cell investigation is computed once (seconds on a slow host) and then cached.
-SLOW_CACHED = {"/discoveries", "/analysis/investigate"}
+SLOW_CACHED = {"/discoveries", "/analysis/investigate", "/map-static"}
 WINDOW_S = 60.0
 
 

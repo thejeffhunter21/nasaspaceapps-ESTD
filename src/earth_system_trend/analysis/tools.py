@@ -15,7 +15,9 @@ import statistics
 from functools import lru_cache
 from pathlib import Path
 
+import numpy as np
 import pymannkendall as mk
+from scipy.stats import norm
 
 from ..ai.trend import TrendInputError, run_trend
 from .grid import QUARTER_REGION, Grid, load_grid
@@ -42,6 +44,38 @@ def bh_qvalues(pvalues: list[float]) -> list[float]:
         running = min(running, pvalues[i] * m / rank)
         q[i] = running
     return q
+
+
+def sen_slope_ci(values, alpha: float = ALPHA, period: int = 12) -> dict | None:
+    """Seasonal Sen's slope (per year) with its Mann-Kendall-based (1 - alpha) confidence interval.
+
+    Gilbert (1987) / Hirsch et al. (1982): pool every within-season pairwise slope (each step is one
+    year), take ranks (N - C)/2 and (N + C)/2 + 1 with C = z(1 - alpha/2) * sqrt(Var S), where Var S
+    is pymannkendall's seasonal test variance. The median equals pymannkendall's seasonal Sen slope.
+    Missing months are skipped, never filled.
+    """
+    x = np.array([np.nan if v is None else float(v) for v in values])
+    slopes = []
+    for season in range(period):
+        xs = x[season::period]
+        for i in range(len(xs)):
+            if np.isnan(xs[i]):
+                continue
+            for j in range(i + 1, len(xs)):
+                if not np.isnan(xs[j]):
+                    slopes.append((xs[j] - xs[i]) / (j - i))
+    if len(slopes) < 10:
+        return None
+    slopes = np.sort(np.array(slopes))
+    n = len(slopes)
+    var_s = float(mk.seasonal_test(x, period=period).var_s)
+    c = norm.ppf(1 - alpha / 2) * np.sqrt(var_s)
+    ranks = np.arange(1, n + 1)
+    return {"slope_per_year": float(np.median(slopes)),
+            "ci_low_per_year": float(np.interp((n - c) / 2, ranks, slopes)),
+            "ci_high_per_year": float(np.interp((n + c) / 2 + 1, ranks, slopes)),
+            "ci_level": 1 - alpha, "pairs": n,
+            "ci_method": "Seasonal Sen's slope CI from Mann-Kendall variance (Gilbert 1987)"}
 
 
 def _cell(grid: Grid, cell_id: str):
@@ -107,8 +141,10 @@ def cell_trend(cell_id: str) -> dict:
     if result is None:
         raise ToolError(f"{cell_id} has too few valid months for the seasonal test")
     first, second = _halves(grid, c.values)
+    ci = sen_slope_ci(c.values) or {}
     return {**c.public(), "method": "Seasonal Mann-Kendall + seasonal Sen's slope (per month x 12)",
-            **result, "halves": [{"period": [a, b], **(_trend(v) or {"status": "insufficient data"})}
+            **result, **{k: ci[k] for k in ("ci_low_per_year", "ci_high_per_year", "ci_level") if k in ci},
+            "valid_months": sum(v is not None for v in c.values), "halves": [{"period": [a, b], **(_trend(v) or {"status": "insufficient data"})}
                                  for a, b, v in (first, second)]}
 
 
@@ -119,7 +155,10 @@ def _all_cell_trends_cached(sha: str) -> dict:
     for c in grid.cells.values():
         t = _trend(c.values)
         if t is not None:
-            rows.append({**c.public(), **t})
+            ci = sen_slope_ci(c.values) or {}
+            rows.append({**c.public(), **t, "ci_low_per_year": ci.get("ci_low_per_year"),
+                         "ci_high_per_year": ci.get("ci_high_per_year"),
+                         "valid_months": sum(v is not None for v in c.values)})
     qs = bh_qvalues([r["p"] for r in rows])
     for r, q in zip(rows, qs):
         r["q"] = q
@@ -240,6 +279,41 @@ def region_vs_cells(region_id: str) -> dict:
             "fastest_cells": [r["id"] for r in sorted(rows, key=lambda r: -r["slope_per_year"])[:3]]}
 
 
+REGION_IDS = ("phoenix_study_area", *QUARTER_REGION.values())
+
+
+def region_stats() -> dict:
+    """Published regional trends plus the Sen's slope confidence interval for each region."""
+    out = {}
+    for rid in REGION_IDS:
+        series = _regional_series(rid)
+        out[rid] = {**_regional_trend(rid), **(sen_slope_ci(series) or {}),
+                    "valid_months": sum(v is not None for v in series), "months": len(series)}
+        out[rid]["slope_per_year"] = _regional_trend(rid)["slope_per_year"]  # the published value
+    return {"alpha": ALPHA, "regions": out}
+
+
+def region_difference(region_a: str, region_b: str) -> dict:
+    """Direct test: do two regions' trends differ? Seasonal MK on the monthly difference A - B."""
+    if region_a not in REGION_IDS or region_b not in REGION_IDS or region_a == region_b:
+        raise ToolError(f"choose two different regions from {list(REGION_IDS)}")
+    a, b = _regional_series(region_a), _regional_series(region_b)
+    diff = [None if (x is None or y is None) else x - y for x, y in zip(a, b)]
+    t = _trend(diff)
+    if t is None:
+        raise ToolError("not enough overlapping months")
+    ci = sen_slope_ci(diff) or {}
+    return {"region_a": region_a, "region_b": region_b,
+            "method": "Seasonal Mann-Kendall + seasonal Sen's slope on the monthly difference (A minus B)",
+            "difference_slope_per_year": t["slope_per_year"], "p": t["p"], "tau": t["tau"],
+            "significant": t["p"] < ALPHA, "ci_low_per_year": ci.get("ci_low_per_year"),
+            "ci_high_per_year": ci.get("ci_high_per_year"), "ci_level": 1 - ALPHA,
+            "months_used": sum(v is not None for v in diff),
+            "interpretation": ("The two trends differ significantly" if t["p"] < ALPHA else
+                               "No significant difference between the two trends was detected")
+                              + f" (p = {t['p']:.2g}). This is a historical comparison, not a cause."}
+
+
 TOOL_SPECS = [
     {"name": "list_cells", "description": "List every grid cell (id, location, quarter, valid months).", "params": {}},
     {"name": "cell_series", "description": "QC'd monthly values of one cell (None = failed QC).", "params": {"cell_id": "str"}},
@@ -248,11 +322,14 @@ TOOL_SPECS = [
     {"name": "localized_differences", "description": "Cells warming faster/slower than their quarter (FDR, halves challenge).", "params": {}},
     {"name": "seasonal_trend", "description": "Trend of yearly seasonal means for a cell or region.", "params": {"target": "cell id or region id", "season": "DJF|MAM|JJA|SON"}},
     {"name": "anomalies", "description": "Unusual months by robust z (exploratory).", "params": {"cell_id": "optional str", "threshold": "float"}},
+    {"name": "region_stats", "description": "Regional trends with Sen's slope confidence intervals.", "params": {}},
+    {"name": "region_difference", "description": "Direct test of whether two regions' trends differ.", "params": {"region_a": "str", "region_b": "str"}},
     {"name": "region_vs_cells", "description": "Regional trend versus the distribution of its cells' trends.", "params": {"region_id": "str"}},
 ]
 TOOLS = {"list_cells": list_cells, "cell_series": cell_series, "cell_trend": cell_trend,
          "all_cell_trends": all_cell_trends, "localized_differences": localized_differences,
-         "seasonal_trend": seasonal_trend, "anomalies": anomalies, "region_vs_cells": region_vs_cells}
+         "seasonal_trend": seasonal_trend, "anomalies": anomalies, "region_vs_cells": region_vs_cells,
+         "region_stats": region_stats, "region_difference": region_difference}
 
 
 def finite(obj):

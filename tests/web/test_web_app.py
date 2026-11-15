@@ -114,3 +114,14 @@ def test_converter_rejects_cells_that_do_not_reproduce_published_series(tmp_path
     months_out, cells = conv.read_cells(_write(tmp_path, rows))
     with pytest.raises(conv.GridError, match="not the published data"):
         conv.compare_with_regions(months_out, cells, published, 0.01)
+
+
+def test_page_reads_one_frame_at_a_time_and_never_the_raw_file():
+    js = (ROOT / "web/app.js").read_text()
+    assert "/map-frame?year=" in js and "grid_cells" not in js.replace("grid_cells.csv sha256", "")
+    assert "only the settled frame is data" in js  # eased transitions are labelled, never presented as data
+
+
+def test_share_links_never_carry_secrets():
+    js = (ROOT / "web/app.js").read_text()
+    assert "ANALYSIS_TOKEN" not in js and "X-Analysis-Token" not in js
