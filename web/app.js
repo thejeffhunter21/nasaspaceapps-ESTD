@@ -688,6 +688,107 @@
       setTimeout(() => { $("share").textContent = "Copy link to this view"; }, 2000);
     });
     $("csv").addEventListener("click", downloadCsv);
+    $("png").addEventListener("click", downloadPng);
+    $("map").addEventListener("keydown", onMapKey);
+    setupNav();
+  }
+
+  // ---------- map image (PNG) ----------
+  function downloadPng() {
+    const btn = $("png");
+    try {
+      deckgl.redraw("png-export");                 // draw now, then copy in the same task (before the buffer clears)
+      const src = deckgl.getCanvas ? deckgl.getCanvas() : deckgl.canvas;
+      const k = src.width / (src.clientWidth || src.width);
+      const cw = src.clientWidth || src.width;   // crop away the strip under the control panel on wide screens
+      const sx = cw >= 900 && state.eased < 0.2 ? Math.round((($("controls").getBoundingClientRect().right || 0) + 8) * k) : 0;
+      const sw = src.width - sx, head = 78 * k, foot = 74 * k;
+      const out = document.createElement("canvas");
+      out.width = Math.max(sw, 900 * k); out.height = src.height + head + foot;
+      const g = out.getContext("2d");
+      g.fillStyle = "#141518"; g.fillRect(0, 0, out.width, out.height);
+      g.drawImage(src, sx, 0, sw, src.height, 0, head, sw, src.height);
+      const L = LAYERS[state.layer];
+      g.fillStyle = "#efe6d2"; g.font = `${26 * k}px "Special Elite", monospace`;
+      g.fillText("Phoenix nighttime land surface temperature", 24 * k, 36 * k);
+      g.fillStyle = "#e0a43a"; g.font = `bold ${15 * k}px "Courier Prime", monospace`;
+      g.fillText(`${L.label} · ${state.layer === "rate" ? "2003–2024 trend" : periodLabel()} · ${state.region === "all" ? "All Phoenix" : QUARTERS[state.region].name}`, 24 * k, 62 * k);
+      const y0 = head + src.height + 16 * k, bw = 220 * k;
+      const grad = g.createLinearGradient(24 * k, 0, 24 * k + bw, 0);
+      L.ramp.forEach((c, i) => grad.addColorStop(i / (L.ramp.length - 1), `rgb(${c.join(",")})`));
+      g.fillStyle = grad; g.fillRect(24 * k, y0, bw, 10 * k);
+      g.fillStyle = "#cfc4ad"; g.font = `${12 * k}px "Courier Prime", monospace`;
+      L.ticks.forEach((t, i) => { const x = 24 * k + bw * i / (L.ticks.length - 1); g.textAlign = i === 0 ? "left" : i === L.ticks.length - 1 ? "right" : "center"; g.fillText(t, x, y0 + 26 * k); });
+      g.textAlign = "left"; g.fillStyle = "#9c927d";
+      g.font = `${11 * k}px "Courier Prime", monospace`;
+      g.fillText("Data: NASA Terra MODIS MOD11C3 v061 LST_Night_CMG (phoenix-qc-v1.0); failed-QC months never filled.", 264 * k, y0 + 8 * k);
+      g.fillText("Basemap © Esri, HERE, Garmin, OpenStreetMap · Earth System Trend Detective, NASA Space Apps 2026", 264 * k, y0 + 26 * k);
+      out.toBlob((blob) => {
+        if (!blob) throw new Error("empty image");
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `estd_phoenix_${state.layer}_${state.layer === "rate" ? "trend" : (state.frame?.period || "map").replace(/\s+/g, "_")}.png`;
+        a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+        btn.textContent = "Image downloaded"; setTimeout(() => { btn.textContent = "Download map image (PNG)"; }, 2000);
+      }, "image/png");
+    } catch (err) {
+      console.warn("PNG export failed:", err);
+      btn.textContent = "Image export blocked by the browser"; setTimeout(() => { btn.textContent = "Download map image (PNG)"; }, 3000);
+    }
+  }
+
+  // ---------- keyboard: arrow keys move between the cells drawn on the map ----------
+  function onMapKey(ev) {
+    const steps = {ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1]};
+    if (ev.key === "Escape") { if (state.cell) { setState({cell: null}); $("cell-live").textContent = "Cell closed."; } return; }
+    if (!(ev.key in steps) && ev.key !== "Enter" && ev.key !== " ") return;
+    if (!state.cells) return;
+    ev.preventDefault();
+    const shown = (id) => !!state.cellIndex[id] && (!urban.inside || urban.inside.has(id));
+    const id2 = (r, c) => `r${String(r).padStart(2, "0")}_c${String(c).padStart(2, "0")}`;
+    let cur = state.cell && shown(state.cell) ? state.cell : null;
+    if (!cur) {   // start downtown (or the first drawn cell)
+      const start = shown("r07_c06") ? "r07_c06" : state.cells.map((c) => c.id).find(shown);
+      return selectByKey(start);
+    }
+    if (!(ev.key in steps)) return selectByKey(cur);
+    const [dr, dc] = steps[ev.key];
+    let r = +cur.slice(1, 3), c = +cur.slice(5, 7);
+    for (let k = 1; k < 16; k++) {
+      const rr = r + dr * k, cc = c + dc * k;
+      if (rr < 0 || rr > 11 || cc < 0 || cc > 15) break;
+      if (shown(id2(rr, cc))) return selectByKey(id2(rr, cc));
+    }
+    $("cell-live").textContent = "Edge of the map.";
+  }
+  function selectByKey(id) {
+    if (!id) return;
+    setState({cell: id});
+    const r = cellRecord(id), L = LAYERS[state.layer];
+    const v = layerValue(r);
+    $("cell-live").textContent = `Cell ${id}, ${QUARTERS[r.quarter].name} quarter. ${L.label}: ${v == null ? "no valid value" : `${fmt(v, state.layer === "rate" ? 3 : 1)} ${L.unit}`}.`;
+  }
+
+  // ---------- section menu ----------
+  function setupNav() {
+    const nav = $("case-nav");
+    const go = (where) => {
+      const smooth = reduceMotion ? "auto" : "smooth";
+      if (where === "map") window.scrollTo({top: 0, behavior: smooth});
+      else if (where === "quarters") window.scrollTo({top: $("stage").offsetTop + 1.9 * window.innerHeight, behavior: smooth});
+      else $(where)?.scrollIntoView({behavior: smooth, block: "start"});
+    };
+    nav.querySelectorAll("button[data-go]").forEach((b) => b.addEventListener("click", () => go(b.dataset.go)));
+    const ids = ["compare", "coverage", "discoveries", "method"];
+    const update = () => {
+      const y = window.scrollY, vh = window.innerHeight;
+      nav.hidden = y < 0.6 * vh;
+      let cur = y < 1.4 * vh ? "map" : "quarters";
+      for (const id of ids) { const el = $(id); if (el && el.getBoundingClientRect().top < vh * 0.4) cur = id; }
+      nav.querySelectorAll("button[data-go]").forEach((b) => b.toggleAttribute("aria-current", b.dataset.go === cur && cur !== "map"));
+    };
+    window.addEventListener("scroll", update, {passive: true});
+    update();
   }
 
   function downloadCsv() {

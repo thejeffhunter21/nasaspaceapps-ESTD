@@ -17,7 +17,7 @@
     {sel: "#ask", scroll: true, title: "5 · Ask the Climate Detective",
      text: "Ask anything about Phoenix's nights: a place, a year, a season, a comparison. Answers come from the statistical tests on the NASA cells, never invented."},
     {sel: ".ctl-actions", controls: true, title: "6 · Keep your evidence",
-     text: "'Copy link to this view' saves your exact view (year, month, layer, region, cell) as a link you can reopen or share. 'Download CSV' saves the numbers. There is no saved notebook yet: links are how you keep a case."},
+     text: "'Copy link to this view' saves your exact view (year, month, layer, region, cell) as a link you can reopen or share. 'Download CSV' saves the numbers and 'Download map image' saves the picture. There is no saved notebook yet: links are how you keep a case."},
   ];
   let i = 0, root, spot, card;
 
