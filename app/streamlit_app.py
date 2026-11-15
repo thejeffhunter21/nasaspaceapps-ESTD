@@ -19,6 +19,7 @@ from api_client import (
     require_observations,
 )
 from charts import anomaly_chart, anomaly_heatmap, monthly_chart, region_comparison_chart
+from climate_detective import render_climate_detective
 from dotenv import load_dotenv
 from offline_snapshot import SnapshotError, load_snapshot
 from pydantic import ValidationError
@@ -112,6 +113,9 @@ if st.session_state.get("region_api_url") != region_context:
     st.session_state.pop("selected_region", None)
     st.session_state.region_api_url = region_context
 use_sample = not offline_root and (not api_url or st.session_state.sample_fallback_url == api_url)
+
+render_climate_detective()
+st.divider()
 
 # Clear the previous region's evidence before any slow request starts.
 evidence = st.empty()

@@ -208,3 +208,29 @@ def test_committed_evidence_describes_the_committed_results():
     saved = json.loads(EVIDENCE.read_text(encoding="utf-8"))
     assert saved["status"] == "PASS"
     assert saved["result_sha256"] == ai_release.result_hashes(ROOT)
+
+
+def test_rebuild_accepts_only_machine_precision_p_differences(committed):
+    import math
+
+    original = committed["phoenix_study_area"]
+    shifted = copy.deepcopy(original)
+    shifted["trend"]["p"] = math.nextafter(original["trend"]["p"], 0.0)
+    assert ai_release.rebuild_differences(original, shifted) == []
+    shifted["trend"]["p"] = 0.0
+    assert ai_release.rebuild_differences(original, shifted) == ["trend"]
+    shifted["trend"]["p"] = original["trend"]["p"] * 1.000001
+    assert ai_release.rebuild_differences(original, shifted) == ["trend"]
+
+
+def test_deterministic_runtime_imports_still_scan_for_model_clients(tmp_path):
+    pkg = tmp_path / "src" / "earth_system_trend"
+    (pkg / "ai").mkdir(parents=True)
+    (pkg / "__init__.py").write_text("")
+    (pkg / "ai" / "__init__.py").write_text("")
+    (pkg / "ai" / "trend.py").write_text("import openai\n")
+    (tmp_path / "app").mkdir()
+    (tmp_path / "app" / "streamlit_app.py").write_text(
+        "from earth_system_trend.ai.trend import run_trend\n")
+    report = ai_release.runtime_isolation(tmp_path, ("app/streamlit_app.py",))
+    assert any(v["import"] == "openai" for v in report["violations"])

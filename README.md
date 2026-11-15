@@ -226,3 +226,38 @@ cannot call Gemini, run `uv run --locked python scripts/verify_ai_release.py`.
   explanation". The committed results contain no Gemini text, and nothing calls Gemini while
   the app runs. Details: [AI submission handoff](docs/ai_submission.md).
 - **Libraries:** FastAPI, pandas, pydantic, pymannkendall, statsmodels, Streamlit, Plotly.
+
+## AI Climate Detective
+
+The dashboard includes a **Guided Investigation Demo**, using real committed NASA MOD11C3
+observations and deterministic explanations. Select a suggested question, then **Investigate**:
+
+- Rank the four Phoenix subregions by stored seasonal warming rate.
+- Compare Northeast and Southwest observations and trend evidence.
+- Examine the Phoenix study area's historical warming significance.
+- Challenge acceleration since 2014 with two historical charts and newly computed seasonal
+  trends for 2003–2013 and 2014–2024.
+
+Question interpretation uses predefined patterns, not Gemini or RAG. The acceleration verdict
+is **inconclusive**: comparing descriptive slopes does not test a change in warming rate.
+Regional ranking likewise does not establish significant differences. Missing observations
+remain gaps; land surface temperature is not air temperature, a forecast, or evidence of causes.
+No dependencies or backend endpoints were added. Existing pipeline Gemini configuration remains
+unchanged and is not used by this feature.
+
+The investigation always uses the repository's approved local results, independently of the
+main dashboard's API/sample/snapshot selector. It runs before API loading, so it remains available
+when the API fails. For an offline launch (the original dashboard below shows its labeled sample):
+
+```bash
+API_URL='' uv run --locked streamlit run app/streamlit_app.py
+```
+
+For a fully real-data offline dashboard, use the existing offline snapshot launcher or
+`uv run --locked python scripts/backup_run.py`.
+
+**60-second demo:** rank regions (15 seconds), compare Northeast and Southwest (15 seconds),
+challenge acceleration and explain the inconclusive verdict (20 seconds), then open
+“How was this calculated?” to show provenance and scope (10 seconds).
+
+Verify with `uv run --locked pytest tests/frontend/test_climate_detective.py`.
