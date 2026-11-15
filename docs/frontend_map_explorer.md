@@ -36,6 +36,8 @@ Dark Gray basemap (no key). Without it the map still shows the grid, freeways (N
    - The range of cell trends in the quarter and how many are significant after FDR.
    - The monthly record (gaps stay gaps) and yearly anomaly bars.
    Close it to return to the whole map. A cell's panel replaces it while a cell is open.
+   **Scroll split.** Scrolling down from the map moves the four quarters apart, each with a panel
+   (warming per year, 95% CI, p, τ, yearly anomaly bars, the period's quarter average, valid months).
 5. **Map toolbar.** Data information, Compare, Legend (show or hide the active layer's legend)
    and Reset view (clears region, cell, AI highlight and drawers; keeps year, month and layer).
    Data information is a drawer with collapsible groups: results table, NASA source and
@@ -83,7 +85,7 @@ for anomalies, Plasma for warming rate, Viridis for coverage.
   because there is no notebook yet.
 
 - **Section menu.** The only section below the map is the Climate Detective. After you scroll
-  past the map, a fixed menu appears (Back to map, Ask the detective).
+  past the map, a fixed menu appears (Back to map, Quarters, Ask the detective).
 - **Map image.** "Download map image (PNG)" saves the current map view with a title, legend and
   data and basemap credits.
 - **Keyboard.** Tab to the map; the arrow keys move between the drawn cells (opening each cell's

@@ -11,7 +11,7 @@
     {sel: ".timeline", extra: "#year", controls: true, title: "2 · Move through time",
      text: "Press play to watch 2003–2024, or drag the year. Pick a month, or the annual average (shown only when all 12 months passed quality control)."},
     {sel: "#region", controls: true, title: "3 · Pick a region",
-     text: "Click a quarter's name on the map, or pick it here, to open its case file: warming rate, 95% range, the monthly record and data coverage."},
+     text: "Click a quarter's name on the map, or pick it here, to open its case file: warming rate, 95% range, the monthly record and data coverage. Scroll down from the map and Phoenix splits into its four quarters, side by side."},
     {sel: "#toolbar", title: "4 · Compare",
      text: "Compare puts any two periods side by side and tests whether two regions really warm at different rates: a direct test, not two separate p-values. Data information holds the source, methods and limits."},
     {sel: "#ask", scroll: true, title: "5 · Ask the Climate Detective",

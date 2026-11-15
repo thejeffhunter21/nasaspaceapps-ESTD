@@ -12,10 +12,11 @@
   <a class="skip" href="#story">Skip the map and read the findings</a>
   <nav class="case-nav" id="case-nav" aria-label="Sections" hidden>
     <button type="button" data-go="map" class="nav-map">↑ Back to map</button>
+    <button type="button" data-go="quarters">Quarters</button>
     <button type="button" data-go="discoveries">Ask the detective</button>
   </nav>
 
-  <!-- The map stage: one full-screen map. Regions, cells, comparison and data information all open from it. -->
+  <!-- The map stage: one sticky viewport. Regions, cells, comparison and data information open from it; scrolling splits it into quarters. -->
   <!-- The map stage: one sticky viewport that the scroll track drives (explore, then the split). -->
   <section class="stage" id="stage" aria-label="Phoenix temperature map">
     <div class="sticky">
@@ -26,7 +27,7 @@
         <p class="eyebrow">NASA Space Apps 2026 · Earth System Trend Detective</p>
         <h1>Are Phoenix nights getting warmer?</h1>
         <button type="button" class="tour-open" data-tour-start>▶ Take the 1-minute tour</button>
-        <p class="lede">Every column is one 5 km NASA grid cell. Pick a year and month, press play, then click a column or a quarter to open its case file.</p>
+        <p class="lede">Every column is one 5 km NASA grid cell. Pick a year and month, press play, click a column or a quarter, then scroll.</p>
       </header>
 
       <div class="toolbar" id="toolbar" role="toolbar" aria-label="Map tools">
@@ -93,8 +94,11 @@
       </aside>
 
       <div class="hint" id="hint" aria-hidden="true">
-        <span>Click a quarter's name or any column to open its case file</span>
+        <span>Scroll to split Phoenix into four quarters</span>
+        <span class="hint-line"></span>
       </div>
+
+      <div class="panels" id="panels" aria-live="polite"></div>
 
       <p class="attribution" id="attribution">Basemap: Esri World Dark Gray (Esri, HERE, Garmin, © OpenStreetMap contributors) · Freeways: Natural Earth</p>
     </div>

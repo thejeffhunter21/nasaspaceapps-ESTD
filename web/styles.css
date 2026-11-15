@@ -594,8 +594,6 @@ a { color: #e0a43a; }
    Map-first layout: one full-screen map; region and cell case files, Compare and Data information
    open from it. Same Case File theme (manila, red stamp, typewriter faces).
    ===================================================================== */
-.stage { height: 100vh; height: 100svh; }
-.sticky { position: relative; }
 [hidden] { display: none !important; }
 
 /* toolbar: four tools, top of the map, between the control panel and the heading */
@@ -616,8 +614,7 @@ a { color: #e0a43a; }
 .map-legend .legend-scale { color: #6b5d40; }
 .map-legend button { font: 700 11px "Courier Prime", monospace; background: #f6edd5; border: 1px solid #b9a67c; border-radius: 2px; padding: 1px 6px; cursor: pointer; }
 
-.hint { left: calc(50% + 190px); bottom: 30px; font-size: 12px; white-space: nowrap; }
-@media (max-width: 1100px) { .hint { display: none; } } .hint-line { display: none; }
+@media (min-width: 901px) { .hint { left: calc(50% + 170px); white-space: nowrap; } }
 
 /* case file panel (cell or region) */
 .inspector { width: 316px; top: 150px; bottom: 30px; max-height: none; overflow-y: auto; }
@@ -688,3 +685,6 @@ a { color: #e0a43a; }
   .drawer .compare-maps { grid-template-columns: 1fr 1fr; }
   .drawer .evidence-log::after { display: none; } .drawer .evidence-log h3 { padding-right: 0; }
 }
+/* quarter panels (scroll split): readable figures on manila */
+.panel .ci, .panel dt, .panel .spark-cap, .panel .spark-cap * { color: #6b5d40 !important; }
+.panel dd, .panel .sig { color: #2a2418 !important; }

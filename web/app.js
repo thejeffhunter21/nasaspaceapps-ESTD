@@ -7,7 +7,8 @@
  *    AI discoveries (/discoveries). Nothing is interpolated or estimated in the browser.
  *  - A missing month stays missing. An annual average needs all 12 months (enforced server-side).
  *  - One shared state object drives every view; the URL hash mirrors it for shareable links.
- * The camera never moves. One map: regions, cells, comparison and data information open from it.
+ * The camera never moves. One map: regions, cells, comparison and data information open from it;
+ * scrolling splits it into its four quarters, each with its own panel.
  */
 (() => {
   "use strict";
@@ -413,8 +414,19 @@
     frameReq = requestAnimationFrame(() => {
       frameReq = 0;
       deckgl.setProps({layers: buildLayers()});
+      const e = state.eased;
       $("hint").hidden = !!(state.cell || state.region !== "all" || state.drawer);
-      syncControls(); renderLegend(); renderInspector(); renderStatus(); renderChrome();
+      $("hint").style.opacity = String(1 - clamp(e * 4));
+      document.querySelector(".brand").style.opacity = String(1 - clamp(e * 2.5));
+      for (const id of ["controls", "toolbar", "legend"]) {
+        const el = $(id);
+        el.style.opacity = String(1 - clamp((e - 0.15) * 3));
+        el.style.pointerEvents = e > 0.4 ? "none" : "auto";
+        el.setAttribute("aria-hidden", e > 0.4 ? "true" : "false");
+      }
+      $("inspector").style.opacity = String(1 - clamp((e - 0.1) * 4));
+      $("inspector").style.pointerEvents = e > 0.3 ? "none" : "auto";
+      syncControls(); renderLegend(); renderInspector(); renderStatus(); renderChrome(); placePanels(); updatePanels();
     });
   }
 
@@ -629,7 +641,15 @@
 
   // ---------- scroll ----------
   function onScroll() {
-    if (state.playing && window.scrollY > 0.8 * window.innerHeight) stopPlayback();   // left the map
+    const stage = $("stage"), vh = window.innerHeight;
+    const travelled = -stage.getBoundingClientRect().top;
+    const raw = clamp((travelled - 0.3 * vh) / (1.5 * vh));
+    const p = reduceMotion ? (raw > 0.5 ? 1 : 0) : raw;
+    if (state.playing && travelled > 2.4 * vh) stopPlayback();   // left the map section
+    if (p === state.progress) return;
+    state.progress = p;
+    state.eased = reduceMotion ? p : easeInOut(p);
+    renderAll();
   }
 
   // ---------- playback (one timer at most) ----------
@@ -657,7 +677,40 @@
   }
   document.addEventListener("visibilitychange", () => { if (document.hidden) stopPlayback(); });
 
-  // ---------- regional charts ----------
+  // ---------- regional panels ----------
+  function placePanels() {
+    const e = state.eased, o = clamp((e - 0.72) / 0.28);
+    const vp = new WebMercatorViewport({...state.view, width: $("map").clientWidth, height: $("map").clientHeight});
+    for (const q of ORDER) {
+      const el = document.getElementById(`panel-${q}`);
+      if (!el) continue;
+      const {f} = pieceTransform(q, e);
+      const [w, s, ea, n] = QUARTERS[q].b;
+      const pts = [[w, s], [ea, s], [ea, n], [w, n]].map((pt) => vp.project(f(pt)));
+      const xs = pts.map((pt) => pt[0]), ys = pts.map((pt) => pt[1]);
+      const left = Math.min(...xs), right = Math.max(...xs), top = Math.min(...ys), bottom = Math.max(...ys);
+      let x, y, width;
+      if (layoutMode() === "tall") {
+        width = Math.max(150, right - left); el.style.width = `${width}px`; x = left; y = bottom + 8;
+      } else {
+        const gap = 16, half = window.innerWidth / 2;
+        width = Math.min(310, Math.max(210, (q.endsWith("W") ? half - right : left - half) - 1.5 * gap));
+        el.style.width = `${width}px`;
+        const h = el.offsetHeight || 200;
+        x = q.endsWith("W") ? right + gap : left - gap - width;
+        y = q.startsWith("N") ? top : bottom - h;
+      }
+      const h = el.offsetHeight || 200;
+      el.style.left = `${clamp(x, 8, window.innerWidth - width - 8)}px`;
+      el.style.top = `${clamp(y, 8, window.innerHeight - h - 8)}px`;
+      el.style.opacity = String(o);
+      el.style.transform = `translateY(${(1 - o) * 6}px)`;
+      el.style.visibility = o > 0.01 ? "visible" : "hidden";
+      el.setAttribute("aria-hidden", o > 0.5 ? "false" : "true");
+      el.classList.toggle("selected", state.region === q);
+    }
+  }
+
   function yearlyAnomalyMeans(rid) {
     const a = state.anomaly[rid];
     if (!a) return [];
@@ -673,6 +726,46 @@
       return `<rect x="${i * bw + bw * 0.15}" y="${y}" width="${bw * 0.7}" height="${Math.max(h, 0.8)}" fill="${b.v >= 0 ? "#b3261e" : "#4f6f8f"}"><title>${b.y}: ${signed(b.v, 2)} °C vs average</title></rect>`;
     }).join("");
     return `<svg viewBox="0 0 ${W2} ${H2}" preserveAspectRatio="none" role="img" aria-label="Yearly mean anomaly bars, 2003 to 2024"><line x1="0" x2="${W2}" y1="${mid}" y2="${mid}" stroke="#b9a67c"/>${rects}</svg>`;
+  }
+
+  function buildPanels() {
+    const host = $("panels");
+    host.innerHTML = "";
+    const stats = state.regionStats?.regions || {};
+    const quarterRegions = ORDER.map((q) => state.regions.find((r) => r.region_id === state.quarterIds[q])).filter(Boolean);
+    const fastest = quarterRegions.reduce((a, b) => (b.trend.slope > a.trend.slope ? b : a), quarterRegions[0]);
+    for (const q of ORDER) {
+      const r = state.regions.find((x) => x.region_id === state.quarterIds[q]);
+      if (!r) continue;
+      const t = r.trend, st = stats[r.region_id] || {}, perYear = t.slope * 12, sig = t.p < 0.05;
+      const isFastest = r === fastest && t.slope > 0 && sig;
+      const el = document.createElement("article");
+      el.className = `panel q-${q}` + (isFastest ? " fastest" : "");
+      el.id = `panel-${q}`;
+      el.tabIndex = 0;
+      el.setAttribute("aria-label", `${QUARTERS[q].name} quarter; select to focus this region`);
+      el.innerHTML = `
+        <div class="panel-head"><h3>${QUARTERS[q].name}</h3>${isFastest ? '<span class="tag">Fastest warming</span>' : ""}</div>
+        <p class="rate${perYear < 0 ? " cool" : ""}">${signed(perYear, 3)} °C<small>per year</small></p>
+        <p class="ci">${st.ci_low_per_year != null ? `95% CI ${signed(st.ci_low_per_year, 3)} to ${signed(st.ci_high_per_year, 3)}` : ""}</p>
+        <p class="sig">${sig ? "Statistically significant" : "Not statistically significant"} · ${pText(t.p)} · τ ${t.tau.toFixed(2)}</p>
+        ${sparkSVG(r.region_id)}
+        <div class="spark-cap"><span>2003</span><span>yearly mean vs average (full years)</span><span>2024</span></div>
+        <dl><dt id="pl-${q}">—</dt><dd id="pv-${q}">—</dd><dt>Valid months</dt><dd>${st.valid_months ?? "—"} of ${st.months ?? 264}</dd></dl>`;
+      el.addEventListener("click", () => selectRegion(state.region === q ? "all" : q));
+      el.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); el.click(); } });
+      host.appendChild(el);
+    }
+  }
+  function updatePanels() {
+    for (const q of ORDER) {
+      const rid = state.quarterIds[q], s = rid && state.series[rid];
+      const l = document.getElementById(`pl-${q}`), v = document.getElementById(`pv-${q}`);
+      if (!l || !s) continue;
+      l.textContent = `${periodLabel()}, quarter avg`;
+      const val = periodValue(s.times, s.values, state.year, state.month);
+      v.textContent = val == null ? "no value" : `${fmt(val)} °C`;
+    }
   }
 
   // ---------- controls ----------
@@ -806,6 +899,7 @@
     const go = (where) => {
       const smooth = reduceMotion ? "auto" : "smooth";
       if (where === "map") window.scrollTo({top: 0, behavior: smooth});
+      else if (where === "quarters") window.scrollTo({top: $("stage").offsetTop + 1.9 * window.innerHeight, behavior: smooth});
       else $(where)?.scrollIntoView({behavior: smooth, block: "start"});
     };
     nav.querySelectorAll("button[data-go]").forEach((b) => b.addEventListener("click", () => go(b.dataset.go)));
@@ -813,7 +907,7 @@
     const update = () => {
       const y = window.scrollY, vh = window.innerHeight;
       nav.hidden = y < 0.6 * vh;
-      let cur = "map";
+      let cur = y < 1.4 * vh ? "map" : "quarters";
       for (const id of ids) { const el = $(id); if (el && el.getBoundingClientRect().top < vh * 0.4) cur = id; }
       nav.querySelectorAll("button[data-go]").forEach((b) => b.toggleAttribute("aria-current", b.dataset.go === cur && cur !== "map"));
     };
@@ -1141,7 +1235,7 @@
       if (state.cell && !state.cellIndex[state.cell]) state.cell = null;
       const times = state.series[state.quarterIds.whole || ids[0]].times;
       const years = [...new Set(times.map((t) => +t.slice(0, 4)))];
-      buildControls(years); buildCompareControls(years); buildFindings(); buildMethodFigure(); buildProvenance();
+      buildControls(years); buildCompareControls(years); buildPanels(); buildFindings(); buildMethodFigure(); buildProvenance();
       buildDiscoveries(); renderCoverage();
       await showPeriod();
       renderCompare(); renderRegionTest();

@@ -158,9 +158,9 @@ def test_map_first_layout_keeps_one_map_and_moves_the_science_into_drawers():
     assert 'id="discoveries"' in story and 'id="ask"' in story
     for moved in ('id="method"', 'id="provenance"', 'id="coverage"', 'id="compare"', 'id="findings-body"'):
         assert moved in html and moved not in story          # still available, no longer a page section
-    assert html.count('id="map"') == 1 and 'id="panels"' not in html
+    assert html.count('id="map"') == 1
     assert "function renderRegionPanel" in js and "function resetView" in js and "function openDrawer" in js
-    assert "buildPanels" not in js and "placePanels" not in js
+    assert 'id="panels"' in html and "function placePanels" in js    # the scroll split and its quarter panels stay
     # Reset view clears temporary selections only: it never touches year, month or layer.
     reset = js[js.index("function resetView"):js.index("function setupChrome")]
     assert 'region: "all"' in reset and "cell: null" in reset and "finding: null" in reset
