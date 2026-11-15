@@ -11,7 +11,7 @@ USE_MOCK=false uv run --locked uvicorn earth_system_trend.api.app:app --port 800
 ```
 
 Because the page is served by the API, every merge to `main` deploys it with the API. No CDN is
-needed: the only network request outside the API is the CARTO basemap, and without it the map
+needed: the only network request outside the API is the Esri World Light Gray basemap (no key), and without it the map
 still shows the study grid, freeways (Natural Earth, `web/assets/`) and all data.
 
 ## What it shows

@@ -197,8 +197,9 @@
       getElevation: {duration: 520, easing: easeInOut}, getFillColor: {duration: 520, easing: easeInOut}};
 
     layers.push(new TileLayer({
+      // Esri World Light Gray Canvas: no API key needed (CARTO raster tiles now require one).
       id: "basemap", minZoom: 0, maxZoom: 16, tileSize: 256, opacity: 1 - 0.9 * e,
-      data: "https://basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}@2x.png",
+      data: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
       onTileError: () => {}, maxRequests: 8,
       renderSubLayers: (props) => {
         const {boundingBox} = props.tile;
@@ -246,7 +247,7 @@
         layers.push(new PolygonLayer({
           id: `quarter-${q}`, data: [{kind: "quarter", label: QUARTERS[q].name, value}],
           pickable: true, getPolygon: () => rect(w, s, ea, n).map(f),
-          getFillColor: value == null ? [255, 255, 255, 0] : tempColor(value, 120), stroked: false, filled: true,
+          getFillColor: value == null ? [255, 255, 255, 0] : tempColor(value, 105), stroked: false, filled: true,
           transitions: reduceMotion ? {} : {getFillColor: {duration: 520, easing: easeInOut}},
           updateTriggers: {getPolygon: e, getFillColor: [state.year, state.month, value]},
         }));
