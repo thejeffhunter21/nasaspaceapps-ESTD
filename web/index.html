@@ -10,11 +10,20 @@
 </head>
 <body>
   <a class="skip" href="#story">Skip the map and read the findings</a>
+  <nav class="case-nav" id="case-nav" aria-label="Sections" hidden>
+    <button type="button" data-go="map" class="nav-map">↑ Back to map</button>
+    <button type="button" data-go="quarters">Quarters</button>
+    <button type="button" data-go="compare">Compare</button>
+    <button type="button" data-go="coverage">Coverage</button>
+    <button type="button" data-go="discoveries">Ask</button>
+    <button type="button" data-go="method">Method</button>
+  </nav>
 
   <!-- The map stage: one sticky viewport that the scroll track drives (explore, then the split). -->
   <section class="stage" id="stage" aria-label="Phoenix temperature map">
     <div class="sticky">
-      <div id="map" class="map" role="img" aria-label="3D map of Phoenix with one column per 5 km NASA grid cell; taller and warmer-coloured means a hotter night."></div>
+      <div id="map" class="map" tabindex="0" role="application" aria-roledescription="map" aria-label="3D map of Phoenix with one column per 5 km NASA grid cell; taller and warmer-coloured means a hotter night. Use the arrow keys to move between cells and Escape to close a cell."></div>
+      <p class="sr" id="cell-live" aria-live="polite"></p>
 
       <header class="brand">
         <p class="eyebrow">NASA Space Apps 2026 · Earth System Trend Detective</p>
@@ -69,6 +78,7 @@
         <div class="ctl-actions">
           <button type="button" id="share">Copy link to this view</button>
           <button type="button" id="csv">Download CSV</button>
+          <button type="button" id="png" class="wide-btn">Download map image (PNG)</button>
         </div>
         <p class="status" id="data-status" role="status">Loading NASA results…</p>
       </div>

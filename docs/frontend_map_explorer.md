@@ -76,6 +76,13 @@ for anomalies, Plasma for warming rate, Viridis for coverage.
   replayable from the header and footer; Esc closes it. Step 6 points to share links and CSV
   because there is no notebook yet.
 
+- **Section menu.** After you scroll past the map, a fixed menu appears (Back to map, Quarters,
+  Compare, Coverage, Ask, Method) and marks the current section.
+- **Map image.** "Download map image (PNG)" saves the current map view with a title, legend and
+  data and basemap credits.
+- **Keyboard.** Tab to the map; the arrow keys move between the drawn cells (opening each cell's
+  details and announcing it to screen readers), and Escape closes the cell.
+
 ## Endpoints the page uses
 
 | Endpoint | Returns |
@@ -97,5 +104,5 @@ for anomalies, Plasma for warming rate, Viridis for coverage.
 - Transitions between frames are eased for readability; only the settled frame is data.
 - No secrets in the page or the URL. The private `/analysis/*` service is never called from
   the browser.
-- Not built yet (deliberately not faked): notebook, PDF and PNG export, and 1 km cells
+- Not built yet (deliberately not faked): notebook, PDF reports, and 1 km cells
   (see `docs/data_request_1km.md`).

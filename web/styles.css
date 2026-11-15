@@ -576,3 +576,16 @@ a { color: #e0a43a; }
 .brand .tour-open { pointer-events: auto; }
 .evidence-log .facts div { border-left: 0 !important; border-right: 0 !important; border-bottom: 0 !important; }
 .tour-nav { flex-wrap: nowrap; } .tour-skip { white-space: nowrap; } .tour-count { white-space: nowrap; }
+/* Section menu + back to map */
+.case-nav { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 60; display: flex; gap: 2px;
+  background: rgba(20,21,24,.94); border: 1px solid #4a463e; border-radius: 3px; padding: 4px; box-shadow: 0 10px 24px rgba(0,0,0,.5); }
+.case-nav[hidden] { display: none; }
+.case-nav button { font: 13px "Courier Prime", monospace; color: #cfc4ad; background: transparent; border: 0; padding: 6px 10px; cursor: pointer; border-radius: 2px; }
+.case-nav button:hover { color: #efe6d2; background: #2a2620; }
+.case-nav button[aria-current] { color: #141518; background: #e9dbb8; }
+.case-nav .nav-map { color: #fff; background: #c8372d; }
+.case-nav .nav-map:hover { background: #a92c23; color: #fff; }
+@media (max-width: 640px) { .case-nav { left: 6px; right: 6px; transform: none; overflow-x: auto; } .case-nav button { padding: 6px 8px; font-size: 12px; white-space: nowrap; } }
+/* map keyboard focus + PNG button */
+.map:focus-visible { outline: 3px solid #c8372d; outline-offset: -3px; }
+.ctl-actions .wide-btn { grid-column: 1 / -1; }

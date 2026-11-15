@@ -137,3 +137,11 @@ def test_tour_methodology_and_outline_are_wired():
     outline = json.loads((ROOT / "web/assets/phoenix_urban_area.json").read_text())
     assert set(outline["quarters"]) == {"NW", "NE", "SW", "SE"} and len(outline["inside_cells"]) == 88
     assert "visual" in outline["note"].lower()
+
+
+def test_nav_png_and_keyboard_are_wired():
+    html = (ROOT / "web/index.html").read_text()
+    js = (ROOT / "web/app.js").read_text()
+    assert 'id="case-nav"' in html and 'data-go="map"' in html and 'id="png"' in html
+    assert 'tabindex="0"' in html and 'id="cell-live"' in html
+    assert "function downloadPng" in js and "function onMapKey" in js and "function setupNav" in js
