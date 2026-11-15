@@ -127,6 +127,7 @@ reported p-values are from the uncorrected test and are smaller than the correct
 | A8 | `tests/ai/test_question_bank.py`, `docs/ai_question_results.md` | Runs the data team's 17-case question bank against the AI layer: expected facts recomputed from the data, evidence hashes checked, the trend case met by the independently verified result, and a mocked Gemini reply with each applicable case's forbidden claim rejected. The conversational cases are not run: there is no chat interface this sprint. |
 | A9 | `ai/explain.py` (`explain_detailed`), `ai/ai_trial.py`, `scripts/try_ai_explanations.py` | `explain_detailed()` returns the reason, raw reply and A3 problems behind each outcome (`explain()` is unchanged). The trial tool runs the real Gemini path on the committed results, prints each reply as ACCEPTED/REJECTED with reasons and saves `data/cache/ai_trial_report.json`; it never writes results files. |
 | A10 | `ai/explain.py`, `ai/prompts/explain_v2.txt`, `ai/ai_trial.py` | Prompt v2 (`PROMPT_VERSION = "v2"`): plain-language facts ("Change: about X per month", missing months, p-value; no slope, tau, method or source text), and AI text must name the selected region. Gemini is called only when `GEMINI_LIVE=1` (or `allow_live=True`); a key alone is not enough, and cached approved replies are still reused. The trial tool defaults to a dry run (no request); `--ping` sends one tiny request with no project data; `--live` sends the facts. |
+| A11 | `ai/ai_release.py`, `scripts/verify_ai_release.py` | Release check before the offline rehearsal; never calls Gemini. Rebuilds all five results with AI off and sockets blocked and requires them to match the committed files (approved `"ai"` text is exempt only in its two explanation fields). A fallback must equal `fallback_text()` of its own numbers; AI text must pass A3 and name its region. The API, dashboard and `backup_run.py` must not import the AI layer or a model SDK. Evidence: `docs/evidence/ai/a11_release_check.json`. |
 
 The fallback text (`ai/explain.py: fallback_text`) is built from the numbers only and passes the
 A3 checks on every committed results file. Example (southeast): "From 2003-01 to 2024-12,
@@ -191,6 +192,47 @@ uv run python scripts/try_ai_explanations.py --live --fresh --region phoenix_nor
 Trial log: v1 on 2026-11-15 (gemini-3.5-flash-lite) - 5 of 5 accepted, numbers correct, but the
 study-area reply did not name its region, none gave p or missing months, and two used "slope"
 or "Kendall's tau". v2 addresses these; not yet run live.
+
+## Release check (A11)
+
+Run before the no-Wi-Fi rehearsal, and again whenever a results file changes:
+
+```bash
+uv run --locked python scripts/verify_ai_release.py --out docs/evidence/ai/a11_release_check.json
+```
+
+- **Rebuild:** each committed results file must equal what the pipeline builds from the qc-v1
+  CSVs with AI off (no key, `GEMINI_LIVE=0`, cap 0, empty cache) and every socket connection
+  blocked. This proves the frozen snapshot needs no Gemini or network to reproduce.
+- **Provenance:** a `"fallback"` explanation must be exactly `fallback_text()` of the same
+  file's numbers, so text left over from an older or different region's result fails. An `"ai"`
+  explanation must pass the A3 checks and name the selected region.
+- **Isolation:** imports are followed from `api/app.py`, `app/streamlit_app.py` and
+  `scripts/backup_run.py`. None may reach `earth_system_trend.ai` or `openai`, so neither the live
+  nor the offline demo can call Gemini. Only the pipeline and the trial tool use the AI layer.
+- **Evidence:** the JSON records the commit, the SHA-256 of each results file (LF line endings,
+  as stored in git), every explanation and the scanned modules. A test fails if a results file
+  changes without the check being re-run.
+
+Run on 2026-11-14: PASS. All five explanations are `"fallback"`, all five rebuild exactly, no
+network attempts, 17 runtime modules scanned with no AI or model-SDK import.
+
+## Rehearsal answers (sprint plan, FE-15)
+
+The same verified snapshot backs all three role questions. The dashboard shows the evidence; these
+are the limits the presenter states, in line with what the A3 checks forbid the AI text to claim.
+
+- **City planner:** "What changed in Phoenix nighttime surface temperature between 2003 and
+  2024?" Show the main area: nighttime land surface temperature rose by about 0.00771 degC per
+  month (0.0926 degC per year; p < 0.001, seasonal Mann-Kendall), with all 264 months
+  present. Then show a subregion and its missing months. It is a historical trend, not a cause and not a forecast.
+- **Farmer:** "Does this tell me when to irrigate tomorrow?" No. It is monthly satellite
+  surface temperature history, averaged over a box. It gives no weather for tomorrow and no
+  irrigation amounts or timing.
+- **Engineer:** "Can I use this to predict street-level heat or drainage losses?" No. The grid
+  is 0.05 degrees (about 5 km), averaged over a study rectangle, so it says nothing at street
+  level. It is land surface temperature, not air temperature, and it identifies no causes. It
+  supports no site-specific engineering prediction.
 
 ## What the results do not say
 
