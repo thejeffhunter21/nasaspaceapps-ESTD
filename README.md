@@ -58,7 +58,17 @@ browser-origin CORS changes.
 Frontend-only installation, port changes, settings and recovery steps are in the
 [tested frontend runbook](docs/frontend_runbook.md). See the
 [freeze checklist and known limits](docs/frontend_demo_freeze.md) before presenting.
-Native Chrome/Safari and full screen-reader checks remain pending.
+Native Chrome/Safari desktop core interactions were subsequently checked; native
+phone and full screen-reader acceptance remain partial/pending.
+
+For the approved real snapshot without an API, use the
+[FE-14 offline package and rehearsal instructions](docs/frontend_offline.md).
+The Apple silicon bundle includes dependency wheels; it needs preinstalled
+Python 3.12 and macOS 14+. From its extracted folder, run
+`sh START_OFFLINE.command --check`, then `sh START_OFFLINE.command` and open
+http://127.0.0.1:8501. The page labels **Offline snapshot** and verifies all five
+approved result files before showing evidence. Two physical Wi-Fi-off laptop
+rehearsals and saved-clip playback remain pending.
 
 ### Dashboard preview
 

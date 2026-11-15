@@ -63,7 +63,7 @@ def test_offline_backend_page_matches_json_through_switch_and_cache(offline_back
         "Slope (°C/month)": "0.021", "p-value": "p < 0.001", "Direction": "increasing",
     }
     assert any("Sample data" in w.value for w in app.warning)
-    assert "Automatic summary" in [c.value for c in app.caption]
+    assert "Automatic summary (AI unavailable)" in [c.value for c in app.caption]
 
     app.selectbox[0].select("phoenix_northwest").run()
     assert not app.exception

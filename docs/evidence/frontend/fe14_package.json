@@ -1,0 +1,68 @@
+{
+  "checked_at_utc": "2026-11-15T03:53:20.586165+00:00",
+  "base_commit": "6318c556dbb970613798f5d3570cda2093ec24e4",
+  "freeze_id": "phoenix-qc-v1.0-handoff-1",
+  "data_version": "phoenix-qc-v1.0",
+  "bundle": {
+    "filename": "estd-offline-fe14-mac-arm64.tar.gz",
+    "bytes": 131899882,
+    "sha256": "f30878c1a56104357486941df1ec41648ad6fca92f1d0b5b4bb80b849e70b15d",
+    "wheels": 56,
+    "platform": "macOS Apple silicon",
+    "minimum_macos": "14.0",
+    "python_prerequisite": "3.12 with pip/venv, preinstalled; not bundled",
+    "archive_manifest_check": "PASS; all archived files match manifest; no .venv/.git/.env",
+    "runtime_source_check": "PASS; all packaged app Python files match review working tree"
+  },
+  "install": {
+    "status": "PASS",
+    "fresh_environment": true,
+    "pip_cache_disabled": true,
+    "network": "all denied by macOS sandbox",
+    "command": "PIP_NO_CACHE_DIR=1 /usr/bin/sandbox-exec -p '(version 1)(allow default)(deny network*)' /bin/sh START_OFFLINE.command --check"
+  },
+  "walkthrough": {
+    "filename": "estd-offline-walkthrough.mp4",
+    "bytes": 242302,
+    "sha256": "0eed496d4bc698fe13d1d041e4a5cbfee2a335634b47a91a80bb2fd2746d432d",
+    "format": "H.264 MP4, 1280x720, 24 fps, 16 seconds",
+    "type": "four actual local browser screenshots, four seconds each; not continuous screen recording",
+    "full_frame_decode": "PASS, 384 frames",
+    "native_player_playback": "pending",
+    "physical_wifi_off_playback": "pending"
+  },
+  "verification": {
+    "frontend_tests": {
+      "passed": 123,
+      "failed": 0
+    },
+    "ruff": "PASS",
+    "full_suite": {
+      "passed": 610,
+      "failed": 4,
+      "inherited_on_untouched_main": true,
+      "baseline_ai_release_check_suite": {
+        "passed": 12,
+        "failed": 4
+      },
+      "failure_file": "tests/ai/test_release_check.py",
+      "failed_tests": [
+        "test_offline_rebuild_matches_every_committed_file",
+        "test_ai_text_is_not_required_to_be_reproduced_offline",
+        "test_release_check_passes_on_the_committed_results",
+        "test_script_writes_evidence"
+      ],
+      "cause": "exact-equality checks on last-bit p-value recomputation differences; frontend preserves approved result bytes",
+      "owner_action": "AI owner review; unchanged in this frontend task"
+    }
+  },
+  "gate_G5": {
+    "status": "pending",
+    "first_physical_wifi_off_run": "pending",
+    "second_physical_wifi_off_run": "pending; Apple silicon confirmed by user",
+    "same_archive_on_both": "pending",
+    "clip_playback_offline": "pending"
+  },
+  "production_deployment": "unchanged; no FE-14 deployment",
+  "external_teammate_messages_sent": false
+}

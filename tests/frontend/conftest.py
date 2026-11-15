@@ -8,6 +8,7 @@ import streamlit as st
 @pytest.fixture(autouse=True)
 def isolated_frontend(monkeypatch):
     monkeypatch.setenv("API_URL", "")
+    monkeypatch.setenv("OFFLINE_SNAPSHOT_DIR", "")
     monkeypatch.setattr("dotenv.load_dotenv", lambda *args, **kwargs: None)
     st.cache_data.clear()
 
