@@ -90,7 +90,9 @@ def test_offline_page_overrides_live_api_and_switches_without_http(snapshot, mon
     app.run()
     assert not app.exception and app.error
     assert not app.metric and not app.get("plotly_chart")
-    assert [b.label for b in app.button] == ["Retry snapshot"]
+    assert [b.label for b in app.button if not (b.key or "").startswith("detective_")] == [
+        "Retry snapshot"
+    ]
 
 
 @pytest.mark.parametrize("region_id,expected_gaps", [

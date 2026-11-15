@@ -268,3 +268,12 @@ Run on 2026-11-14 against qc-v1 (`main` at 004c47f). All passed:
   average 0.
 - Manifest checksums match; a month is blank exactly when its valid area is below 80%.
 - Slope units and the serial-dependence sensitivity above.
+
+## Guided Climate Detective runtime
+
+The Streamlit guided demo now reuses `ai.trend` and `ai.ai_checks` for deterministic seasonal
+statistics. The release import scan allows these two modules and follows their imports, while
+continuing to reject model clients and SDKs. It does not permit runtime Gemini requests.
+Offline rebuild comparison permits only relative p-value differences up to 1e-14 (no absolute
+tolerance), accounting for machine precision across SciPy/platform versions; every other
+statistical field remains exact. Rounding a tiny p-value to zero still fails verification.

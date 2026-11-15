@@ -9,8 +9,8 @@ no-Wi-Fi rehearsal (G5), none of which the trend or story reviewers already prov
 2. Provenance: each explanation belongs to the result it sits in. A fallback must equal
    fallback_text() of that result's own numbers; AI text must pass the A3 checks and name the
    selected region (A10).
-3. Isolation: the API, the dashboard and the backup launcher never import the AI layer or a
-   model SDK, so the offline demo has no path to Gemini.
+3. Isolation: the API, dashboard and backup launcher cannot reach model clients or SDKs.
+   Only the deterministic trend and validation modules may run in the guided demo.
 
 scripts/verify_ai_release.py runs release_check() and saves the evidence file.
 """
@@ -21,6 +21,7 @@ import ast
 import copy
 import hashlib
 import json
+import math
 import os
 import socket
 import subprocess
@@ -43,6 +44,7 @@ _AI_ONLY_FIELDS = ("explanation", "explanation_source")
 RUNTIME_ENTRIES = ("src/earth_system_trend/api/app.py", "app/streamlit_app.py",
                    "scripts/backup_run.py")
 _PACKAGE = "earth_system_trend"
+_DETERMINISTIC = (f"{_PACKAGE}.ai.trend", f"{_PACKAGE}.ai.ai_checks")
 _FORBIDDEN = (f"{_PACKAGE}.ai", "openai", "google.genai", "google.generativeai")
 AI_OFF = {"GEMINI_API_KEY": "", "GEMINI_LIVE": "0", "AI_DAILY_CALL_CAP": "0"}
 
@@ -154,7 +156,20 @@ def rebuild_differences(committed: dict[str, Any], rebuilt: dict[str, Any]) -> l
     """Top-level fields where the committed file differs from the offline rebuild."""
     skip = _AI_ONLY_FIELDS if committed.get("explanation_source") == "ai" else ()
     keys = sorted((set(committed) | set(rebuilt)) - set(skip))
-    return [key for key in keys if committed.get(key) != rebuilt.get(key)]
+    differences = []
+    for key in keys:
+        left, right = committed.get(key), rebuilt.get(key)
+        if key == "trend" and isinstance(left, dict) and isinstance(right, dict):
+            # scipy/platform differences can shift tiny p-values by one floating-point bit.
+            # No absolute tolerance: rounding a tiny p-value to zero must still fail.
+            left, right = dict(left), dict(right)
+            if (isinstance(left.get("p"), (int, float))
+                    and isinstance(right.get("p"), (int, float))
+                    and math.isclose(left["p"], right["p"], rel_tol=1e-14, abs_tol=0.0)):
+                left["p"] = right["p"]
+        if left != right:
+            differences.append(key)
+    return differences
 
 
 # --- 2. provenance ----------------------------------------------------------------------
@@ -226,7 +241,10 @@ def runtime_isolation(root: Path, entries: tuple[str, ...] = RUNTIME_ENTRIES) ->
             for name in names:
                 if not name:
                     continue
-                if any(name == f or name.startswith(f + ".") for f in _FORBIDDEN):
+                deterministic = any(name == f or name.startswith(f + ".")
+                                    for f in _DETERMINISTIC)
+                if (not deterministic
+                        and any(name == f or name.startswith(f + ".") for f in _FORBIDDEN)):
                     violations.append({"module": rel(path), "import": name})
                 elif name == _PACKAGE or name.startswith(_PACKAGE + "."):
                     todo += [f for f in module_file(name) if f not in seen]
