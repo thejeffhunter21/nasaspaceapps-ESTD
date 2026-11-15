@@ -1044,14 +1044,14 @@
   const EXAMPLES = ["Is Tempe warming faster than Glendale?", "Which cell warmed the most, and where is it?",
     "How hot was downtown Phoenix in July 2024?", "Do summer nights warm faster than winter nights?",
     "What was unusual about this month?", "What is land surface temperature?"];
-  function setAskBusy(busy) { $("ask-go").disabled = busy; $("ask-go").textContent = busy ? "Working…" : "Ask"; }
+  function setAskBusy(busy) { $("ask-go").disabled = busy; $("ask-go").textContent = busy ? "Working…" : "Investigate"; }
   const TOOL_NAMES = {cell_trend: "cell trend", all_cell_trends: "all 192 cell trends", localized_differences: "local hot-spot test",
     seasonal_trend: "seasonal trends", anomalies: "unusual-month scan", region_stats: "region trends",
     region_difference: "region vs region test", difference_test: "direct difference test", period_values: "map values", region_monthly: "regional record", list_cells: "coverage count"};
   const KIND_LABEL = {compare: "Comparison", value: "Measurement", ranking: "Ranking", seasons: "Seasons", unusual: "Unusual months",
     hotspots: "Neighbourhood hot spots", coverage: "Data coverage", background: "Background", forecast: "Not a forecast",
     cause: "Causes", halves: "Both halves check", cluster: "Clustering", outside_data: "Needs outside data", no_data: "No valid data", answer: "Warming trend", help: "What I can answer", error: "Couldn't answer"};
-  function askAgain(q) { $("ask-input").value = q; askAI(q); }
+  function askAgain(q) { ask(q); }
   async function askAI(q) {
     const box = $("ask-result");
     box.hidden = false; box.className = "answer loading";
@@ -1093,11 +1093,237 @@
       window.scrollTo({top: 0, behavior: reduceMotion ? "auto" : "smooth"});
     });
   }
+  // ---------- AI Scientific Discovery Engine (prototype workflow) ----------
+  // Deterministic routing to four fixed investigations. The WORKFLOW is scripted; the NUMBERS are not:
+  // every value comes from this project's endpoints (/regions, /region-stats, /region-compare,
+  // /discoveries, /map-static, /cell-years). Nothing is typed in here and no language model runs.
+  const INVESTIGATIONS = [
+    ["hidden_pattern", "Find a hidden warming pattern", "Find a warming pattern that regional averages might hide."],
+    ["rank_regions", "Which region is warming fastest?", "Which Phoenix region is warming fastest?"],
+    ["local_vs_region", "Compare a local observation with its regional average", "Can a regional average hide local warming?"],
+    ["trend_acceleration", "Has Phoenix warming accelerated?", "Has Phoenix warming accelerated since 2014?"],
+  ];
+  const INTENT_LABEL = {hidden_pattern: "localized warming discovery", rank_regions: "regional ranking",
+    local_vs_region: "local observation vs regional average", trend_acceleration: "change in warming rate (evidence challenge)"};
+  function detectDemoIntent(q) {
+    const s = q.toLowerCase();
+    if (/accelerat|since 2014|speed(ing|ed)? up|getting faster/.test(s)) return "trend_acceleration";
+    if (/hidden|discover|pattern|might hide|locali[sz]ed/.test(s)) return "hidden_pattern";
+    if (/regional average|compare (a )?local|local observation|hide local|local vs/.test(s)) return "local_vs_region";
+    if (/fastest|warming most|warms? (the )?most|which (region|quarter)/.test(s)) return "rank_regions";
+    return "unsupported";
+  }
+  const qName = (rid) => (rid === state.quarterIds.whole ? "Whole study area" : QUARTERS[quarterOfRegion(rid)]?.name || rid);
+  const finding = (id) => state.discoveries?.findings.find((x) => x.id === id) || null;
+  const quarterRegions = () => ORDER.map((q) => state.regions.find((r) => r.region_id === state.quarterIds[q])).filter(Boolean);
+
+  function stripPlot() {   // every cell's trend on one axis, with the quarter and whole-area averages marked
+    const cells = state.cells.filter((c) => c.slope_per_year != null), W2 = 720, H2 = 118, x0 = 16, x1 = W2 - 16;
+    const X = (v) => x0 + clamp(v / 0.2) * (x1 - x0);
+    const ticks = cells.map((c) => `<line x1="${X(c.slope_per_year).toFixed(1)}" x2="${X(c.slope_per_year).toFixed(1)}" y1="54" y2="82" stroke="rgb(${rampColor(RAMP_RATE, c.slope_per_year / 0.2).slice(0, 3).map(Math.round).join(",")})" stroke-width="2"><title>${c.id}: ${signed(c.slope_per_year, 3)} °C/yr</title></line>`).join("");
+    const marks = [...quarterRegions().map((r) => [quarterOfRegion(r.region_id), r.trend.slope * 12]),
+      ["All", state.regions.find((r) => r.region_id === state.quarterIds.whole).trend.slope * 12]];
+    marks.sort((a, b) => a[1] - b[1]);
+    const tri = marks.map(([n, v], i) => `<path d="M${X(v).toFixed(1)} 50 l-4 -7 h8 z" fill="#efe6d2"/><line x1="${X(v).toFixed(1)}" x2="${X(v).toFixed(1)}" y1="${14 + (i % 3) * 11}" y2="43" stroke="#6b6557"/><text x="${X(v).toFixed(1)}" y="${11 + (i % 3) * 11}" font-size="10" fill="#efe6d2" text-anchor="middle">${esc(n)} ${signed(v, 3)}</text>`).join("");
+    const axis = [0, 0.05, 0.1, 0.15, 0.2].map((v) => `<text x="${X(v)}" y="102" font-size="10" fill="#9c927d" text-anchor="middle">${v === 0 ? "0" : "+" + v.toFixed(2)}</text>`).join("");
+    return `<svg viewBox="0 0 ${W2} ${H2}" role="img" aria-label="Warming rate of each of the ${cells.length} grid cells on one axis, with the four quarter averages and the whole-area average marked above">
+      <line x1="${x0}" x2="${x1}" y1="86" y2="86" stroke="#4a463e"/>${ticks}${tri}${axis}<text x="${x1}" y="116" font-size="10" fill="#9c927d" text-anchor="end">°C per year, 2003–2024 (one line per grid cell; triangles: regional averages)</text></svg>`;
+  }
+  function rankBars(ranked) {
+    const st = state.regionStats?.regions || {}, W2 = 720, rowH = 34, x0 = 110, x1 = W2 - 90, max = 0.15;
+    const X = (v) => x0 + clamp(v / max) * (x1 - x0);
+    const rows = ranked.map((r, i) => {
+      const v = r.trend.slope * 12, s = st[r.region_id] || {}, y = 8 + i * rowH;
+      return `<text x="${x0 - 10}" y="${y + 15}" font-size="12" fill="#efe6d2" text-anchor="end">${esc(qName(r.region_id))}</text>
+        <rect x="${x0}" y="${y}" width="${(X(v) - x0).toFixed(1)}" height="22" rx="2" fill="${i === 0 ? "#c8372d" : "#7a6a45"}"><title>${qName(r.region_id)}: ${signed(v, 3)} °C/yr</title></rect>
+        ${s.ci_low_per_year != null ? `<line x1="${X(s.ci_low_per_year).toFixed(1)}" x2="${X(s.ci_high_per_year).toFixed(1)}" y1="${y + 11}" y2="${y + 11}" stroke="#efe6d2" stroke-width="1.5"/>` : ""}
+        <text x="${(Math.max(X(v), s.ci_high_per_year != null ? X(s.ci_high_per_year) : 0) + 8).toFixed(1)}" y="${y + 15}" font-size="12" fill="#efe6d2">${signed(v, 3)}</text>`;
+    }).join("");
+    return `<svg viewBox="0 0 ${W2} ${ranked.length * rowH + 26}" role="img" aria-label="Estimated warming rate per quarter with 95% confidence intervals">${rows}
+      <text x="${x0}" y="${ranked.length * rowH + 20}" font-size="10" fill="#9c927d">°C per year (seasonal Sen's slope); thin line: 95% confidence interval</text></svg>`;
+  }
+  function twoLines(years, a, b, nameA, nameB, splitYear) {   // yearly anomalies; gaps stay gaps
+    const W2 = 720, H2 = 170, x0 = 34, x1 = W2 - 12, y0 = 12, y1 = H2 - 26;
+    const vals = [...a, ...(b || [])].filter((v) => v != null), m = Math.max(1, ...vals.map(Math.abs));
+    const X = (i) => x0 + (i / (years.length - 1)) * (x1 - x0), Y = (v) => (y0 + y1) / 2 - (v / m) * ((y1 - y0) / 2);
+    const path = (arr) => { let d = "", pen = false; arr.forEach((v, i) => { if (v == null) { pen = false; return; } d += `${pen ? "L" : "M"}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`; pen = true; }); return d; };
+    const dots = (arr, fill, name) => arr.map((v, i) => (v == null ? "" : `<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="2.6" fill="${fill}"><title>${name}, ${years[i]}: ${signed(v, 2)} °C vs usual</title></circle>`)).join("");
+    const si = splitYear ? years.indexOf(splitYear) : -1;
+    return `<svg viewBox="0 0 ${W2} ${H2}" role="img" aria-label="Yearly mean anomaly, ${years[0]} to ${years[years.length - 1]}: ${esc(nameA)}${b ? " and " + esc(nameB) : ""}">
+      <line x1="${x0}" x2="${x1}" y1="${Y(0)}" y2="${Y(0)}" stroke="#4a463e"/>
+      ${si > 0 ? `<line x1="${((X(si - 1) + X(si)) / 2).toFixed(1)}" x2="${((X(si - 1) + X(si)) / 2).toFixed(1)}" y1="${y0}" y2="${y1}" stroke="#e0a43a" stroke-dasharray="4 4"/><text x="${((X(si - 1) + X(si)) / 2 + 6).toFixed(1)}" y="${y0 + 10}" font-size="10" fill="#e0a43a">${splitYear} onward</text>` : ""}
+      ${b ? `<path d="${path(b)}" fill="none" stroke="#9c927d" stroke-width="2"/>${dots(b, "#9c927d", nameB)}` : ""}
+      <path d="${path(a)}" fill="none" stroke="#c8372d" stroke-width="2.4"/>${dots(a, "#c8372d", nameA)}
+      <text x="4" y="${y0 + 8}" font-size="10" fill="#9c927d">+${m.toFixed(1)}</text><text x="4" y="${y1}" font-size="10" fill="#9c927d">−${m.toFixed(1)}</text>
+      <text x="${x0}" y="${H2 - 6}" font-size="10" fill="#9c927d">${years[0]}</text><text x="${x1}" y="${H2 - 6}" font-size="10" fill="#9c927d" text-anchor="end">${years[years.length - 1]}</text>
+      <text x="${(x0 + x1) / 2}" y="${H2 - 6}" font-size="10" fill="#9c927d" text-anchor="middle">yearly mean vs usual, °C (complete years only)</text></svg>
+      <p class="eng-key"><i style="background:#c8372d"></i>${esc(nameA)}${b ? `<i style="background:#9c927d"></i>${esc(nameB)}` : ""}</p>`;
+  }
+
+  async function investigate(intent) {
+    const prov = state.discoveries?.provenance, haveCells = !!state.cells;
+    const whole = state.regions.find((r) => r.region_id === state.quarterIds.whole);
+    const st = state.regionStats?.regions || {};
+    const out = {tools: [["GET /regions, /series, /anomaly", "published regional results (seasonal Mann-Kendall, Sen's slope)"]], cells: [], stats: []};
+    if (intent === "hidden_pattern") {
+      const spread = finding("hidden-spread"), local = finding("local-faster");
+      if (haveCells && spread && local) {
+        const rates = state.cells.map((c) => c.slope_per_year).filter((v) => v != null);
+        const q = quarterRegions().map((r) => r.trend.slope * 12);
+        out.viz = stripPlot();
+        out.discovery = `${spread.statement} ${local.statement}`;
+        out.evidence = [`Regional averages span ${signed(Math.min(...q), 3)} to ${signed(Math.max(...q), 3)} °C/yr; the ${rates.length} individual cells span ${signed(Math.min(...rates), 3)} to ${signed(Math.max(...rates), 3)} °C/yr.`,
+          `Cells: ${local.evidence_text}.`, `Method: ${local.method}.`];
+        out.challenge = `${local.challenge} ${local.limitations}`;
+        out.verdict = [STATUS[local.status] || local.status, local.status];
+        out.cells = local.cells; out.mapFinding = "local-faster";
+        out.tools.push(["GET /map-static", `each cell's own trend, 95% CI and FDR q-value (${state.cells.length} cells)`], ["GET /discoveries", "cell-minus-quarter tests, FDR correction, both-halves challenge"]);
+      } else {
+        const ranked = quarterRegions().sort((a, b) => b.trend.slope - a.trend.slope);
+        out.viz = rankBars(ranked); out.notice = "Granular cell-level investigation unavailable in this build; demonstrating the discovery workflow using verified regional observations.";
+        out.discovery = `The ${qName(ranked[0].region_id)} quarter shows a stronger estimated warming trend (${signed(ranked[0].trend.slope * 12, 3)} °C/yr) than the whole study area (${signed(whole.trend.slope * 12, 3)} °C/yr).`;
+        out.evidence = [`All four quarters: ${ranked.map((r) => `${qName(r.region_id)} ${signed(r.trend.slope * 12, 3)}`).join(", ")} °C/yr.`];
+        out.challenge = "The descriptive difference is observable, but additional testing would be required to establish that the two warming rates differ significantly.";
+        out.verdict = ["Candidate for deeper investigation", "exploratory"];
+      }
+      out.why = "A regional average can be accurate and still hide neighbourhoods that warm much faster or slower. Those pockets are where follow-up work (land cover, urban growth) should look first.";
+    } else if (intent === "rank_regions") {
+      const ranked = quarterRegions().sort((a, b) => b.trend.slope - a.trend.slope), top = ranked[0];
+      out.viz = rankBars(ranked);
+      out.discovery = `${qName(top.region_id)} has the largest estimated warming rate among the four analysed regions: ${signed(top.trend.slope * 12, 3)} °C per year${st[top.region_id]?.ci_low_per_year != null ? ` (95% CI ${signed(st[top.region_id].ci_low_per_year, 3)} to ${signed(st[top.region_id].ci_high_per_year, 3)})` : ""}.`;
+      out.evidence = ranked.map((r) => `${qName(r.region_id)}: ${signed(r.trend.slope * 12, 3)} °C/yr, ${pText(r.trend.p)}, τ ${r.trend.tau.toFixed(2)}.`);
+      const tests = await Promise.all(ranked.slice(1).map((r) => getJSON(`${API}/region-compare?a=${encodeURIComponent(top.region_id)}&b=${encodeURIComponent(r.region_id)}`, true).catch(() => null)));
+      const ok = tests.filter(Boolean);
+      if (ok.length) {
+        out.challenge = `Being ranked first does not automatically establish that its warming rate is statistically different from every other region, so the engine ran the direct test on each monthly difference: ` +
+          ok.map((t) => `${qName(t.region_a)} minus ${qName(t.region_b)} ${signed(t.difference_slope_per_year, 3)} °C/yr (95% CI ${signed(t.ci_low_per_year, 3)} to ${signed(t.ci_high_per_year, 3)}, ${pText(t.p)}, ${t.significant ? "differs" : "no significant difference"})`).join("; ") + ".";
+        const all = ok.length === ranked.length - 1 && ok.every((t) => t.significant);
+        out.verdict = all ? ["Supported: fastest, and significantly faster than each other quarter", "supported"] : ["Ranked first; not significantly different from every quarter", "exploratory"];
+        out.tools.push(["GET /region-compare", `seasonal Mann-Kendall on the monthly difference between two regions (${ok.length} tests run)`]);
+      } else {
+        out.challenge = "Being ranked first does not automatically establish that its warming rate is statistically different from every other region. The direct comparison test could not be run right now.";
+        out.verdict = ["Candidate for deeper investigation", "exploratory"];
+      }
+      out.tools.push(["GET /region-stats", "95% confidence interval for each regional Sen's slope"]);
+      out.mapRegion = quarterOfRegion(top.region_id);
+      out.why = "Knowing where nights warm fastest points heat-mitigation and follow-up study at the right part of the metro. The cause is not established here.";
+    } else if (intent === "local_vs_region") {
+      const local = finding("local-faster");
+      const pick = haveCells && local && [...local.cells].sort((a, b) => b.metric - a.metric)[0];
+      if (pick) {
+        const c = state.cellIndex[pick.id], rid = state.quarterIds[c.quarter], r = state.regions.find((x) => x.region_id === rid);
+        const cy = await getJSON(`${API}/cell-years?id=${encodeURIComponent(c.id)}`, true).catch(() => null);
+        const reg = yearlyAnomalyMeans(rid);
+        if (cy) out.viz = twoLines(cy.years.map((y) => y.year), cy.years.map((y) => y.anomaly), reg.map((b) => b.v), `Cell ${c.id}`, `${QUARTERS[c.quarter].name} quarter average`);
+        out.stats = [["Cell", c.id, `${c.lat.toFixed(3)}° N, ${Math.abs(c.lon).toFixed(3)}° W`], ["Cell trend", `${signed(c.slope_per_year, 3)} °C/yr`, `95% CI ${signed(c.ci_low_per_year, 3)} to ${signed(c.ci_high_per_year, 3)}`],
+          [`${QUARTERS[c.quarter].name} quarter trend`, `${signed(r.trend.slope * 12, 3)} °C/yr`, pText(r.trend.p)], ["Cell minus quarter", `${signed(pick.metric, 3)} °C/yr`, `q = ${pick.q.toPrecision(2)} after correction`]];
+        out.discovery = `Cell ${c.id} in the ${QUARTERS[c.quarter].name} quarter warms at ${signed(c.slope_per_year, 3)} °C per year, while its quarter's average warms at ${signed(r.trend.slope * 12, 3)} °C per year. The regional average hides this cell.`;
+        out.evidence = [`Direct test on the monthly series (cell minus its quarter): ${signed(pick.metric, 3)} °C/yr, q = ${pick.q.toPrecision(2)}.`, `${c.valid_months} of ${c.months} months valid for this cell; missing months stay missing.`, `Method: ${local.method}.`];
+        out.challenge = `${local.challenge} ${local.limitations}`;
+        out.verdict = [STATUS[local.status] || local.status, local.status];
+        out.cells = [c]; out.mapCell = c.id; out.mapFinding = "local-faster";
+        out.tools.push(["GET /discoveries", "cell-minus-quarter test with FDR correction and both-halves challenge"], ["GET /cell-years", "this cell's yearly record and trend line"], ["GET /map-static", "the cell's own trend and 95% CI"]);
+      } else {
+        const ranked = quarterRegions().sort((a, b) => b.trend.slope - a.trend.slope), top = ranked[0];
+        out.notice = "Individual grid-cell observations are not available in the current processed dataset, so cell-level comparison is disabled.";
+        out.viz = twoLines(yearlyAnomalyMeans(top.region_id).map((b) => +b.y), yearlyAnomalyMeans(top.region_id).map((b) => b.v), yearlyAnomalyMeans(whole.region_id).map((b) => b.v), `${qName(top.region_id)} quarter`, "Whole study area");
+        out.discovery = `At regional level, the ${qName(top.region_id)} quarter (${signed(top.trend.slope * 12, 3)} °C/yr) warms faster than the whole study area (${signed(whole.trend.slope * 12, 3)} °C/yr).`;
+        out.evidence = ["Published regional series only."]; out.challenge = "The descriptive difference is observable, but additional testing would be required to establish that the two warming rates differ significantly.";
+        out.verdict = ["Candidate for deeper investigation", "exploratory"];
+      }
+      out.why = "One 5 km cell can behave differently from the 48-cell average around it. Checking the local record against its region is how hidden hot spots are found.";
+    } else {   // trend_acceleration
+      const yrs = yearlyAnomalyMeans(whole.region_id), split = 2014;
+      const mean = (arr) => (arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null);
+      const early = yrs.filter((b) => +b.y < split && b.v != null).map((b) => b.v), late = yrs.filter((b) => +b.y >= split && b.v != null).map((b) => b.v);
+      const wide = finding("widespread-warming");
+      out.hypothesis = "Recent nighttime warming is faster than earlier warming.";
+      out.viz = twoLines(yrs.map((b) => +b.y), yrs.map((b) => b.v), null, "Whole study area", "", split);
+      out.stats = [[`${yrs[0].y}–${split - 1}`, `${signed(mean(early), 2)} °C`, `mean yearly anomaly, ${early.length} complete years`], [`${split}–${yrs[yrs.length - 1].y}`, `${signed(mean(late), 2)} °C`, `mean yearly anomaly, ${late.length} complete years`],
+        ["Full-period trend", `${signed(whole.trend.slope * 12, 3)} °C/yr`, pText(whole.trend.p)]];
+      const me = mean(early), ml = mean(late), sig = whole.trend.p < 0.05;
+      out.discovery = `Phoenix nights were ${me == null || ml == null ? "not comparable" : ml > me ? "warmer" : "not warmer"} in ${split}–${yrs[yrs.length - 1].y} than in ${yrs[0].y}–${split - 1} on average, and the full-period trend is ${sig ? "significant" : "not significant"}. That describes the two periods; it does not show that the rate of warming changed.`;
+      out.evidence = [`Whole study area, ${whole.period.start} to ${whole.period.end}: ${signed(whole.trend.slope * 12, 3)} °C/yr, ${pText(whole.trend.p)}.`,
+        `Period means above are descriptive averages of the published yearly anomalies, not trend estimates.`, ...(wide ? [`Both-halves check on cells: ${wide.statement}`] : [])];
+      out.challenge = "Two different estimated slopes do not, by themselves, prove that the underlying warming rate changed. This build has no slope-change test, and about a decade per half is short for one. The recent period may show a different descriptive trend, but an appropriate statistical comparison is required before claiming acceleration.";
+      out.verdict = ["Verdict: INCONCLUSIVE", "not_supported"];
+      if (wide) out.tools.push(["GET /discoveries", "each cell re-tested separately in 2003–2013 and 2014–2024"]);
+      out.why = "A system that refuses to overstate its evidence is more useful than one that always answers yes. The honest next step is a formal change-in-trend test on a longer record.";
+    }
+    out.retrieved = [["Source", "NASA Terra MODIS MOD11C3 Collection 6.1 (LP DAAC, doi:10.5067/MODIS/MOD11C3.061)"], ["Variable", "Nighttime land surface temperature (LST_Night_CMG)"],
+      ["Study area", "Phoenix, Arizona: 112.4°–111.6° W, 33.2°–33.8° N"], ["Analysis period", `${whole.period.start} to ${whole.period.end}`],
+      ["Retrieved data", `Regional monthly series for ${state.regions.length} areas${haveCells ? ` and per-cell trend records for ${state.cells.length} grid cells` : ""}`],
+      ...(prov ? [["Granularity", `Individual MODIS grid cells: ${prov.cells} cells × ${prov.months} months`], ["Data version", `${prov.data_version}, grid_cells.csv sha256 ${prov.sha256.slice(0, 12)}…`]] : [["Granularity", "Regional averages only in this build"]]),
+      ["Statistical method", "Seasonal Mann-Kendall, seasonal Sen's slope, Kendall's τ; Benjamini-Hochberg FDR for cells"], ["Provenance", "Existing processed Earth System Trend Detective dataset; failed-QC months stay missing"]];
+    return out;
+  }
+
+  let engineRun = 0;
+  async function runInvestigation(intent, question) {
+    const box = $("ask-result"), run = ++engineRun;
+    const haveCells = !!state.cells, prov = state.discoveries?.provenance;
+    const stages = [
+      ["Understanding research question", `Research intent identified: ${INTENT_LABEL[intent]}`],
+      ["Retrieving relevant observations", `Quality-controlled NASA nighttime land surface temperature, Phoenix study area, 2003–2024, MODIS MOD11C3${prov ? `: ${prov.cells} grid cells × ${prov.months} months` : haveCells ? `: ${state.cells.length} grid cells` : " (regional series)"}`],
+      ["Selecting scientific analysis", intent === "trend_acceleration" ? "Seasonal trend analysis · period comparison · both-halves check" : "Seasonal trend analysis · spatial comparison · regional baseline comparison · significance validation"],
+      ["Challenging initial finding", "Checking whether the observed difference is a meaningful pattern, not just the largest descriptive estimate"],
+      ["Preparing discovery", "Verified evidence prepared for visualization"],
+    ];
+    box.hidden = false; box.className = "answer engine";
+    box.innerHTML = `<p class="eng-label">Research question</p><p class="answer-q">${esc(question)}</p>
+      <ol class="eng-flow" aria-label="Investigation workflow">${["Discover", "Investigate", "Validate", "Explain"].map((x) => `<li>${x}</li>`).join("")}</ol>
+      <ul class="eng-stages" id="eng-stages" aria-live="polite"></ul><div id="eng-out"></div>`;
+    box.scrollIntoView({behavior: reduceMotion ? "auto" : "smooth", block: "start"});
+    setAskBusy(true);
+    const work = investigate(intent).catch((err) => ({error: err.message || String(err)}));
+    for (let i = 0; i < stages.length; i++) {
+      if (run !== engineRun) return;
+      $("eng-stages").insertAdjacentHTML("beforeend", `<li><b>${i + 1}. ${esc(stages[i][0])}</b><span>${esc(stages[i][1])}</span></li>`);
+      box.querySelectorAll(".eng-flow li").forEach((li, k) => li.classList.toggle("on", k <= Math.min(3, Math.floor(i * 0.9))));
+      if (!reduceMotion) await new Promise((r) => setTimeout(r, 260));
+    }
+    const out = await work;
+    setAskBusy(false);
+    if (run !== engineRun) return;
+    if (out.error) { $("eng-out").innerHTML = `<p class="det-info">The investigation could not be completed (${esc(out.error)}).</p>`; return; }
+    const n = out.cells.length;
+    $("eng-out").innerHTML = `
+      ${out.notice ? `<p class="eng-notice">${esc(out.notice)}</p>` : ""}
+      ${out.hypothesis ? `<p class="eng-label">Hypothesis</p><p class="eng-hyp">${esc(out.hypothesis)}</p>` : ""}
+      ${out.viz ? `<figure class="eng-viz">${out.viz}</figure>` : ""}
+      ${out.stats.length ? `<div class="answer-stats">${out.stats.map((s, i) => `<div class="tile t${i}"><span class="tile-label">${esc(s[0])}</span><b class="tile-value">${esc(s[1])}</b><span class="tile-sub">${esc(s[2])}</span></div>`).join("")}</div>` : ""}
+      <dl class="eng-report">
+        <dt>Discovery</dt><dd>${esc(out.discovery)}</dd>
+        <dt>Evidence</dt><dd><ul>${out.evidence.map((e) => `<li>${esc(e)}</li>`).join("")}</ul></dd>
+        <dt>Challenge</dt><dd>${esc(out.challenge)}</dd>
+        <dt>Conclusion</dt><dd><span class="badge ${esc(out.verdict[1])}">${esc(out.verdict[0])}</span></dd>
+        <dt>Why it matters</dt><dd>${esc(out.why)}</dd>
+      </dl>
+      <div class="answer-foot">${n || out.mapRegion ? `<button type="button" class="primary small" id="eng-map">${out.mapRegion ? `Open the ${esc(QUARTERS[out.mapRegion].name)} quarter on the map` : `Show ${n} cell${n > 1 ? "s" : ""} on the map`}</button>` : ""}</div>
+      <details class="eng-more"><summary>Retrieved evidence</summary><dl class="eng-facts">${out.retrieved.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl></details>
+      <details class="eng-more"><summary>Investigation tools</summary><p class="note">Project endpoints this investigation read. The statistics are computed by the Python analysis code, never by a language model.</p>
+        <ul class="eng-tools">${out.tools.map(([t, d]) => `<li><code>${esc(t)}</code><span>${esc(d)}</span></li>`).join("")}</ul>
+        <p class="eng-arch">User question → interpretation → scientific retrieval → NASA observations → statistical analysis tools → evidence validation → explanation → map / chart discovery</p></details>
+      <p class="answer-meta">Prototype workflow: deterministic investigation routing demonstrates the planned retrieval-augmented scientific analysis architecture. No vector database or language model runs here.</p>`;
+    $("eng-map")?.addEventListener("click", () => {
+      if (out.mapRegion) selectRegion(out.mapRegion);
+      else setState({finding: out.mapFinding || null, cell: out.mapCell || null, region: "all"});
+      window.scrollTo({top: 0, behavior: reduceMotion ? "auto" : "smooth"});
+    });
+  }
+  // One entry point for the question box: a supported investigation, or the question engine for anything else.
+  function ask(q) {
+    const intent = state.regions ? detectDemoIntent(q) : "unsupported";
+    $("ask-input").value = q;
+    if (intent === "unsupported") { engineRun++; askAI(q); } else runInvestigation(intent, q);
+  }
+
   function buildDiscoveries() {
     const d = state.discoveries, host = $("discovery-list");
-    $("ask-chips").innerHTML = EXAMPLES.map((q) => `<button type="button" class="chip">${esc(q)}</button>`).join("");
-    $("ask-chips").querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => askAgain(b.textContent)));
-    $("ask").addEventListener("submit", (ev) => { ev.preventDefault(); const q = $("ask-input").value.trim(); if (q) askAI(q); });
+    $("ask-chips").innerHTML = INVESTIGATIONS.map(([id, label, q]) => `<button type="button" class="chip inv" data-q="${esc(q)}" data-intent="${id}">${esc(label)}</button>`).join("")
+      + EXAMPLES.map((q) => `<button type="button" class="chip" data-q="${esc(q)}">${esc(q)}</button>`).join("");
+    $("ask-chips").querySelectorAll(".chip").forEach((b) => b.addEventListener("click", () => (b.dataset.intent ? ($("ask-input").value = b.dataset.q, runInvestigation(b.dataset.intent, b.dataset.q)) : askAgain(b.dataset.q))));
+    $("ask").addEventListener("submit", (ev) => { ev.preventDefault(); const q = $("ask-input").value.trim(); if (q) ask(q); });
     if (!d) {
       host.innerHTML = '<p class="det-info">The AI findings are unavailable right now (the cell-level analysis service did not answer). The map is unaffected.</p>';
       $("finding-wrap").hidden = true; $("discover").disabled = true; return;
@@ -1125,9 +1351,8 @@
       </article>`).join("");
     host.querySelectorAll("button[data-finding]").forEach((b) => b.addEventListener("click", () => showDiscovery(b.dataset.finding)));
     host.querySelectorAll("button[data-ask]").forEach((b) => b.addEventListener("click", () => {
-      $("ask-input").value = b.dataset.ask;
       $("ask").scrollIntoView({behavior: reduceMotion ? "auto" : "smooth", block: "center"});
-      askAI(b.dataset.ask);
+      ask(b.dataset.ask);
     }));
     let next = 0;
     $("discover").addEventListener("click", () => {

@@ -13,7 +13,7 @@
   <nav class="case-nav" id="case-nav" aria-label="Sections" hidden>
     <button type="button" data-go="map" class="nav-map">↑ Back to map</button>
     <button type="button" data-go="quarters">Quarters</button>
-    <button type="button" data-go="discoveries">Ask the detective</button>
+    <button type="button" data-go="discoveries">Discovery Engine</button>
   </nav>
 
   <!-- The map stage: one sticky viewport. Regions, cells, comparison and data information open from it; scrolling splits it into quarters. -->
@@ -216,16 +216,16 @@
   <main id="story" class="story">
     <section class="block" id="discoveries" aria-labelledby="disc-title">
       <div class="block-head">
-        <p class="kicker">Ask the Climate Detective</p>
-        <h2 id="disc-title">Ask anything about Phoenix's nights</h2>
-        <p class="wide">Ask about a place, a cell, a year, a season or a comparison. The answer comes from running this project's statistical tests on all 192 NASA grid cells, so every number is a real measurement or test result.</p>
+        <p class="kicker">AI Scientific Discovery Engine</p>
+        <h2 id="disc-title">Explore patterns hidden beneath regional climate averages</h2>
+        <p class="wide">The map shows what is happening. The Discovery Engine investigates what is hidden beneath it: it retrieves the cell-level NASA observations, runs the statistical tools, challenges its own finding and returns the evidence to the map. You can also ask about a place, a year, a season or a comparison.</p>
       </div>
       <form id="ask" class="ask-box">
         <label class="sr" for="ask-input">Your question</label>
-        <input id="ask-input" type="text" maxlength="600" placeholder="e.g. Is Tempe warming faster than Glendale?" autocomplete="off">
-        <button type="submit" class="primary" id="ask-go">Ask</button>
+        <input id="ask-input" type="text" maxlength="600" placeholder="Ask the AI to investigate the Phoenix climate data..." autocomplete="off">
+        <button type="submit" class="primary" id="ask-go">Investigate</button>
       </form>
-      <div class="chips" id="ask-chips" aria-label="Example questions"></div>
+      <div class="chips" id="ask-chips" aria-label="Suggested investigations and example questions"></div>
       <div class="answer" id="ask-result" hidden aria-live="polite"></div>
 
       <div class="disc-bar">
@@ -233,6 +233,7 @@
         <button type="button" id="discover" class="ghost">Surprise me</button>
       </div>
       <div class="disc-list" id="discovery-list"></div>
+      <p class="note eng-disclosure">Prototype Discovery Engine: this demonstration uses deterministic investigation workflows to represent the planned retrieval-augmented scientific analysis architecture. Scientific results shown are derived from verified project data.</p>
       <details class="det-how"><summary>Rules, caveats and provenance</summary><ul id="discovery-caveats"></ul><p class="note" id="discovery-prov"></p></details>
     </section>
 

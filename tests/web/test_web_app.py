@@ -166,3 +166,20 @@ def test_map_first_layout_keeps_one_map_and_moves_the_science_into_drawers():
     assert 'region: "all"' in reset and "cell: null" in reset and "finding: null" in reset
     assert "year" not in reset and "month" not in reset and "layer:" not in reset
     assert "outline only, not a measurement" in js           # AI highlights are labelled apart from data
+
+
+def test_discovery_engine_scripts_the_workflow_but_never_the_numbers():
+    """The prototype engine hard-codes the workflow and routing; every value is read from the API."""
+    html = (ROOT / "web/index.html").read_text()
+    js = (ROOT / "web/app.js").read_text()
+    assert "AI Scientific Discovery Engine" in html and "Prototype Discovery Engine" in html
+    assert "deterministic investigation workflows" in html      # the disclosure stays visible
+    engine = js[js.index("function detectDemoIntent"):js.index("function buildDiscoveries")]
+    for intent in ("hidden_pattern", "rank_regions", "local_vs_region", "trend_acceleration", "unsupported"):
+        assert intent in engine
+    assert "INCONCLUSIVE" in engine and "No vector database or language model runs here" in engine
+    assert "/region-compare" in engine and "/cell-years" in engine     # real tests, not typed-in results
+    import re
+    # no result typed in: no cell ids and no trend-sized decimals (0.0xx / 0.1xx) appear in the engine code
+    assert not re.search(r"r\d{2}_c\d{2}", engine)
+    assert not re.search(r"[+−-]0\.[01]\d{2}", engine)
