@@ -46,7 +46,8 @@ def prepare_payload(root: Path, out: Path) -> None:
     load_snapshot(root)
     out.mkdir(parents=True, exist_ok=False)
     paths = [*root.joinpath("app").glob("*.py"),
-             root / "app/fixtures/results.mock.json", root / "scripts/run_frontend_offline.py",
+             root / "app/fixtures/results.mock.json", root / ".streamlit/config.toml",
+             root / "scripts/run_frontend_offline.py",
              root / "docs/evidence/data_freeze_manifest.json", root / "docs/data_card.md",
              root / "docs/data_quality_report.md", root / "docs/frontend_offline.md"]
     paths += [root / ("results/results.json" if rid == REGION_IDS[0]

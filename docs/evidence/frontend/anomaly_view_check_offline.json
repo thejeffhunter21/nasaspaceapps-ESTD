@@ -1,0 +1,133 @@
+{
+  "mode": "offline snapshot",
+  "regions": {
+    "phoenix_study_area": {
+      "heading": "Phoenix study area",
+      "chart_title": "Phoenix study area: monthly anomaly (°C) vs 2003–2024 calendar-month mean",
+      "title_matches_region": true,
+      "anomaly_y_axis": "Anomaly (°C)",
+      "anomaly_units_degC": true,
+      "baseline_2003_2024_calendar_month_mean": true,
+      "zero_line": true,
+      "anomaly_positions": 264,
+      "anomaly_gaps": [],
+      "anomaly_mismatches": [],
+      "temperature_mismatches": [],
+      "first_anomaly": [
+        "2003-01",
+        2.1392
+      ],
+      "first_temperature": [
+        "2003-01",
+        7.7619
+      ],
+      "page_errors": [],
+      "pass": true
+    },
+    "phoenix_northwest": {
+      "heading": "Phoenix study area northwest",
+      "chart_title": "Phoenix study area northwest: monthly anomaly (°C) vs 2003–2024 calendar-month mean",
+      "title_matches_region": true,
+      "anomaly_y_axis": "Anomaly (°C)",
+      "anomaly_units_degC": true,
+      "baseline_2003_2024_calendar_month_mean": true,
+      "zero_line": true,
+      "anomaly_positions": 264,
+      "anomaly_gaps": [
+        "2024-05"
+      ],
+      "anomaly_mismatches": [],
+      "temperature_mismatches": [],
+      "first_anomaly": [
+        "2003-01",
+        2.2825
+      ],
+      "first_temperature": [
+        "2003-01",
+        8.1389
+      ],
+      "page_errors": [],
+      "pass": true
+    },
+    "phoenix_northeast": {
+      "heading": "Phoenix study area northeast",
+      "chart_title": "Phoenix study area northeast: monthly anomaly (°C) vs 2003–2024 calendar-month mean",
+      "title_matches_region": true,
+      "anomaly_y_axis": "Anomaly (°C)",
+      "anomaly_units_degC": true,
+      "baseline_2003_2024_calendar_month_mean": true,
+      "zero_line": true,
+      "anomaly_positions": 264,
+      "anomaly_gaps": [
+        "2007-07",
+        "2023-07"
+      ],
+      "anomaly_mismatches": [],
+      "temperature_mismatches": [],
+      "first_anomaly": [
+        "2003-01",
+        2.4777
+      ],
+      "first_temperature": [
+        "2003-01",
+        8.2907
+      ],
+      "page_errors": [],
+      "pass": true
+    },
+    "phoenix_southwest": {
+      "heading": "Phoenix study area southwest",
+      "chart_title": "Phoenix study area southwest: monthly anomaly (°C) vs 2003–2024 calendar-month mean",
+      "title_matches_region": true,
+      "anomaly_y_axis": "Anomaly (°C)",
+      "anomaly_units_degC": true,
+      "baseline_2003_2024_calendar_month_mean": true,
+      "zero_line": true,
+      "anomaly_positions": 264,
+      "anomaly_gaps": [
+        "2007-07",
+        "2010-07"
+      ],
+      "anomaly_mismatches": [],
+      "temperature_mismatches": [],
+      "first_anomaly": [
+        "2003-01",
+        1.9979
+      ],
+      "first_temperature": [
+        "2003-01",
+        7.3928
+      ],
+      "page_errors": [],
+      "pass": true
+    },
+    "phoenix_southeast": {
+      "heading": "Phoenix study area southeast",
+      "chart_title": "Phoenix study area southeast: monthly anomaly (°C) vs 2003–2024 calendar-month mean",
+      "title_matches_region": true,
+      "anomaly_y_axis": "Anomaly (°C)",
+      "anomaly_units_degC": true,
+      "baseline_2003_2024_calendar_month_mean": true,
+      "zero_line": true,
+      "anomaly_positions": 264,
+      "anomaly_gaps": [
+        "2012-07",
+        "2017-07",
+        "2024-06"
+      ],
+      "anomaly_mismatches": [],
+      "temperature_mismatches": [],
+      "first_anomaly": [
+        "2003-01",
+        1.8014
+      ],
+      "first_temperature": [
+        "2003-01",
+        7.2283
+      ],
+      "page_errors": [],
+      "pass": true
+    }
+  },
+  "pass": true
+}
