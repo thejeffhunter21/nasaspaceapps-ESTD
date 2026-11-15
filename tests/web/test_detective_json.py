@@ -19,6 +19,9 @@ QUESTIONS = [
     "Is Phoenix getting warmer from 2003 to 2024?", "Which region warmed most?",
     "Show me the trend", "", "northeast vs southwest", "Is the southeast warming?",
     "Has Phoenix warmed since 1999?", "What causes warming?",
+    "Find a warming pattern that regional averages might hide.",
+    "Compare a local observation with its regional average.",
+    "Can a regional average hide local warming?",
 ]
 
 
@@ -35,7 +38,7 @@ def test_committed_investigations_match_the_ai_code():
     assert committed == json.loads(json.dumps(built, ensure_ascii=False)), (
         "web/data/detective.json is stale: run scripts/build_detective_json.py")
     assert "Gemini is not used" in committed["mode"]
-    assert [i["intent"] for i in committed["investigations"]] == ["rank", "compare", "trend", "acceleration"]
+    assert [i["intent"] for i in committed["investigations"]] == ["hidden_pattern", "rank", "local_vs_region", "acceleration"]
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="node is not installed")

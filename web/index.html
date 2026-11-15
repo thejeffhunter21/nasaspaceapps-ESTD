@@ -144,6 +144,24 @@
       </div>
     </section>
 
+    <section class="block" id="detective" aria-labelledby="detective-title">
+      <div class="block-head">
+        <p class="kicker">Scientific discovery prototype</p>
+        <h2 id="detective-title">AI Scientific Discovery Engine</h2>
+        <p class="wide">Explore patterns hidden beneath regional climate averages.</p>
+        <p>The dashboard shows what is happening. This prototype demonstrates how a future AI layer could investigate the observations beneath it.</p>
+      </div>
+      <p id="det-mode" class="note">Deterministic investigation workflows; Python-computed evidence. No live AI reasoning.</p>
+      <form id="det-form" class="det-form">
+        <label class="sr" for="det-input">Research question</label>
+        <input id="det-input" maxlength="600" placeholder="Ask the AI to investigate the Phoenix climate data..." autocomplete="off">
+        <button type="submit">Investigate</button>
+      </form>
+      <div id="det-chips" class="det-chips" aria-label="Suggested investigations"></div>
+      <div id="det-result" aria-live="polite"></div>
+      <p class="note">Prototype Discovery Engine — deterministic investigation workflows represent the planned retrieval-augmented scientific analysis architecture. Scientific results come from verified project data; browser responses are exported in advance.</p>
+    </section>
+
     <section class="block" id="discoveries" aria-labelledby="disc-title">
       <div class="block-head">
         <p class="kicker">Ask the Climate Detective</p>
@@ -234,6 +252,7 @@
 
   <script src="vendor/deck.gl-9.4.1.min.js"></script>
   <script src="app.js"></script>
+  <script src="detective.js"></script>
   <script src="tour.js"></script>
 </body>
 </html>
