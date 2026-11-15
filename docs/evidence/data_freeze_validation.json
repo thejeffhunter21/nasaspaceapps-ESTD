@@ -1,0 +1,892 @@
+{
+  "checked_at_utc": "2026-11-15T00:28:06.214730+00:00",
+  "source_commit": "bc2230307e0871db7ab7ee40f7466a4ee59602bf",
+  "scope": "Local processed snapshot and saved results; no new live API or browser check in this report",
+  "status": "PASS",
+  "snapshot": {
+    "data_version": "phoenix-qc-v1.0",
+    "source_reference": "PR #59; source checkout aef91f193d5a3b0f7c89e8107821cd564e6f1e20; bytes verified against docs/evidence/day17/freeze_manifest.json",
+    "manifest_sha256": "55be3d7f548b175a846cd83a9474da8db88bd64ea1c9e2928e7497a5fe3eb66a",
+    "quality_manifest_sha256": "d88e800ab9ca938703283dd485f93ba42921704f6695bbb60922278b3bc619ed",
+    "file_hashes": {
+      "data/processed/timeseries.csv": "040b7e413bd33c08662127192e0a642e9311a4ddbc52c592bc57a46218c5b31a",
+      "data/processed/timeseries_phoenix_northeast.csv": "459ed07e87b6c2649bfdd8c5f532be53fd8f1c7279b04e2c36ec35e6b042ae48",
+      "data/processed/timeseries_phoenix_northwest.csv": "4ed003958411f8dd785d7a1e15fe724f911a20143884b59fdc6414cb4535ed1a",
+      "data/processed/timeseries_phoenix_southeast.csv": "3762b21d0eaf4ce53dffdd9df9cf32107ec6e3235f64e7e0c758d0a7d8892102",
+      "data/processed/timeseries_phoenix_southwest.csv": "6a481a4323bdb738b8de14ce985a09421f2a5b1c46ad7b94b0e5c395fa5fb8a2",
+      "data/processed/coverage.csv": "eb282a0fed6bfb87a2fc3242a1b842c9feef9c379d8712ea8626e12407947080",
+      "docs/data_card.md": "fe1c5394e18cb6651a2ffdbce89e471b750391bc2e4fdaff0579cba7438f28fe",
+      "docs/data_quality_report.md": "d7e78a97e21e22dd14bf7708621c4238a96955f531a8fbaf6eb3bb9bf8004797"
+    },
+    "coverage_records": 1320,
+    "regions": {
+      "phoenix_study_area": {
+        "csv": "timeseries.csv",
+        "positions": 264,
+        "valid_months": 264,
+        "missing_dates": []
+      },
+      "phoenix_northwest": {
+        "csv": "timeseries_phoenix_northwest.csv",
+        "positions": 264,
+        "valid_months": 263,
+        "missing_dates": [
+          "2024-05"
+        ]
+      },
+      "phoenix_northeast": {
+        "csv": "timeseries_phoenix_northeast.csv",
+        "positions": 264,
+        "valid_months": 262,
+        "missing_dates": [
+          "2007-07",
+          "2023-07"
+        ]
+      },
+      "phoenix_southwest": {
+        "csv": "timeseries_phoenix_southwest.csv",
+        "positions": 264,
+        "valid_months": 262,
+        "missing_dates": [
+          "2007-07",
+          "2010-07"
+        ]
+      },
+      "phoenix_southeast": {
+        "csv": "timeseries_phoenix_southeast.csv",
+        "positions": 264,
+        "valid_months": 261,
+        "missing_dates": [
+          "2012-07",
+          "2017-07",
+          "2024-06"
+        ]
+      }
+    }
+  },
+  "saved_regions": [
+    {
+      "region_id": "phoenix_study_area",
+      "region": "Phoenix study area",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "positions": 264,
+      "valid_months": 264,
+      "missing_dates": [],
+      "units": "degC",
+      "slope_unit": "degC/month",
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.0077125000000000015,
+        "slope_unit": "degC/month",
+        "p": 7.022635523002321e-11,
+        "tau": 0.2893217893217893,
+        "trend": "increasing"
+      },
+      "csv_to_api_rule": "round(value, 4), preserving nulls (documented pipeline preprocessing)",
+      "csv_to_api_max_abs_difference": 4.9668975211858424e-05,
+      "api_matches_rounded_csv": true,
+      "sample_values": [
+        {
+          "time": "2003-01",
+          "csv_value": 7.761905300373255,
+          "result_value": 7.7619
+        },
+        {
+          "time": "2014-01",
+          "csv_value": 6.34667526394898,
+          "result_value": 6.3467
+        },
+        {
+          "time": "2024-12",
+          "csv_value": 8.571696477144183,
+          "result_value": 8.5717
+        }
+      ]
+    },
+    {
+      "region_id": "phoenix_northwest",
+      "region": "Phoenix study area northwest",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "positions": 264,
+      "valid_months": 263,
+      "missing_dates": [
+        "2024-05"
+      ],
+      "units": "degC",
+      "slope_unit": "degC/month",
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.0075514705882352845,
+        "slope_unit": "degC/month",
+        "p": 3.275029494158922e-10,
+        "tau": 0.2795347146492185,
+        "trend": "increasing"
+      },
+      "csv_to_api_rule": "round(value, 4), preserving nulls (documented pipeline preprocessing)",
+      "csv_to_api_max_abs_difference": 4.99830579592242e-05,
+      "api_matches_rounded_csv": true,
+      "sample_values": [
+        {
+          "time": "2003-01",
+          "csv_value": 8.13889135015579,
+          "result_value": 8.1389
+        },
+        {
+          "time": "2014-01",
+          "csv_value": 6.624845984352828,
+          "result_value": 6.6248
+        },
+        {
+          "time": "2024-05",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2024-12",
+          "csv_value": 8.7502044018816,
+          "result_value": 8.7502
+        }
+      ]
+    },
+    {
+      "region_id": "phoenix_northeast",
+      "region": "Phoenix study area northeast",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "positions": 264,
+      "valid_months": 262,
+      "missing_dates": [
+        "2007-07",
+        "2023-07"
+      ],
+      "units": "degC",
+      "slope_unit": "degC/month",
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.005289583333333329,
+        "slope_unit": "degC/month",
+        "p": 3.799507330776624e-06,
+        "tau": 0.20615159282314172,
+        "trend": "increasing"
+      },
+      "csv_to_api_rule": "round(value, 4), preserving nulls (documented pipeline preprocessing)",
+      "csv_to_api_max_abs_difference": 4.9692414327395795e-05,
+      "api_matches_rounded_csv": true,
+      "sample_values": [
+        {
+          "time": "2003-01",
+          "csv_value": 8.290685824165182,
+          "result_value": 8.2907
+        },
+        {
+          "time": "2007-07",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2014-01",
+          "csv_value": 6.646244169390677,
+          "result_value": 6.6462
+        },
+        {
+          "time": "2023-07",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2024-12",
+          "csv_value": 8.838349692414328,
+          "result_value": 8.8383
+        }
+      ]
+    },
+    {
+      "region_id": "phoenix_southwest",
+      "region": "Phoenix study area southwest",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "positions": 264,
+      "valid_months": 262,
+      "missing_dates": [
+        "2007-07",
+        "2010-07"
+      ],
+      "units": "degC",
+      "slope_unit": "degC/month",
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.007761666666666667,
+        "slope_unit": "degC/month",
+        "p": 2.979982995713438e-10,
+        "tau": 0.2808495056755767,
+        "trend": "increasing"
+      },
+      "csv_to_api_rule": "round(value, 4), preserving nulls (documented pipeline preprocessing)",
+      "csv_to_api_max_abs_difference": 4.9553418524084236e-05,
+      "api_matches_rounded_csv": true,
+      "sample_values": [
+        {
+          "time": "2003-01",
+          "csv_value": 7.392830323586921,
+          "result_value": 7.3928
+        },
+        {
+          "time": "2007-07",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2010-07",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2014-01",
+          "csv_value": 6.043062215656093,
+          "result_value": 6.0431
+        },
+        {
+          "time": "2024-12",
+          "csv_value": 8.281400593858345,
+          "result_value": 8.2814
+        }
+      ]
+    },
+    {
+      "region_id": "phoenix_southeast",
+      "region": "Phoenix study area southeast",
+      "period": {
+        "start": "2003-01",
+        "end": "2024-12"
+      },
+      "positions": 264,
+      "valid_months": 261,
+      "missing_dates": [
+        "2012-07",
+        "2017-07",
+        "2024-06"
+      ],
+      "units": "degC",
+      "slope_unit": "degC/month",
+      "source": "NASA Terra/MODIS MOD11C3.061 monthly nighttime land surface temperature (LST_Night_CMG), 0.05 deg grid, LP DAAC, doi:10.5067/MODIS/MOD11C3.061; data version phoenix-qc-v1.0",
+      "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+      "trend": {
+        "slope": 0.008890624999999985,
+        "slope_unit": "degC/month",
+        "p": 2.7803117595238375e-14,
+        "tau": 0.33985239852398524,
+        "trend": "increasing"
+      },
+      "csv_to_api_rule": "round(value, 4), preserving nulls (documented pipeline preprocessing)",
+      "csv_to_api_max_abs_difference": 4.96600137118719e-05,
+      "api_matches_rounded_csv": true,
+      "sample_values": [
+        {
+          "time": "2003-01",
+          "csv_value": 7.228347327766268,
+          "result_value": 7.2283
+        },
+        {
+          "time": "2012-07",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2014-01",
+          "csv_value": 6.074547456184004,
+          "result_value": 6.0745
+        },
+        {
+          "time": "2017-07",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2024-06",
+          "csv_value": null,
+          "result_value": null
+        },
+        {
+          "time": "2024-12",
+          "csv_value": 8.41837131668294,
+          "result_value": 8.4184
+        }
+      ]
+    }
+  ],
+  "independent_trend_verifier_report": {
+    "schema_version": "1.0",
+    "checked_at_utc": "2026-11-15T00:25:28.910490+00:00",
+    "source_commit": "bc2230307e0871db7ab7ee40f7466a4ee59602bf",
+    "data_version": "phoenix-qc-v1.0",
+    "verification_script_sha256": "e869993a303411486b5a2cc7f022394e8dda63d775d850032604c215b4b0776a",
+    "dependencies": {
+      "python": "3.12.15",
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "pymannkendall": "1.4.3"
+    },
+    "reference_method": "Explicit same-calendar-month score, tie-corrected variance, continuity correction, math.erfc p, and median year-index pair slopes / 12",
+    "source_files_sha256": {
+      "src/earth_system_trend/ai/trend.py": "9d0c2132b9b3cd9fa26cd0a19c71537fbc58e1838ef2fe779d3e53bc8f960c23",
+      "src/earth_system_trend/pipeline/run.py": "072dd1292dde1d90959d5b1e4d737d4f7170bb974415c0f62871a9454a775d81",
+      "src/earth_system_trend/pipeline/timeseries.py": "77fb0849c12f80c3bfabdac4eef06eba517cc6febc0c2f20c3f627db962f8eed",
+      "uv.lock": "a6868ddeee96e414e63436bbb9d6e5749fa8a7ab298524ea9830254634ee6c02"
+    },
+    "offline_numerical_checks_pass": true,
+    "live_api_url": null,
+    "live_checks_pass": null,
+    "regions": [
+      {
+        "region_id": "phoenix_study_area",
+        "input_file": "data/processed/timeseries.csv",
+        "input_sha256": "040b7e413bd33c08662127192e0a642e9311a4ddbc52c592bc57a46218c5b31a",
+        "calendar_positions": 264,
+        "valid_months": 264,
+        "missing_dates": [],
+        "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+        "independent_on_pipeline_input": {
+          "slope": 0.0077125000000000015,
+          "slope_per_year": 0.09255000000000002,
+          "slope_per_decade": 0.9255000000000002,
+          "p": 7.022635523002307e-11,
+          "tau": 0.2893217893217893,
+          "trend": "increasing",
+          "score": 802,
+          "variance": 15091.999999999998,
+          "calendar_month_counts": [
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22
+          ]
+        },
+        "independent_on_full_precision_csv": {
+          "slope": 0.0077131550388625306,
+          "slope_per_year": 0.09255786046635037,
+          "slope_per_decade": 0.9255786046635037,
+          "p": 7.022635523002307e-11,
+          "tau": 0.2893217893217893,
+          "trend": "increasing",
+          "score": 802,
+          "variance": 15091.999999999998,
+          "calendar_month_counts": [
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22
+          ]
+        },
+        "project_function": {
+          "slope": 0.0077125000000000015,
+          "slope_unit": "per month",
+          "p": 7.02263552300232e-11,
+          "tau": 0.2893217893217893,
+          "trend": "increasing"
+        },
+        "stored_trend": {
+          "slope": 0.0077125000000000015,
+          "slope_unit": "degC/month",
+          "p": 7.022635523002321e-11,
+          "tau": 0.2893217893217893,
+          "trend": "increasing"
+        },
+        "checks": {
+          "independent_matches_project": true,
+          "stored_matches_independent": true,
+          "stored_matches_legacy_rounding": true,
+          "stored_series_matches_loader": true,
+          "stored_slope_unit_correct": true,
+          "stored_method_correct": true,
+          "full_precision_anomaly_equivalent": true
+        },
+        "input_rounding": {
+          "loader_decimal_places": 4,
+          "maximum_value_change_c": 4.9668975211858424e-05,
+          "slope_change_c_per_month": -6.550388625290934e-07,
+          "p_change": 0.0
+        },
+        "gap_dropping_diagnostic_slope_c_per_month": 0.0077125000000000015,
+        "correlated_seasonal_library_sensitivity": {
+          "function": "pymannkendall.correlated_seasonal_test(period=12)",
+          "p": 3.244767669885462e-05,
+          "trend": "increasing",
+          "note": "Library sensitivity comparison, not an independent verification of its covariance correction or a general serial-dependence guarantee."
+        }
+      },
+      {
+        "region_id": "phoenix_northwest",
+        "input_file": "data/processed/timeseries_phoenix_northwest.csv",
+        "input_sha256": "4ed003958411f8dd785d7a1e15fe724f911a20143884b59fdc6414cb4535ed1a",
+        "calendar_positions": 264,
+        "valid_months": 263,
+        "missing_dates": [
+          "2024-05"
+        ],
+        "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+        "independent_on_pipeline_input": {
+          "slope": 0.0075514705882352845,
+          "slope_per_year": 0.09061764705882341,
+          "slope_per_decade": 0.9061764705882341,
+          "p": 3.2750294941589485e-10,
+          "tau": 0.2795347146492185,
+          "trend": "increasing",
+          "score": 769,
+          "variance": 14930.999999999998,
+          "calendar_month_counts": [
+            22,
+            22,
+            22,
+            22,
+            21,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22
+          ]
+        },
+        "independent_on_full_precision_csv": {
+          "slope": 0.007551248553379197,
+          "slope_per_year": 0.09061498264055036,
+          "slope_per_decade": 0.9061498264055036,
+          "p": 3.2750294941589485e-10,
+          "tau": 0.2795347146492185,
+          "trend": "increasing",
+          "score": 769,
+          "variance": 14930.999999999998,
+          "calendar_month_counts": [
+            22,
+            22,
+            22,
+            22,
+            21,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            22
+          ]
+        },
+        "project_function": {
+          "slope": 0.0075514705882352845,
+          "slope_unit": "per month",
+          "p": 3.2750294941589206e-10,
+          "tau": 0.2795347146492185,
+          "trend": "increasing"
+        },
+        "stored_trend": {
+          "slope": 0.0075514705882352845,
+          "slope_unit": "degC/month",
+          "p": 3.275029494158922e-10,
+          "tau": 0.2795347146492185,
+          "trend": "increasing"
+        },
+        "checks": {
+          "independent_matches_project": true,
+          "stored_matches_independent": true,
+          "stored_matches_legacy_rounding": true,
+          "stored_series_matches_loader": true,
+          "stored_slope_unit_correct": true,
+          "stored_method_correct": true,
+          "full_precision_anomaly_equivalent": true
+        },
+        "input_rounding": {
+          "loader_decimal_places": 4,
+          "maximum_value_change_c": 4.99830579592242e-05,
+          "slope_change_c_per_month": 2.220348560878771e-07,
+          "p_change": 0.0
+        },
+        "gap_dropping_diagnostic_slope_c_per_month": 0.006278070175438597,
+        "correlated_seasonal_library_sensitivity": {
+          "function": "pymannkendall.correlated_seasonal_test(period=12)",
+          "p": 8.388855309893195e-05,
+          "trend": "increasing",
+          "note": "Library sensitivity comparison, not an independent verification of its covariance correction or a general serial-dependence guarantee."
+        }
+      },
+      {
+        "region_id": "phoenix_northeast",
+        "input_file": "data/processed/timeseries_phoenix_northeast.csv",
+        "input_sha256": "459ed07e87b6c2649bfdd8c5f532be53fd8f1c7279b04e2c36ec35e6b042ae48",
+        "calendar_positions": 264,
+        "valid_months": 262,
+        "missing_dates": [
+          "2007-07",
+          "2023-07"
+        ],
+        "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+        "independent_on_pipeline_input": {
+          "slope": 0.005289583333333329,
+          "slope_per_year": 0.06347499999999995,
+          "slope_per_decade": 0.6347499999999995,
+          "p": 3.799507330776636e-06,
+          "tau": 0.20615159282314172,
+          "trend": "increasing",
+          "score": 563,
+          "variance": 14784.33333333333,
+          "calendar_month_counts": [
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            20,
+            22,
+            22,
+            22,
+            22,
+            22
+          ]
+        },
+        "independent_on_full_precision_csv": {
+          "slope": 0.005289628702214888,
+          "slope_per_year": 0.06347554442657866,
+          "slope_per_decade": 0.6347554442657866,
+          "p": 3.799507330776636e-06,
+          "tau": 0.20615159282314172,
+          "trend": "increasing",
+          "score": 563,
+          "variance": 14784.33333333333,
+          "calendar_month_counts": [
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            20,
+            22,
+            22,
+            22,
+            22,
+            22
+          ]
+        },
+        "project_function": {
+          "slope": 0.005289583333333329,
+          "slope_unit": "per month",
+          "p": 3.799507330776624e-06,
+          "tau": 0.20615159282314172,
+          "trend": "increasing"
+        },
+        "stored_trend": {
+          "slope": 0.005289583333333329,
+          "slope_unit": "degC/month",
+          "p": 3.799507330776624e-06,
+          "tau": 0.20615159282314172,
+          "trend": "increasing"
+        },
+        "checks": {
+          "independent_matches_project": true,
+          "stored_matches_independent": true,
+          "stored_matches_legacy_rounding": true,
+          "stored_series_matches_loader": true,
+          "stored_slope_unit_correct": true,
+          "stored_method_correct": true,
+          "full_precision_anomaly_equivalent": true
+        },
+        "input_rounding": {
+          "loader_decimal_places": 4,
+          "maximum_value_change_c": 4.9692414327395795e-05,
+          "slope_change_c_per_month": -4.536888155871194e-08,
+          "p_change": 0.0
+        },
+        "gap_dropping_diagnostic_slope_c_per_month": 0.004649726430976421,
+        "correlated_seasonal_library_sensitivity": {
+          "function": "pymannkendall.correlated_seasonal_test(period=12)",
+          "p": 0.0005282027686059898,
+          "trend": "increasing",
+          "note": "Library sensitivity comparison, not an independent verification of its covariance correction or a general serial-dependence guarantee."
+        }
+      },
+      {
+        "region_id": "phoenix_southwest",
+        "input_file": "data/processed/timeseries_phoenix_southwest.csv",
+        "input_sha256": "6a481a4323bdb738b8de14ce985a09421f2a5b1c46ad7b94b0e5c395fa5fb8a2",
+        "calendar_positions": 264,
+        "valid_months": 262,
+        "missing_dates": [
+          "2007-07",
+          "2010-07"
+        ],
+        "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+        "independent_on_pipeline_input": {
+          "slope": 0.007761666666666667,
+          "slope_per_year": 0.09314,
+          "slope_per_decade": 0.9314,
+          "p": 2.9799829957134346e-10,
+          "tau": 0.2808495056755767,
+          "trend": "increasing",
+          "score": 767,
+          "variance": 14784.33333333333,
+          "calendar_month_counts": [
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            20,
+            22,
+            22,
+            22,
+            22,
+            22
+          ]
+        },
+        "independent_on_full_precision_csv": {
+          "slope": 0.007761713715493249,
+          "slope_per_year": 0.09314056458591899,
+          "slope_per_decade": 0.93140564585919,
+          "p": 2.9799829957134346e-10,
+          "tau": 0.2808495056755767,
+          "trend": "increasing",
+          "score": 767,
+          "variance": 14784.33333333333,
+          "calendar_month_counts": [
+            22,
+            22,
+            22,
+            22,
+            22,
+            22,
+            20,
+            22,
+            22,
+            22,
+            22,
+            22
+          ]
+        },
+        "project_function": {
+          "slope": 0.007761666666666667,
+          "slope_unit": "per month",
+          "p": 2.9799829957134377e-10,
+          "tau": 0.2808495056755767,
+          "trend": "increasing"
+        },
+        "stored_trend": {
+          "slope": 0.007761666666666667,
+          "slope_unit": "degC/month",
+          "p": 2.979982995713438e-10,
+          "tau": 0.2808495056755767,
+          "trend": "increasing"
+        },
+        "checks": {
+          "independent_matches_project": true,
+          "stored_matches_independent": true,
+          "stored_matches_legacy_rounding": true,
+          "stored_series_matches_loader": true,
+          "stored_slope_unit_correct": true,
+          "stored_method_correct": true,
+          "full_precision_anomaly_equivalent": true
+        },
+        "input_rounding": {
+          "loader_decimal_places": 4,
+          "maximum_value_change_c": 4.9553418524084236e-05,
+          "slope_change_c_per_month": -4.704882658208148e-08,
+          "p_change": 0.0
+        },
+        "gap_dropping_diagnostic_slope_c_per_month": 0.012514980158730158,
+        "correlated_seasonal_library_sensitivity": {
+          "function": "pymannkendall.correlated_seasonal_test(period=12)",
+          "p": 7.336530339996372e-05,
+          "trend": "increasing",
+          "note": "Library sensitivity comparison, not an independent verification of its covariance correction or a general serial-dependence guarantee."
+        }
+      },
+      {
+        "region_id": "phoenix_southeast",
+        "input_file": "data/processed/timeseries_phoenix_southeast.csv",
+        "input_sha256": "3762b21d0eaf4ce53dffdd9df9cf32107ec6e3235f64e7e0c758d0a7d8892102",
+        "calendar_positions": 264,
+        "valid_months": 261,
+        "missing_dates": [
+          "2012-07",
+          "2017-07",
+          "2024-06"
+        ],
+        "method": "Seasonal Mann-Kendall test (12-month period) with seasonal Sen's slope",
+        "independent_on_pipeline_input": {
+          "slope": 0.008890624999999985,
+          "slope_per_year": 0.10668749999999982,
+          "slope_per_decade": 1.0668749999999982,
+          "p": 2.780311759523866e-14,
+          "tau": 0.33985239852398524,
+          "trend": "increasing",
+          "score": 921,
+          "variance": 14622.33333333333,
+          "calendar_month_counts": [
+            22,
+            22,
+            22,
+            22,
+            22,
+            21,
+            20,
+            22,
+            22,
+            22,
+            22,
+            22
+          ]
+        },
+        "independent_on_full_precision_csv": {
+          "slope": 0.008890162641402763,
+          "slope_per_year": 0.10668195169683314,
+          "slope_per_decade": 1.0668195169683314,
+          "p": 2.6132018787173163e-14,
+          "tau": 0.34022140221402214,
+          "trend": "increasing",
+          "score": 922,
+          "variance": 14623.33333333333,
+          "calendar_month_counts": [
+            22,
+            22,
+            22,
+            22,
+            22,
+            21,
+            20,
+            22,
+            22,
+            22,
+            22,
+            22
+          ]
+        },
+        "project_function": {
+          "slope": 0.008890624999999985,
+          "slope_unit": "per month",
+          "p": 2.780311759523836e-14,
+          "tau": 0.33985239852398524,
+          "trend": "increasing"
+        },
+        "stored_trend": {
+          "slope": 0.008890624999999985,
+          "slope_unit": "degC/month",
+          "p": 2.7803117595238375e-14,
+          "tau": 0.33985239852398524,
+          "trend": "increasing"
+        },
+        "checks": {
+          "independent_matches_project": true,
+          "stored_matches_independent": true,
+          "stored_matches_legacy_rounding": true,
+          "stored_series_matches_loader": true,
+          "stored_slope_unit_correct": true,
+          "stored_method_correct": true,
+          "full_precision_anomaly_equivalent": true
+        },
+        "input_rounding": {
+          "loader_decimal_places": 4,
+          "maximum_value_change_c": 4.96600137118719e-05,
+          "slope_change_c_per_month": 4.6235859722278116e-07,
+          "p_change": 1.6710988080654954e-15
+        },
+        "gap_dropping_diagnostic_slope_c_per_month": 0.014904166666666718,
+        "correlated_seasonal_library_sensitivity": {
+          "function": "pymannkendall.correlated_seasonal_test(period=12)",
+          "p": 7.645502472053423e-05,
+          "trend": "increasing",
+          "note": "Library sensitivity comparison, not an independent verification of its covariance correction or a general serial-dependence guarantee."
+        }
+      }
+    ],
+    "synthetic_checks": [
+      {
+        "case": "positive_with_gaps",
+        "synthetic_not_nasa_data": true,
+        "expected_slope_c_per_month": 0.01,
+        "actual": {
+          "slope": 0.009999999999999998,
+          "slope_unit": "per month",
+          "p": 3.544655233137847e-111,
+          "tau": 1.0,
+          "trend": "increasing"
+        },
+        "passed": true
+      },
+      {
+        "case": "negative_with_gaps",
+        "synthetic_not_nasa_data": true,
+        "expected_slope_c_per_month": -0.008,
+        "actual": {
+          "slope": -0.008000000000000007,
+          "slope_unit": "per month",
+          "p": 3.7672713496580235e-111,
+          "tau": -1.0,
+          "trend": "decreasing"
+        },
+        "passed": true
+      },
+      {
+        "case": "flat_with_seasonal_cycle",
+        "synthetic_not_nasa_data": true,
+        "expected_slope_c_per_month": 0.0,
+        "actual": {
+          "slope": 0.0,
+          "slope_unit": "per month",
+          "p": 1.0,
+          "tau": 0.0,
+          "trend": "no trend"
+        },
+        "passed": true
+      },
+      {
+        "case": "nine_valid_julys_is_rejected",
+        "synthetic_not_nasa_data": true,
+        "passed": true
+      }
+    ],
+    "live_regions": [],
+    "unknown_region": null,
+    "limits": [
+      "This verifies numerical implementation of the documented uncorrected seasonal test, not that its statistical assumptions hold.",
+      "Correlated seasonal sensitivity is library-only and does not establish general robustness to year-to-year serial dependence.",
+      "Live responses have no verified deployment commit; matching values cannot establish binary/code provenance.",
+      "No AI-generated answer, causal claim, forecast or frontend interaction is evaluated here."
+    ]
+  },
+  "pending": [
+    "Frontend anomaly-view visual verification",
+    "Final deployed-app sign-off",
+    "Offline demo rehearsal on two laptops"
+  ]
+}
