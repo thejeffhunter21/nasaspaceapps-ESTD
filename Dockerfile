@@ -15,6 +15,7 @@ RUN uv sync --locked --no-default-groups --no-install-project
 COPY src ./src
 COPY results.mock.json ./
 COPY results ./results
+COPY web ./web
 RUN uv sync --locked --no-default-groups
 
 # Render tells us the port through PORT. --proxy-headers so each visitor keeps their own address.

@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from ..config import get_settings
 from .middleware import add_protection
@@ -48,3 +51,12 @@ def version() -> dict:
 
 
 app.include_router(router)
+
+# The map explorer (web/): a static page that reads the endpoints above from the same server.
+WEB_DIR = Path(os.getenv("WEB_DIR", "web"))
+if WEB_DIR.is_dir():
+    app.mount("/app", StaticFiles(directory=WEB_DIR, html=True), name="web")
+
+    @app.get("/explore", include_in_schema=False)
+    def explore() -> RedirectResponse:
+        return RedirectResponse("/app/")

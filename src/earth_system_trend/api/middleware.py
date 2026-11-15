@@ -56,7 +56,8 @@ def add_protection(app: FastAPI) -> None:
     @app.middleware("http")
     async def protect(request: Request, call_next):
         settings = get_settings()
-        if request.url.path not in EXEMPT and settings.rate_limit_per_minute > 0:
+        if (request.url.path not in EXEMPT and not request.url.path.startswith("/app/")
+                and settings.rate_limit_per_minute > 0):
             visitor = request.client.host if request.client else "unknown"
             wait = limiter.check(visitor, settings.rate_limit_per_minute, time.monotonic())
             if wait is not None:
