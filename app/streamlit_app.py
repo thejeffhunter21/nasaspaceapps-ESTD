@@ -15,6 +15,7 @@ from api_client import (
 )
 from charts import monthly_chart
 from dotenv import load_dotenv
+from offline_snapshot import SnapshotError, load_snapshot
 from pydantic import ValidationError
 from view_model import build_view_model
 
@@ -33,7 +34,7 @@ def refresh_api(api_url):
     clear_results_cache(api_url, st.session_state.get("selected_region"))
 
 
-def show_failure(error, api_url, *, preview=False):
+def show_failure(error, api_url, *, preview=False, snapshot=False):
     titles = {
         "empty": "No observations available",
         "empty_regions": "No regions available",
@@ -45,10 +46,11 @@ def show_failure(error, api_url, *, preview=False):
         "rate_limit": "The data service is busy",
         "configuration": "The data connection needs setup",
         "sample": "The sample preview is unavailable",
+        "snapshot": "The offline snapshot is unavailable",
     }
     st.error(str(error), title=titles.get(error.kind, "The data response could not be read"))
     if preview:
-        st.button("Retry preview")
+        st.button("Retry snapshot" if snapshot else "Retry preview")
     if api_url:
         st.button("Retry API", on_click=retry_api)
         if error.kind in ("not_found", "selection", "empty_regions"):
@@ -66,12 +68,14 @@ st.set_page_config(
 st.title("Earth System Trend Detective")
 st.caption("Explore historical land surface temperature trends.")
 
-api_url = os.getenv("API_URL", DEFAULT_API_URL).strip().rstrip("/")
+offline_root = os.getenv("OFFLINE_SNAPSHOT_DIR", "").strip()
+api_url = "" if offline_root else os.getenv("API_URL", DEFAULT_API_URL).strip().rstrip("/")
+region_context = f"snapshot:{Path(offline_root).resolve()}" if offline_root else api_url
 st.session_state.setdefault("sample_fallback_url", None)
-if st.session_state.get("region_api_url") != api_url:
+if st.session_state.get("region_api_url") != region_context:
     st.session_state.pop("selected_region", None)
-    st.session_state.region_api_url = api_url
-use_sample = not api_url or st.session_state.sample_fallback_url == api_url
+    st.session_state.region_api_url = region_context
+use_sample = not offline_root and (not api_url or st.session_state.sample_fallback_url == api_url)
 
 # Clear the previous region's evidence before any slow request starts.
 evidence = st.empty()
@@ -89,10 +93,18 @@ with evidence.container():
                 kind="sample",
             ), api_url, preview=True)
     else:
-        st.button("Refresh data", on_click=refresh_api, args=(api_url,))
+        if not offline_root:
+            st.button("Refresh data", on_click=refresh_api, args=(api_url,))
+        else:
+            st.caption("Connection: Offline snapshot")
         try:
-            with st.spinner("Connecting to the API. A sleeping server can take 45 seconds to respond…"):
-                regions = fetch_regions(api_url)
+            if offline_root:
+                snapshot = load_snapshot(offline_root)
+                st.caption(f"Approved snapshot: {snapshot.freeze_id} | {snapshot.data_version}")
+                regions = snapshot.regions
+            else:
+                with st.spinner("Connecting to the API. A sleeping server can take 45 seconds to respond…"):
+                    regions = fetch_regions(api_url)
             labels = {region["region_id"]: region["region"] for region in regions}
             if st.session_state.get("selected_region") not in labels:
                 st.session_state.selected_region = regions[0]["region_id"]
@@ -104,8 +116,13 @@ with evidence.container():
                 selected_id = regions[0]["region_id"]
             if selected_id not in labels:
                 raise ApiError("Choose a region from the refreshed list.", kind="selection")
-            with st.spinner("Loading the selected region…"):
-                payload = fetch_region_results(api_url, selected_id)
+            if offline_root:
+                payload = snapshot.results[selected_id]
+            else:
+                with st.spinner("Loading the selected region…"):
+                    payload = fetch_region_results(api_url, selected_id)
+        except SnapshotError as exc:
+            show_failure(ApiError(str(exc), kind="snapshot"), "", preview=True, snapshot=True)
         except ApiError as exc:
             show_failure(exc, api_url)
 
@@ -122,7 +139,7 @@ with evidence.container():
 
     if use_sample and api_url:
         st.button("Retry API", on_click=retry_api)
-    if not use_sample:
+    if not use_sample and not offline_root:
         st.caption("Connection: Live API")
         st.caption("Connected to API. Successful results are cached for up to 60 seconds.")
 
@@ -160,7 +177,7 @@ with evidence.container():
 
     st.subheader("Explanation")
     st.caption(
-        "Automatic summary"
+        "Automatic summary (AI unavailable)"
         if view.explanation_source == "fallback"
         else "AI-assisted explanation"
     )
@@ -183,6 +200,7 @@ with evidence.container():
         )
         st.markdown(
             "**Data labels:** Live API describes the connection, not live measurements. "
-            "Offline preview uses a local file. Sample data identifies synthetic "
+            "Offline snapshot reads approved real files without an API. "
+            "Offline preview uses a local sample file. Sample data identifies synthetic "
             "observations, whether received from the API or read locally."
         )

@@ -20,7 +20,7 @@ it does not imply teammate approval or that outstanding coordination is complete
 | FE-11 | Make it readable everywhere | Review (Chrome/Safari checks pending) |
 | FE-12 | Freeze a dependable demo | Review (native-browser checks pending) |
 | FE-13 | Fix and document | Review |
-| FE-14 | Rehearse without Wi-Fi | To do |
+| FE-14 | Rehearse without Wi-Fi | Review (draft; physical two-laptop G5 pending) |
 | FE-15 | Deliver and keep a buffer | To do |
 
 ## FE-01: local app shell
@@ -570,3 +570,34 @@ screen-reader checks remain outstanding as recorded in the freeze handoff.
 
 This PR is the documented handoff for Avid-arch and teammates; receipt/approval is
 not claimed, and no external messages were sent. FE-14 has not started.
+
+## FE-14: rehearse without Wi-Fi
+
+The frontend can now read the five approved `phoenix-qc-v1.0-handoff-1` result
+files directly, with an explicit Offline snapshot label and freeze/version caption.
+It verifies delivered hashes, retains supplied values/gaps/explanations/provenance,
+and clears evidence on failure without silently switching to API or sample data.
+The offline launcher binds only to loopback and disables Streamlit usage telemetry.
+
+The frontend-owned package builder includes approved results, local UI code,
+provenance, locked dependency wheels and an integrity-checking launcher. The user
+confirmed the second laptop is Apple silicon; the tested package requires macOS
+14+ and preinstalled Python 3.12. It excludes secrets, caches and virtual environments.
+Backend backup tooling, shared dependencies, results and AI code are unchanged.
+
+See [the offline runbook](frontend_offline.md) and `evidence/frontend/fe14_*.json`.
+A fresh dependency installation and all-five-region packaged AppTest passed with
+networking denied. Browser main/northwest rendering used a loopback-only server;
+the observed page asset references were local. A 16-second screenshot walkthrough
+was encoded and all frames decoded. It is not physical Wi-Fi-off evidence.
+
+All 123 frontend tests and Ruff passed. The full suite had 610 passes/four inherited
+AI release-check failures, reproduced on untouched main due to last-bit p-value
+differences; no approved results were rewritten. Native Chrome/Safari desktop
+core interactions were also observed after FE-13; native phone and full screen-reader
+acceptance are still incomplete.
+
+G5 remains pending: both physical laptops must run the same archive with external
+networking disabled, show the same snapshot/story and play the saved clip offline.
+The focused PR remains draft for teammate review. No production deployment or
+external message was sent. FE-15 has not started.
