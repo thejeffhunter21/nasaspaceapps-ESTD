@@ -67,3 +67,8 @@ def test_supported_local_cells_pass_correction_and_challenge():
     rows = tools.localized_differences()["cells"]
     supported = [r for r in rows if r["q"] < 0.05 and r["consistent_in_both_halves"]]
     assert supported and all(r["p"] <= r["q"] for r in supported)
+
+
+def test_data_files_are_never_line_ending_converted():
+    rules = (Path(__file__).resolve().parents[2] / ".gitattributes").read_text()
+    assert "data/processed/*.csv -text" in rules

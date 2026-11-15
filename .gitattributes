@@ -1,0 +1,4 @@
+# Data files are verified by SHA-256: never convert their line endings (Windows checkouts)
+data/processed/*.csv -text
+data/processed/*.json -text
+results/**/*.json -text
