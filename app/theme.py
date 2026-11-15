@@ -129,6 +129,10 @@ a {{ color: var(--amber); }}
 .st-key-controls {{ border-radius: 18px; border: 1px solid var(--line);
   padding: .9rem 1.1rem .5rem; background: rgba(18, 26, 48, 0.6); margin-top: 1.2rem; }}
 
+.st-key-mapwrap {{ border-radius: 22px; overflow: hidden; border: 1px solid var(--line);
+  box-shadow: 0 30px 80px rgba(0,0,0,.45), 0 0 0 1px rgba(255,200,87,.06) inset;
+  background: radial-gradient(800px 400px at 50% 40%, #111a33, #070b16); }}
+
 /* Quarter map */
 .estd-map {{ display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 6px;
   border-radius: 20px; border: 1px solid var(--line); background: rgba(10,15,30,.6);

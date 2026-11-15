@@ -5,6 +5,7 @@ import os
 from dataclasses import replace
 from pathlib import Path
 
+import map3d
 import streamlit as st
 import theme
 from api_client import (
@@ -36,6 +37,36 @@ def retry_api():
 
 def refresh_api(api_url):
     clear_results_cache(api_url, st.session_state.get("selected_region"))
+
+
+def open_map_region():
+    """Map click: switch the region selector to the clicked quarter before the rerun."""
+    selection = st.session_state.get("phoenix_map")
+    objects = (selection or {}).get("selection", {}).get("objects", {})
+    for picked in objects.values():
+        if picked and picked[0].get("region_id"):
+            st.session_state.selected_region = picked[0]["region_id"]
+            st.session_state.chart_view = "Temperature"
+            return
+
+
+def map_quarters(region_trends, payloads):
+    """short -> plotting data for every study quarter that has complete supplied results."""
+    ids = theme.quarter_ids(region_trends) if region_trends else None
+    if not ids:
+        return {}
+    quarters = {}
+    for short, rid in ids.items():
+        payload = payloads.get(rid)
+        if not payload:
+            return {}
+        try:
+            view = build_view_model(payload)
+        except ValidationError:
+            return {}
+        quarters[short] = {"region_id": rid, "label": view.region_label, "times": view.times,
+                           "values": view.values, "anomaly": view.anomaly}
+    return quarters
 
 
 def show_failure(error, api_url, *, preview=False, snapshot=False):
@@ -161,6 +192,48 @@ with evidence.container():
                 (a is None) == (v is None) for a, v in zip(anomaly, view.values)
             ):
                 view = replace(view, anomaly=anomaly)
+
+    quarter_payloads = {}
+    if offline_root and not use_sample:
+        quarter_payloads = snapshot.results
+    elif not use_sample and api_url and theme.quarter_ids(region_trends):
+        try:
+            with st.spinner("Loading the Phoenix map…"):
+                for rid in theme.quarter_ids(region_trends).values():
+                    quarter = fetch_region_results(api_url, rid)
+                    anomaly_values = fetch_region_anomaly(api_url, rid, tuple(
+                        point["time"] for point in quarter["series"]))
+                    if anomaly_values is not None:
+                        quarter = {**quarter, "anomaly": [
+                            {"time": point["time"], "value": a}
+                            for point, a in zip(quarter["series"], anomaly_values)]}
+                    quarter_payloads[rid] = quarter
+        except ApiError:
+            quarter_payloads = {}  # the map is optional; the evidence below still loads
+    quarters = map_quarters(region_trends, quarter_payloads)
+    if quarters:
+        selected_quarter = next((q for q, data in quarters.items()
+                                 if data["region_id"] == view.region_id), None)
+        st.html(theme.section_html(
+            "Explore the city", "Phoenix from above",
+            "Every bar is one real month of NASA satellite data: taller is hotter, orange is warmer "
+            "than usual for that month, blue is cooler. In each quarter, years run west to east "
+            "and months north to south, so a bar's spot inside its quarter is a calendar position, "
+            "not a street location. Missing months have no bar. Click a quarter to open its charts.",
+        ))
+        map_mode = st.radio(
+            "Bars", ("Every month, 2003–2024", "Latest month"), horizontal=True, key="map_mode",
+            help="Latest month is the newest observation in the approved data (not live weather).",
+        )
+        with st.container(key="mapwrap"):
+            st.pydeck_chart(
+                map3d.build_deck(quarters, selected_quarter,
+                                 "latest" if map_mode == "Latest month" else "months"),
+                height=560, key="phoenix_map", on_select=open_map_region,
+                selection_mode="single-object",
+            )
+        st.caption("Map: freeways from Natural Earth (public domain); street basemap © CARTO, "
+                   "© OpenStreetMap contributors, shown when online. Data: NASA MOD11C3 v061.")
 
     if view.is_sample:
         st.warning("Sample data — synthetic observations for previewing the dashboard.")

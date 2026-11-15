@@ -68,7 +68,7 @@ def main() -> int:
     ok = not app.exception and not app.error
     for region_id, suffix in REGIONS.items():
         app.selectbox[0].select(region_id).run()
-        app.radio[0].set_value("Anomaly").run()
+        next(r for r in app.radio if r.label == "Show").set_value("Anomaly").run()
         spec = json.loads(app.get("plotly_chart")[0].proto.spec)
         trace, layout = spec["data"][0], spec["layout"]
         anomaly_csv = read_csv(f"anomaly{suffix}.csv")
@@ -78,7 +78,7 @@ def main() -> int:
         title = layout["title"]["text"]
         y_title = layout["yaxis"]["title"]["text"]
         a_gaps = [x for x, y in zip(trace["x"], trace["y"]) if y is None]
-        app.radio[0].set_value("Temperature").run()
+        next(r for r in app.radio if r.label == "Show").set_value("Temperature").run()
         spec = json.loads(app.get("plotly_chart")[0].proto.spec)
         t_trace = spec["data"][0]
         t_problems = compare(t_trace["x"], t_trace["y"], read_csv(f"timeseries{suffix}.csv"))

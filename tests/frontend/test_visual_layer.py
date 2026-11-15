@@ -120,3 +120,43 @@ def test_anomaly_switch_matches_data_csvs_for_all_regions_offline():
     assert report["regions"]["phoenix_study_area"]["first_anomaly"] == ["2003-01", 2.1392]
     assert report["regions"]["phoenix_study_area"]["first_temperature"] == ["2003-01", 7.7619]
     assert report["regions"]["phoenix_northwest"]["anomaly_gaps"] == ["2024-05"]
+
+
+def _quarters():
+    from app import map3d
+
+    quarters = {}
+    for short, name in map3d.QUARTER_NAMES.items():
+        data = json.loads((ROOT / f"results/regions/phoenix_{name.lower()}.json").read_text())
+        view = build_view_model(data)
+        quarters[short] = {"region_id": view.region_id, "label": view.region_label,
+                           "times": view.times, "values": view.values, "anomaly": view.anomaly}
+    return quarters
+
+
+def test_map_has_one_bar_per_observed_month_and_none_for_gaps():
+    from app import map3d
+
+    quarters = _quarters()
+    bars = map3d.month_bars(quarters)
+    assert len(bars) == 4 * 264 - 8  # the eight known quarter gaps have no bar
+    nw = [b for b in bars if b["quarter"] == "NW"]
+    assert "May 2024" not in {b["when"] for b in nw}
+    for bar in bars:
+        west, south, east, north = map3d.QUARTER_BOUNDS[bar["quarter"]]
+        assert west < bar["lon"] < east and south < bar["lat"] < north
+    sw = next(b for b in bars if b["quarter"] == "SW" and b["when"] == "Oct 2015")
+    assert sw["temp"] == "20.15 °C" and sw["anom"].startswith("+1.83 °C")
+
+
+def test_latest_mode_uses_newest_observed_month_and_deck_builds():
+    from app import map3d
+
+    quarters = _quarters()
+    latest = map3d.latest_bars(quarters)
+    assert {b["quarter"] for b in latest} == {"NW", "NE", "SW", "SE"}
+    assert all("Dec 2024" in b["when"] for b in latest)
+    deck = json.loads(map3d.build_deck(quarters, "SE", "months").to_json())
+    ids = {layer["id"] for layer in deck["layers"]}
+    assert {"bars", "quarters", "freeways"} <= ids
+    assert map3d.build_deck(quarters, None, "latest")
