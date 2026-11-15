@@ -14,6 +14,7 @@ from api_client import (
     require_observations,
 )
 from charts import monthly_chart
+from climate_detective import render_climate_detective
 from dotenv import load_dotenv
 from pydantic import ValidationError
 from view_model import build_view_model
@@ -72,6 +73,9 @@ if st.session_state.get("region_api_url") != api_url:
     st.session_state.pop("selected_region", None)
     st.session_state.region_api_url = api_url
 use_sample = not api_url or st.session_state.sample_fallback_url == api_url
+
+render_climate_detective()
+st.divider()
 
 # Clear the previous region's evidence before any slow request starts.
 evidence = st.empty()

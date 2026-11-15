@@ -170,3 +170,40 @@ opens the dashboard pointed at it. No internet is needed. Ctrl+C stops it.
   either an automatic summary built from the numbers or Gemini text that passed automated
   number checks; the label in each answer says which.
 - **Libraries:** FastAPI, pandas, pydantic, pymannkendall, statsmodels, Streamlit, Plotly.
+
+## AI Climate Detective — guided investigation demo
+
+The dashboard now includes four offline investigation workflows: rank the four subregions by
+estimated warming rate; compare Northeast and Southwest; examine Phoenix's significant historical
+trend; and challenge an acceleration claim using 2003–2013 versus 2014–2024 observations.
+Select a suggested question, then click **Investigate**. Charts and evidence use the committed,
+contract-validated NASA MOD11C3 results, independently of the dashboard's API/sample selector.
+The existing dashboard remains below the investigation section.
+
+This release uses **Guided Investigation Demo** mode: conservative predefined question patterns,
+dynamic Plotly charts, and deterministic explanations. It does not call Gemini, implement RAG,
+or accept arbitrary dates or places. Ranking and comparison reuse stored statistics; Evidence
+Challenger actually runs the existing seasonal Mann–Kendall / seasonal Sen's slope function on
+each January-aligned period. No slope-difference test or confidence interval is implemented:
+acceleration is explicitly **inconclusive**, and regional rankings are descriptive. Missing
+months remain gaps. Surface temperature is not air temperature, a forecast, or evidence of causes.
+No new dependencies or backend endpoints are required. Existing pipeline Gemini settings are
+unchanged and are not used by this demo.
+
+For an entirely offline presentation, run:
+
+```bash
+API_URL='' uv run --locked streamlit run app/streamlit_app.py
+```
+
+The investigation uses real local observations; the original dashboard beneath it labels its
+synthetic sample preview separately. For a fully real-data offline dashboard, use
+`uv run --locked python scripts/backup_run.py` instead.
+
+**60-second demonstration:** choose “Which region warmed fastest?” and click Investigate
+(15 seconds); compare Northeast vs. Southwest and show the missing-data gaps and evidence table
+(15 seconds); ask “Has warming accelerated?” and explain why descriptive slopes do not prove a
+change in rate (20 seconds); open “How was this calculated?” to show the source and honest scope
+of the implementation (10 seconds).
+
+Feature checks: `uv run --locked pytest tests/frontend/test_climate_detective.py`.
