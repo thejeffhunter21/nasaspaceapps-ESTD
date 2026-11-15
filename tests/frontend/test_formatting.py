@@ -42,3 +42,17 @@ def test_unit_labels_and_chart_hover_preserve_raw_units(unit, slope_unit, displa
     assert chart.layout.yaxis.title.text == f"Land surface temperature ({display})"
     assert display in chart.data[0].hovertemplate
     assert chart.data[0].y[14] is None
+
+
+@pytest.mark.parametrize("slope, display", [
+    (0.0077125000000000015, "0.0077125"),
+    (-0.0075514705882352845, "-0.00755147"),
+    (0.0, "0.0"), (1e-12, "1e-12"), (-1e-12, "-1e-12"),
+])
+def test_slope_display_is_compact_without_losing_raw_precision(slope, display):
+    payload = json.loads(FIXTURE.read_text())
+    payload["trend"]["slope"] = slope
+    view = build_view_model(payload)
+    assert view.display_slope == display
+    assert view.slope == slope
+    assert payload["trend"]["slope"] == slope

@@ -180,7 +180,8 @@ def check_page(page, region_id, series, trend):
     require(page.text[0].value == trend["explanation"], f"{region_id}: explanation mismatch")
     cards = {metric.label: metric.value for metric in page.metric}
     expected_p = "p < 0.001" if trend["trend"]["p"] < 0.001 else str(trend["trend"]["p"])
-    require(cards == {"Slope (°C/month)": str(trend["trend"]["slope"]),
+    require(cards == {"Slope (°C/month)": (format(trend["trend"]["slope"], ".6g") if trend["trend"]["slope"]
+                                             else str(trend["trend"]["slope"])),
                       "p-value": expected_p, "Direction": trend["trend"]["trend"]},
             f"{region_id}: displayed statistics mismatch")
     captions = [caption.value for caption in page.caption]

@@ -35,6 +35,11 @@ class ResultsView:
         return "°C/month" if self.slope_unit == "degC/month" else self.slope_unit
 
     @property
+    def display_slope(self) -> str:
+        """Six significant figures for cards; retain the raw slope for evidence."""
+        return format(self.slope, ".6g") if self.slope else str(self.slope)
+
+    @property
     def display_p(self) -> str:
         return "p < 0.001" if self.p < 0.001 else str(self.p)
 
