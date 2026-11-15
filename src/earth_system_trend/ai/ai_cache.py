@@ -100,6 +100,12 @@ class ExplanationStore:
         self._save()  # persisted before the request, so a crash still counts it
         return True
 
+    def usage_today(self) -> int:
+        """Requests already counted today (UTC)."""
+        usage = self._data["usage"]
+        calls = usage.get("calls", 0)
+        return calls if usage.get("date") == _today() and isinstance(calls, int) else 0
+
     # --- file -----------------------------------------------------------------------------
 
     def _load(self) -> dict[str, Any]:

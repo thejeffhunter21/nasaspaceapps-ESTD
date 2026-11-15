@@ -8,11 +8,16 @@ failure, the fallback is returned and the reason is logged (never the key or pro
 
 A6: text that passed the checks is cached by prompt version + facts and reused (re-checked) on
 the next run, even without a key. Every request to Gemini spends one call from the daily cap.
+
+A10: Gemini is called only when live calls are switched on - GEMINI_LIVE=1 in the environment,
+or allow_live=True (the trial tool's --live). A key alone is not enough. Cached approved text is
+still reused with live calls off. AI text must also name the selected region.
 """
 
 from __future__ import annotations
 
 import logging
+import os
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -28,8 +33,14 @@ from earth_system_trend.ai.ai_setup import GeminiSetupError, build_client
 
 logger = logging.getLogger(__name__)
 
-PROMPT_VERSION = "v1"
+PROMPT_VERSION = "v2"
 FALLBACK_UNAVAILABLE = "An automatic summary is not available for this result."
+_COMPASS = ("northwest", "northeast", "southwest", "southeast")
+
+
+def live_calls_enabled() -> bool:
+    """True only if GEMINI_LIVE is set to 1/true/yes/on. Off by default."""
+    return os.getenv("GEMINI_LIVE", "").strip().lower() in {"1", "true", "yes", "on"}
 
 
 @dataclass(frozen=True)
@@ -60,10 +71,12 @@ def explain_detailed(
     policy: RetryPolicy | None = None,
     sleep: Callable[[float], None] = time.sleep,
     use_cache: bool = True,
+    allow_live: bool | None = None,
 ) -> ExplainOutcome:
     """explain() with the reason, raw reply and check problems (A9). Never raises.
 
     use_cache=False skips the cache lookup (a fresh reply) but still stores approved text.
+    allow_live: None reads GEMINI_LIVE; True/False overrides it (A10).
     """
     fallback_words = fallback_text(results)
 
@@ -90,6 +103,9 @@ def explain_detailed(
         return fallback(f"setup error: {exc}")
     if client is None:
         return fallback("AI disabled (no GEMINI_API_KEY)")
+    if not (live_calls_enabled() if allow_live is None else allow_live):
+        client.close()
+        return fallback("live AI calls are off (set GEMINI_LIVE=1, or use the trial's --live)")
 
     try:
         capped = CappedClient(client, store)
@@ -98,10 +114,10 @@ def explain_detailed(
         if not text:
             logger.warning("explain: Gemini returned no text; using fallback")
             return fallback("no text")
-        check = check_explanation(text, results)
-        if not check.ok:
-            logger.warning("explain: AI text rejected by checks: %s", "; ".join(check.problems))
-            return fallback("rejected by checks", text, check.problems)
+        problems = _ai_problems(text, results)
+        if problems:
+            logger.warning("explain: AI text rejected by checks: %s", "; ".join(problems))
+            return fallback("rejected by checks", text, problems)
         store.put(key, text, model=client.model, prompt_version=PROMPT_VERSION)
         return ExplainOutcome(text, "ai", "accepted", text)
     except GeminiSetupError as exc:
@@ -123,36 +139,48 @@ def _cached_text(store: ExplanationStore, key: str, results: Any) -> str | None:
         text = store.get(key)
         if text is None:
             return None
-        check = check_explanation(text, results)
-        if check.ok:
+        problems = _ai_problems(text, results)
+        if not problems:
             return text
         logger.warning("explain: cached AI text no longer passes checks (%s); asking again",
-                       "; ".join(check.problems))
+                       "; ".join(problems))
         store.drop(key)
     except Exception as exc:  # noqa: BLE001 - the cache must never break explain
         logger.warning("explain: cache lookup failed (%s)", type(exc).__name__)
     return None
 
 
+def _ai_problems(text: str, results: Any) -> tuple[str, ...]:
+    """A3 checks plus the AI-only rule that the reply names the selected region (A10)."""
+    problems = check_explanation(text, results).problems
+    label = str(results.get("region", "")).strip()
+    lower, where = text.lower(), f"{results.get('region_id', '')} {label}".lower()
+    compass = next((c for c in _COMPASS if c in where), None)
+    required = [word for word in (compass, "phoenix" if "phoenix" in where else None) if word]
+    if label and label.lower() not in lower and not all(w in lower for w in required or [label]):
+        problems += (f"does not name the selected region ({label})",)
+    return problems
+
+
 def build_messages(results: Mapping[str, Any]) -> list[ChatCompletionMessageParam]:
     """System prompt (versioned file) + a facts block whose numbers code has already formatted."""
     trend = results["trend"]
-    slope, p, tau = float(trend["slope"]), float(trend["p"]), float(trend["tau"])
+    slope, p = abs(float(trend["slope"])), float(trend["p"])
     units = str(results["units"])
     series = list(results["series"])
-    valid = sum(point.get("value") is not None for point in series)
+    missing = sum(point.get("value") is None for point in series)
+    gaps = f"missing months: {missing}" + (", left as gaps" if missing else "")
+    # v2: plain words only - no "slope"/"tau", no method or source text for the model to copy
+    # (the dashboard shows method and source separately).
     facts = "\n".join([
         f"Region: {results['region']}",
-        f"Variable: {results['variable']} (monthly, satellite)",
+        f"Measurement: {results['variable']} (monthly, from satellites)",
         f"Period: {results['period']['start']} to {results['period']['end']}",
-        f"Valid months: {valid} of {len(series)}",
+        f"Months with data: {len(series) - missing} of {len(series)} ({gaps})",
         f"Direction: {trend['trend']}",
-        f"Slope: {_num(slope)} {units}/month ({_num(slope * 12)} {units}/year)",
+        f"Change: about {_num(slope)} {units} per month ({_num(slope * 12)} {units} per year)",
         (f"Statistically significant: {'yes' if is_significant(p) else 'no'} "
          f"({p_text(p)}; threshold {ALPHA})"),
-        f"Kendall's tau: {_num(tau)}",
-        f"Method: {results['method']}",
-        f"Source: {results['source']}",
     ])
     return [
         {"role": "system", "content": _prompt()},
