@@ -1,0 +1,19 @@
+# Separate frontend service. Select this Blueprint path in Render.
+services:
+  - type: web
+    name: estd-frontend
+    runtime: python
+    plan: free
+    repo: https://github.com/thejeffhunter21/nasaspaceapps-ESTD
+    branch: main
+    autoDeployTrigger: "off"
+    buildCommand: uv sync --locked --no-default-groups --group frontend
+    startCommand: uv run --no-sync streamlit run app/streamlit_app.py --server.address 0.0.0.0 --server.port $PORT --server.headless true --browser.gatherUsageStats false
+    healthCheckPath: /_stcore/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.15
+      - key: UV_VERSION
+        value: 0.11.32
+      - key: API_URL
+        value: https://estd-api.onrender.com

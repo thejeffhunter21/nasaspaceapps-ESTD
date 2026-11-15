@@ -492,3 +492,31 @@ Native Chrome/Safari testing remains outstanding because native computer control
 was unavailable. Keep this ticket in Review until those browser checks and teammate
 review are complete. The branch starts from the latest fetched main including the
 final data freeze. It has not been merged or deployed; FE-12 has not started.
+## FE-10: complete the real-data story
+
+The read-only `scripts/review_frontend_story.py` reviews all five saved or live
+region explanations against the AI owner's existing deterministic guardrails and
+seasonal method reference. It retains the supplied text, statistics and source
+labels, rejects mock data, and records a reproducible evidence report. Seven new
+tests cover the valid result and contradictory method, significance, causal claim,
+number, product wording and sample provenance.
+
+The live review passed for all five regions. The demo walkthrough and a separate
+native Python Render Blueprint are documented in `docs/frontend_deployment.md`.
+The Blueprint passes Render's official schema, and its frontend-only installation,
+start command and health endpoint have been exercised locally.
+
+Verification on November 14, 2026: all 502 repository tests passed, including the
+seven new review tests; repository lint and whitespace checks passed.
+
+**Deployment verified:** https://estd-frontend.onrender.com is live on the free
+Render Python service in the user-confirmed earth system trend workspace. It runs
+`main` commit `b762e921b857fb0df8ece44316c1b15b67c3f626`, including the final data
+freeze. Public health, real-data rendering, all five region options, northwest
+switching, refresh, explanation and source/method were checked. Auto-deploy is off;
+future approved releases need a manual deploy. Direct creation uses default TCP
+readiness; see the deployment handoff for its difference from the reference Blueprint.
+
+This ticket stays in Review for teammates. The PR changes review tooling, evidence
+and deployment documentation/configuration; it does not change dashboard behavior,
+backend or AI logic. FE-11 has not started.

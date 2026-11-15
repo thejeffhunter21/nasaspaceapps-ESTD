@@ -125,6 +125,7 @@ reported p-values are from the uncorrected test and are smaller than the correct
 | A6 | `ai/ai_cache.py` | Cache and daily cap. AI text that passed A3 is stored in `EXPLAIN_CACHE_PATH` (default `data/cache/explanations.json`, git-ignored), keyed by SHA-256 of the prompt version + exact facts, and re-checked on reuse; works without a key, so offline re-runs keep approved AI text. `AI_DAILY_CALL_CAP` (default 50, 0 = AI off) limits requests to Gemini per UTC day, retries included; a request over the cap is not sent and the fallback is used. Unreadable or unwritable cache files are logged, never raised. To refresh text, delete the file or bump the prompt version. |
 | A7 | `pipeline/run.py` (import switch), `tests/conftest.py` | The pipeline uses A4-A6; committed results regenerated (unrounded p, A4 fallback text). Shared test setup strips `GEMINI_API_KEY`/`GEMINI_MODEL` and isolates the cache, because `config.py` loads `.env`. `tests/ai/test_pipeline_integration.py` checks the wiring and that every committed results file matches A5 and passes A3. |
 | A8 | `tests/ai/test_question_bank.py`, `docs/ai_question_results.md` | Runs the data team's 17-case question bank against the AI layer: expected facts recomputed from the data, evidence hashes checked, the trend case met by the independently verified result, and a mocked Gemini reply with each applicable case's forbidden claim rejected. The conversational cases are not run: there is no chat interface this sprint. |
+| A9 | `ai/explain.py` (`explain_detailed`), `ai/ai_trial.py`, `scripts/try_ai_explanations.py` | `explain_detailed()` returns the reason, raw reply and A3 problems behind each outcome (`explain()` is unchanged). The trial tool runs the real Gemini path on the committed results, prints each reply as ACCEPTED/REJECTED with reasons and saves `data/cache/ai_trial_report.json`; it never writes results files. |
 
 The fallback text (`ai/explain.py: fallback_text`) is built from the numbers only and passes the
 A3 checks on every committed results file. Example (southeast): "From 2003-01 to 2024-12,
@@ -158,6 +159,26 @@ uv run --locked python -m earth_system_trend.pipeline.run --all-regions --force 
 - With a key and `GEMINI_MODEL` set, each region makes at most 3 requests; checked replies are
   written as `"ai"` and cached (A6), so a re-run costs nothing.
 - The committed qc-v1 results were built without a key (all `"fallback"`).
+
+## Trying Gemini
+
+The committed results use the fallback text. To see what Gemini writes with the current prompt,
+without changing any results file:
+
+```bash
+# .env (git-ignored): GEMINI_API_KEY=... and GEMINI_MODEL=<a Gemini Flash model>
+uv run python scripts/try_ai_explanations.py            # all five regions
+uv run python scripts/try_ai_explanations.py --fresh    # ignore cached replies
+```
+
+- Sends each region's facts block (numbers already computed by code; see `build_messages`) to
+  Google. At most 3 requests per region, within `AI_DAILY_CALL_CAP`.
+- Prints each reply as ACCEPTED (passed A3) or REJECTED (with the reasons) and saves a report to
+  `data/cache/ai_trial_report.json`. The key is never printed or saved.
+- If the replies are good, run the pipeline command in "Building the results": approved replies
+  come from the cache, so it makes no new request, and the results get `"explanation_source": "ai"`.
+- If many replies are rejected, read the reasons: either the prompt needs a v2
+  (`explain_v2.txt`, bump `PROMPT_VERSION`) or a check is too strict. Keep the fallback until then.
 
 ## What the results do not say
 
