@@ -1,17 +1,27 @@
 # FE-10 frontend deployment and demo
 
-Deployment status: **prepared; not deployed**. Render is available but was not
-installed/connected in this chat when this handoff was prepared. No public frontend
-URL or hosting account changes are claimed. The existing public API is
-https://estd-api.onrender.com; it is not the dashboard.
+Deployment status: **live** as of November 14, 2026 (Pacific).
+
+- Dashboard: https://estd-frontend.onrender.com
+- Render service: `srv-dbsfr5rl550s738bm9s0` in the confirmed **earth system trend** workspace.
+- Deployment: `dep-dbsfr63l550s738bman0`, status `live`, finished 2026-11-15T00:33:49Z.
+- Release commit: `b762e921b857fb0df8ece44316c1b15b67c3f626` from `main`, including
+  the team's final data freeze (PR #39).
+- Backend: https://estd-api.onrender.com (separate service).
+
+Created directly through the connected Render tool as one free Python web service.
+Automatic deploys are off; releasing later merged work requires a manual deploy.
+No pull request was merged as part of deployment.
 
 ## Separate Render frontend service
 
-Use the custom Blueprint path `deploy/frontend.render.yaml` in the Jeff repository.
+The custom Blueprint path `deploy/frontend.render.yaml` in the Jeff repository
+is a reproducible configuration reference; it is not linked to the live service.
 The service uses Render's native Python runtime, not the root backend Dockerfile.
 The Blueprint selects the free plan and `main`, with automatic deployment disabled
 so releases remain deliberate. It leaves the existing backend service alone.
-Review and merge this PR before selecting its Blueprint file from `main`.
+Do not apply it as a second service. Any future Blueprint adoption should explicitly
+reconcile ownership with the existing service to avoid duplicates.
 
 The configuration pins Python 3.12.15 and uv 0.11.32, installs the locked frontend
 and runtime dependencies without data/dev groups, and sets the backend URL:
@@ -34,11 +44,18 @@ The manifest was validated against the [official Render Blueprint schema](https:
 Configuration fields and version pins follow the [Blueprint reference](https://render.com/docs/blueprint-spec)
 and [Python runtime documentation](https://render.com/docs/python-version).
 
-After account connection and deployment, record the actual service URL and release
-commit here. Check its health endpoint, then open the public page and exercise the
-five-region selector, refresh, chart, explanation and metadata. A local health
-check does not substitute for that public verification. Both services may need time
-to wake up; keep the page's loading and retry guidance visible during a demo.
+Public verification: Render reported `live`; `/_stcore/health` returned `ok`.
+The public browser displayed Live API, the main area's real 2003-01 to 2024-12
+chart/cards, `p < 0.001`, Automatic summary, and supplied source/seasonal method.
+All five selector options were present. Switching to northwest updated the chart,
+statistics and explanation together, including the one missing-month statement;
+Refresh data completed successfully. No Sample data warning appeared.
+
+The direct-creation tool does not expose `healthCheckPath`, so the live service
+uses Render's default TCP readiness checks. The Blueprint proposes HTTP readiness
+at `/_stcore/health`; that endpoint was verified publicly but is not configured as
+the service's platform probe. Both services may need time to wake up; keep the
+page's loading and retry guidance visible during a demo.
 
 ## Short real-data walkthrough
 

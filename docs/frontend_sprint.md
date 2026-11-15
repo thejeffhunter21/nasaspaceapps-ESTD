@@ -16,7 +16,7 @@ it does not imply teammate approval or that outstanding coordination is complete
 | FE-07 | Design every state | Review |
 | FE-08 | Test the whole interaction | Review |
 | FE-09 | Verify the real snapshot | Review |
-| FE-10 | Complete the real-data story | Review (deployment pending) |
+| FE-10 | Complete the real-data story | Review |
 | FE-11 | Make it readable everywhere | To do |
 | FE-12 | Freeze a dependable demo | To do |
 | FE-13 | Fix and document | To do |
@@ -484,8 +484,14 @@ start command and health endpoint have been exercised locally.
 Verification on November 14, 2026: all 502 repository tests passed, including the
 seven new review tests; repository lint and whitespace checks passed.
 
-**Deployment remains pending:** Render was not installed/connected in this chat.
-No public frontend URL, public browser verification or teammate approval is
-claimed. This ticket stays in Review with deployment outstanding. The PR changes
-review tooling, evidence and deployment documentation/configuration; it does not
-change dashboard behavior, backend or AI logic. FE-11 has not started.
+**Deployment verified:** https://estd-frontend.onrender.com is live on the free
+Render Python service in the user-confirmed earth system trend workspace. It runs
+`main` commit `b762e921b857fb0df8ece44316c1b15b67c3f626`, including the final data
+freeze. Public health, real-data rendering, all five region options, northwest
+switching, refresh, explanation and source/method were checked. Auto-deploy is off;
+future approved releases need a manual deploy. Direct creation uses default TCP
+readiness; see the deployment handoff for its difference from the reference Blueprint.
+
+This ticket stays in Review for teammates. The PR changes review tooling, evidence
+and deployment documentation/configuration; it does not change dashboard behavior,
+backend or AI logic. FE-11 has not started.
