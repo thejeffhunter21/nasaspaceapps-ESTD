@@ -63,6 +63,17 @@ def test_handoff_says_no_ai_text_only_while_that_is_true():
     assert ("AI text is not used in this release" in HANDOFF) == (sources == {"fallback"})
 
 
+def test_readme_describes_what_the_app_shows():
+    readme = " ".join((ROOT / "README.md").read_text(encoding="utf-8").split())
+    app = (ROOT / "app" / "streamlit_app.py").read_text(encoding="utf-8")
+    for label in ("Automatic summary", "AI-assisted explanation"):
+        assert f'"{label}"' in app and f'"{label}"' in readme  # the labels the dashboard uses
+    sources = {r["explanation_source"] for r in ai_release.load_committed(ROOT).values()}
+    claims_no_ai = "The committed results contain no Gemini text" in readme
+    assert claims_no_ai == (sources == {"fallback"})
+    assert "GEMINI_LIVE=1" in readme  # a key alone never calls Gemini (A10)
+
+
 def test_evidence_contains_no_local_paths():
     for path in EVIDENCE.glob("a12_*.json"):
         text = path.read_text(encoding="utf-8")

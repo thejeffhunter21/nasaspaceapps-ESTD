@@ -34,7 +34,7 @@ All five trends are increasing and statistically significant. The eight missing 
 expected gaps of the approved snapshot.
 
 **AI text is not used in this release.** All five explanations are automatic summaries and the
-dashboard labels them "Automatic summary (AI unavailable)". The Gemini path is built and tested
+dashboard labels them "Automatic summary". The Gemini path is built and tested
 (prompt v2, safety checks, cache, daily cap, opt-in live switch), but the v2 trial was not run
 before the feature freeze, so no Gemini text was approved for the demo.
 
@@ -74,14 +74,12 @@ exact file bytes, so a CRLF checkout fails them even though the data is unchange
 - Answers for the planner, farmer and engineer rehearsal questions are in
   [ai.md](ai.md#rehearsal-answers-sprint-plan-fe-15).
 
-## AI-use statement (suggested)
+## AI-use statement
 
-The README's credit says explanations are "either an automatic summary … or Gemini text". That
-is true of the code, but every explanation in this release is an automatic summary. Suggested
-wording for the README (owned by Avid-arch) and the submission form:
+The README's "AI use" credit states this. The same wording can go on the submission form:
 
-> AI tools helped write code and documentation. The app can use Google Gemini to word each
-> explanation, but only text that passes automated checks of numbers, wording and claims is
-> shown. In the submitted demo every explanation is an automatic summary generated from the
-> numbers by code, labeled "Automatic summary (AI unavailable)". No Gemini call is made while
-> the demo runs.
+> AI tools helped write code and documentation. Every explanation in the app is an automatic
+> summary written by code from the computed numbers, labeled "Automatic summary". The pipeline
+> can optionally use Google Gemini to word explanations. It keeps that text only if it passes
+> automated checks of numbers, wording and claims, and labels it "AI-assisted explanation". The
+> committed results contain no Gemini text, and nothing calls Gemini while the app runs.
