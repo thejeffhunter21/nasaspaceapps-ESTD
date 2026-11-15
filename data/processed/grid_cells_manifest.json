@@ -1,0 +1,50 @@
+{
+  "data_version": "phoenix-qc-v1.0",
+  "filename": "grid_cells.csv",
+  "bytes": 2706858,
+  "sha256": "1b8d67a670c7219bc1f5de62134a3dc38413b337bc8bf3c77ddb8fb6506b8b18",
+  "source": {
+    "reference_pr": "https://github.com/nergisRahimzade/NASA-Space-Apps-Challenges-2026---Be-an-Earth-System-Trend-Detective/pull/59",
+    "source_commit": "aef91f193d5a3b0f7c89e8107821cd564e6f1e20",
+    "file": "data/processed/clean_qc.nc",
+    "sha256": "04406bfbce48c7ec2531c3d9b375bf9c3b8b496b7b02a20ae69239a09aa692e2",
+    "freeze_manifest": "docs/evidence/day17/freeze_manifest.json",
+    "cube_builder": "scripts/freeze_data.py",
+    "variable": "lst_night",
+    "mask": "qc_accepted"
+  },
+  "export_script": "scripts/export_grid_cells.py",
+  "units": "degC",
+  "period": [
+    "2003-01",
+    "2024-12"
+  ],
+  "cell_id": "Zero-based rNN_cNN, row from north and column from west",
+  "missing_value": "Empty when qc_accepted=0; no fill or interpolation",
+  "quarter_boundaries": {
+    "latitude": 33.5,
+    "longitude": -112.0
+  },
+  "region_min_accepted_area_fraction": 0.8,
+  "validation": {
+    "cells": 192,
+    "cells_per_quarter": {
+      "NE": 48,
+      "NW": 48,
+      "SE": 48,
+      "SW": 48
+    },
+    "months_per_cell": 264,
+    "rows": 50688,
+    "empty_cell_months": 412,
+    "regional_months_checked": 1320,
+    "regional_gaps": {
+      "phoenix": 0,
+      "phoenix_northwest": 1,
+      "phoenix_northeast": 2,
+      "phoenix_southwest": 2,
+      "phoenix_southeast": 3
+    },
+    "max_abs_regional_difference_degC": 1.4210854715202004e-14
+  }
+}
