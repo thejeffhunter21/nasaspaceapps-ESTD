@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Earth System Trend Detective · Phoenix nighttime surface temperature</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect x=%222%22 y=%226%22 width=%223%22 height=%228%22 fill=%22%234776d0%22/%3E%3Crect x=%226.5%22 y=%223%22 width=%223%22 height=%2211%22 fill=%22%23d9542b%22/%3E%3Crect x=%2211%22 y=%228%22 width=%223%22 height=%226%22 fill=%22%237865c7%22/%3E%3C/svg%3E">
+  <meta name="description" content="Explore 22 years of NASA MODIS nighttime land surface temperature over Phoenix, Arizona, cell by cell, and the statistics behind its warming trend.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#story">Skip the map and read the findings</a>
+
+  <!-- The map stage: one sticky viewport that the scroll track drives (explore, then the split). -->
+  <section class="stage" id="stage" aria-label="Phoenix temperature map">
+    <div class="sticky">
+      <div id="map" class="map" role="img" aria-label="3D map of Phoenix with one column per 5 km NASA grid cell; taller and warmer-coloured means a hotter night."></div>
+
+      <header class="brand">
+        <p class="eyebrow">NASA Space Apps 2026 · Earth System Trend Detective</p>
+        <h1>Are Phoenix nights getting warmer?</h1>
+        <button type="button" class="tour-open" data-tour-start>▶ Take the 1-minute tour</button>
+        <p class="lede">Every column is one 5 km NASA grid cell. Pick a year and month, press play, click a cell, then scroll.</p>
+      </header>
+
+      <div class="controls" id="controls">
+        <div class="ctl-head">
+          <span class="ctl-title">Nighttime land surface temperature</span>
+          <span class="ctl-period" id="period-label" aria-live="polite">—</span>
+          <button type="button" class="ctl-toggle" id="ctl-toggle" aria-controls="controls" aria-expanded="true">Hide controls</button>
+        </div>
+
+        <div class="ctl-row">
+          <label class="ctl-label" for="region">Region</label>
+          <select id="region">
+            <option value="all">All Phoenix</option>
+            <option value="NW">Northwest</option><option value="NE">Northeast</option>
+            <option value="SW">Southwest</option><option value="SE">Southeast</option>
+          </select>
+        </div>
+
+        <div class="ctl-label" id="layer-label">Map layer</div>
+        <div class="seg" role="radiogroup" aria-labelledby="layer-label" id="layers">
+          <button type="button" role="radio" data-layer="temperature">Temperature</button>
+          <button type="button" role="radio" data-layer="anomaly">Anomaly</button>
+          <button type="button" role="radio" data-layer="rate">Warming rate</button>
+          <button type="button" role="radio" data-layer="coverage">Coverage</button>
+        </div>
+
+        <div class="timeline">
+          <button type="button" id="prev" aria-label="Previous year">‹</button>
+          <button type="button" id="play" aria-label="Play through the years">▶</button>
+          <button type="button" id="next" aria-label="Next year">›</button>
+          <label class="sr" for="speed">Playback speed</label>
+          <select id="speed"><option value="1600">Slow</option><option value="900" selected>Normal</option><option value="500">Fast</option></select>
+          <output id="year-out" for="year">—</output>
+        </div>
+        <label class="sr" for="year">Year</label>
+        <input type="range" id="year" min="2003" max="2024" step="1" value="2024" disabled>
+        <div class="ticks" aria-hidden="true"><span id="year-min">2003</span><span id="year-max">2024</span></div>
+        <div class="months" role="radiogroup" aria-label="Month" id="months"></div>
+
+        <div class="legend" id="legend" aria-live="polite"></div>
+
+        <div class="finding-wrap" id="finding-wrap">
+          <label class="ctl-label" for="finding">AI discovery overlay</label>
+          <select id="finding"><option value="">None</option></select>
+        </div>
+        <div class="ctl-actions">
+          <button type="button" id="share">Copy link to this view</button>
+          <button type="button" id="csv">Download CSV</button>
+        </div>
+        <p class="status" id="data-status" role="status">Loading NASA results…</p>
+      </div>
+
+      <aside class="inspector" id="inspector" hidden aria-live="polite">
+        <button type="button" class="close" id="inspector-close" aria-label="Close cell details">×</button>
+        <div id="inspector-body"></div>
+      </aside>
+
+      <div class="hint" id="hint" aria-hidden="true">
+        <span>Scroll to split Phoenix into four quarters</span>
+        <span class="hint-line"></span>
+      </div>
+
+      <div class="panels" id="panels" aria-live="polite"></div>
+      <p class="attribution" id="attribution">Basemap: Esri World Dark Gray (Esri, HERE, Garmin, © OpenStreetMap contributors) · Freeways: Natural Earth</p>
+    </div>
+  </section>
+
+  <main id="story" class="story">
+    <section class="block" id="compare" aria-labelledby="compare-title">
+      <div class="block-head">
+        <p class="kicker">Compare</p>
+        <h2 id="compare-title">Then and now, cell by cell</h2>
+        <p class="wide">Pick two periods. The third map shows the absolute difference ΔT = T<sub>B</sub> − T<sub>A</sub> for every cell measured in both. This is a difference between two periods, not a trend and not a significance test.</p>
+      </div>
+      <div class="compare-ctl">
+        <fieldset><legend>Period A</legend>
+          <label class="sr" for="a-year">Period A year</label><select id="a-year"></select>
+          <label class="sr" for="a-month">Period A month</label><select id="a-month"></select></fieldset>
+        <fieldset><legend>Period B</legend>
+          <label class="sr" for="b-year">Period B year</label><select id="b-year"></select>
+          <label class="sr" for="b-month">Period B month</label><select id="b-month"></select></fieldset>
+      </div>
+      <div class="compare-maps">
+        <figure><figcaption id="a-cap">Period A</figcaption><svg id="a-map" viewBox="0 0 320 240" role="img"></svg></figure>
+        <figure><figcaption id="b-cap">Period B</figcaption><svg id="b-map" viewBox="0 0 320 240" role="img"></svg></figure>
+        <figure><figcaption>Difference, B − A</figcaption><svg id="d-map" viewBox="0 0 320 240" role="img"></svg></figure>
+        <div class="compare-stats" id="compare-stats"></div>
+      </div>
+
+      <div class="region-test">
+        <h3>Are two regions really warming at different rates?</h3>
+        <p class="wide">One region being significant and another not does not prove they differ. This runs the direct test: a seasonal Mann-Kendall test on the monthly difference between the two regions.</p>
+        <div class="compare-ctl">
+          <label for="rt-a">Region A</label><select id="rt-a"></select>
+          <label for="rt-b">Region B</label><select id="rt-b"></select>
+        </div>
+        <p class="rt-result" id="rt-result" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="block" id="coverage" aria-labelledby="coverage-title">
+      <div class="two">
+        <div>
+          <p class="kicker">Data quality</p>
+          <h2 id="coverage-title">Where the measurements are solid</h2>
+          <p>NASA's quality control drops a cell's month when clouds, smoke or sensor issues make the reading unreliable. Those months stay missing here; nothing is filled in. Most cells have nearly the full 264 months; a few have more gaps, which makes their individual trends less certain.</p>
+          <p id="coverage-summary"></p>
+        </div>
+        <figure class="cov-fig"><svg id="cov-map" viewBox="0 0 320 240" role="img" aria-label="Valid months per grid cell"></svg>
+          <figcaption>Valid months per cell, 2003–2024 (of 264). Lighter cells have more gaps.</figcaption></figure>
+      </div>
+    </section>
+
+    <section class="block" id="discoveries" aria-labelledby="disc-title">
+      <div class="block-head">
+        <p class="kicker">Ask the Climate Detective</p>
+        <h2 id="disc-title">Ask anything about Phoenix's nights</h2>
+        <p class="wide">Ask about a place, a cell, a year, a season or a comparison. The answer comes from running this project's statistical tests on all 192 NASA grid cells, so every number is a real measurement or test result.</p>
+      </div>
+      <form id="ask" class="ask-box">
+        <label class="sr" for="ask-input">Your question</label>
+        <input id="ask-input" type="text" maxlength="600" placeholder="e.g. Is Tempe warming faster than Glendale?" autocomplete="off">
+        <button type="submit" class="primary" id="ask-go">Ask</button>
+      </form>
+      <div class="chips" id="ask-chips" aria-label="Example questions"></div>
+      <div class="answer" id="ask-result" hidden aria-live="polite"></div>
+
+      <div class="disc-bar">
+        <h3>What the AI found on its own</h3>
+        <button type="button" id="discover" class="ghost">Surprise me</button>
+      </div>
+      <div class="disc-list" id="discovery-list"></div>
+      <details class="det-how"><summary>Rules, caveats and provenance</summary><ul id="discovery-caveats"></ul><p class="note" id="discovery-prov"></p></details>
+    </section>
+
+    <section class="block" id="method" aria-labelledby="method-title">
+      <div class="block-head">
+        <p class="kicker">How we know · Methodology explorer</p>
+        <h2 id="method-title">The method, in plain language</h2>
+        <p class="wide">Every number on this page comes from NASA satellite measurements and the tests below. Open any question for the short answer; open "Technical detail" for exactly what the code does.</p>
+      </div>
+      <div class="method-grid">
+        <div class="qa">
+          <details open><summary>What does the satellite measure?</summary>
+            <p>How hot the ground, roofs and roads are: <b>land surface temperature</b>, read from their infrared glow by NASA's Terra satellite. It is <b>not</b> the air temperature a weather station reports.</p>
+            <details class="tech"><summary>Technical detail</summary><p>MODIS on Terra, product MOD11C3 version 6.1: monthly land surface temperature on a 0.05° climate-modelling grid. We use the nighttime layer <span class="mono">LST_Night_CMG</span> (Terra's night pass is around 10:30 pm local time), converted from kelvin to °C.</p></details></details>
+          <details><summary>Why nighttime?</summary>
+            <p>Cities soak up heat by day and release it after dark. Night temperatures show how much heat Phoenix holds, and hot nights matter for health because bodies need to cool down.</p>
+            <details class="tech"><summary>Technical detail</summary><p>Daytime surface temperature also exists in MOD11C3 (LST_Day_CMG) but is not part of this release.</p></details></details>
+          <details><summary>How is Phoenix divided?</summary>
+            <p>Into <b>192 grid cells</b> of about 5 km, 16 across and 12 down, grouped into four quarters. The map's dark base follows the Phoenix urban area; cells outside it are faded but still analysed.</p>
+            <details class="tech"><summary>Technical detail</summary><p>Window 112.4°–111.6° W, 33.2°–33.8° N; quarters split at 112.0° W and 33.5° N. Cell ids are rRR_cCC with row 0 in the north. The urban outline is Natural Earth's MODIS-derived urban extent (c. 2002–2003), used for display only.</p></details></details>
+          <details><summary>How are regional averages made?</summary>
+            <p>For each month, the valid cells in a region are averaged. If less than 80% of a region passed quality control that month, the region's value is left blank.</p>
+            <details class="tech"><summary>Technical detail</summary><p>Cosine-latitude weighted mean of the region's valid cells. The analysis service re-computes this from the cell file and refuses to run unless it reproduces the published regional series (tolerance 0.0001 °C).</p></details></details>
+          <details><summary>What happens to missing measurements?</summary>
+            <p>Clouds, smoke or sensor problems make some months unreliable. Those stay <b>missing</b>; nothing is filled in or estimated. An annual average is shown only when all 12 months are valid.</p>
+            <details class="tech"><summary>Technical detail</summary><p>Kept only when NASA's quality flags are good and the estimated error is under 1 K (policy phoenix-qc-v1.0). 50,276 of 50,688 cell-months (99.2%) pass.</p></details></details>
+          <details><summary>How is a warming trend calculated?</summary>
+            <p>The <b>seasonal Mann-Kendall test</b> compares each calendar month only with the same month in other years (July with July), so the summer–winter cycle never counts as a trend. <b>Sen's slope</b> gives the typical change per year.</p>
+            <details class="tech"><summary>Technical detail</summary><p>pymannkendall <span class="mono">seasonal_test</span> (period 12) on the monthly series with gaps left as missing; Sen's slope per month × 12 = per year. Phoenix nights swing by about <b id="swing">25 °C</b> between winter and summer, which is why the seasonal version is needed.</p></details></details>
+          <details><summary>When is a result "significant"?</summary>
+            <p>When a pattern this strong would be very unlikely by chance (p below 0.05). Testing 192 cells at once would produce some false alarms, so cell results are corrected and reported as <b>q-values</b>.</p>
+            <details class="tech"><summary>Technical detail</summary><p>Benjamini-Hochberg false discovery rate across all cells. AI findings are "statistically supported" only if significant after correction <i>and</i> the direction holds in both 2003–2013 and 2014–2024; otherwise "exploratory". Region-vs-region claims use a direct test on the monthly difference.</p></details></details>
+          <details><summary>What does a 95% confidence interval mean?</summary>
+            <p>The range of warming rates the data support. If the whole range is above zero, warming is clear. If two ranges overlap a lot, the difference may not be real.</p>
+            <details class="tech"><summary>Technical detail</summary><p>Within-season pairwise slopes pooled; C = z·√Var(S) from the seasonal Mann-Kendall variance; bounds at ranks (N−C)/2 and (N+C)/2+1 (Gilbert 1987). Its median equals the published Sen's slope exactly (tested).</p></details></details>
+          <details><summary>What can't this tell you?</summary>
+            <ul class="limits-list"><li><b>Surface, not air:</b> not the temperature a person feels.</li><li><b>Nighttime only.</b></li><li><b>A trend, not a cause:</b> city growth and climate change are possible reasons; we prove neither.</li><li><b>Not a forecast:</b> slopes describe 2003–2024 only.</li><li><b>5 km cells:</b> neighbourhood patterns, not streets. Neighbouring cells are correlated, and month-to-month correlation makes p-values somewhat optimistic.</li></ul></details>
+        </div>
+        <div class="method-side">
+          <figure class="method-fig" aria-label="Diagram: each month compared only with the same month in other years">
+            <svg id="method-svg" viewBox="0 0 360 248" role="img" aria-labelledby="method-cap"></svg>
+            <figcaption id="method-cap">Each row is one calendar month, each dot one year (whole study area). The test compares dots within a row, never across rows.</figcaption>
+          </figure>
+          <div class="evidence-log">
+            <h3>Evidence log · NASA data provenance</h3>
+            <dl class="facts" id="provenance"></dl>
+          </div>
+        </div>
+      </div>
+      <div class="results-glance">
+        <h3 id="findings-title">Results at a glance</h3>
+        <p id="findings-lede" class="wide">Loading results…</p>
+        <div class="table-wrap">
+          <table class="findings" aria-describedby="findings-note">
+            <thead><tr><th scope="col">Area</th><th scope="col">Trend</th><th scope="col">Per year<span class="th-sub">Sen's slope</span></th><th scope="col">95% CI<span class="th-sub">per year</span></th><th scope="col">Over the period<span class="th-sub">slope × years</span></th><th scope="col">Kendall's τ</th><th scope="col">p-value</th><th scope="col">Valid months</th></tr></thead>
+            <tbody id="findings-body"></tbody>
+          </table>
+        </div>
+        <p class="note" id="findings-note">Published seasonal Sen's slopes (per month × 12) for the whole study area and its quarters. "Over the period" is a trend-line estimate, not a measured difference between two years. Data period: <span id="data-period">2003-01 to 2024-12</span>.</p>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <p class="foot-limits"><b>Limits:</b> Not a forecast; it describes 2003–2024. Land surface temperature, not air temperature. Annual mean only with all 12 months; months that failed NASA quality control stay missing and are never filled.</p>
+      <p>Built by the Earth System Trend Detective team for NASA Space Apps 2026. Data: NASA LP DAAC MOD11C3 v061. Statistics: seasonal Mann-Kendall test with Sen's slope (pymannkendall), Benjamini-Hochberg false discovery rate. Map: deck.gl; freeways from Natural Earth; basemap Esri World Dark Gray. AI tools (Claude, Gemini) helped write code and plain-language summaries; every number comes from the analysis.</p>
+      <p><button type="button" class="tour-open" data-tour-start>Replay the tour</button> · <a href="/docs">API documentation</a> · <a href="https://github.com/thejeffhunter21/nasaspaceapps-ESTD">Source code</a></p>
+    </footer>
+  </main>
+
+  <script src="vendor/deck.gl-9.4.1.min.js"></script>
+  <script src="app.js"></script>
+  <script src="tour.js"></script>
+</body>
+</html>

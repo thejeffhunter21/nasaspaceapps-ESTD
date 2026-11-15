@@ -16,3 +16,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.html
+
+# The map explorer page is source, not a generated report
+!web/index.html

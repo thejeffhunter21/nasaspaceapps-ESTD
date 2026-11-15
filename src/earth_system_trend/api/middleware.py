@@ -20,6 +20,8 @@ from fastapi.responses import JSONResponse
 from ..config import get_settings
 
 EXEMPT = {"/health", "/", "/version"}
+# The grid-cell investigation is computed once (seconds on a slow host) and then cached.
+SLOW_CACHED = {"/discoveries", "/analysis/investigate", "/map-static", "/ask"}  # /ask has its own 50 s deadline
 WINDOW_S = 60.0
 
 
@@ -56,7 +58,8 @@ def add_protection(app: FastAPI) -> None:
     @app.middleware("http")
     async def protect(request: Request, call_next):
         settings = get_settings()
-        if request.url.path not in EXEMPT and settings.rate_limit_per_minute > 0:
+        if (request.url.path not in EXEMPT and not request.url.path.startswith("/app/")
+                and settings.rate_limit_per_minute > 0):
             visitor = request.client.host if request.client else "unknown"
             wait = limiter.check(visitor, settings.rate_limit_per_minute, time.monotonic())
             if wait is not None:
@@ -64,6 +67,8 @@ def add_protection(app: FastAPI) -> None:
                 return JSONResponse(
                     {"detail": f"Too many requests. Try again in {retry} s."},
                     status_code=429, headers={"Retry-After": str(retry)})
+        if request.url.path in SLOW_CACHED:
+            return await call_next(request)
         try:
             return await asyncio.wait_for(call_next(request), timeout=settings.request_timeout_s)
         except TimeoutError:
