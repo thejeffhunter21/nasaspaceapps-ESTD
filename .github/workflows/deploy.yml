@@ -1,0 +1,52 @@
+# B11: every merge to main is tested, then deployed to Render, then checked live.
+# One-time setup (repo admin): Render > estd-api > Settings > Deploy Hook, copy the URL,
+# then GitHub > Settings > Secrets and variables > Actions > New secret RENDER_DEPLOY_HOOK.
+name: Deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv python install 3.12
+      - run: uv sync --locked
+      - run: uv run --locked ruff check .
+      - run: uv run --locked pytest
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+      API_URL: https://estd-api.onrender.com
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy hook is set
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK" ]; then
+            echo "::error::RENDER_DEPLOY_HOOK secret is missing, so nothing was deployed. See the top of deploy.yml."
+            exit 1
+          fi
+      - name: Tell Render to deploy this commit
+        run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK" > /dev/null
+      - name: Wait until this commit is live
+        run: |
+          for i in $(seq 1 60); do
+            live=$(curl -fsS --max-time 60 "$API_URL/version" | python3 -c "import json,sys; print(json.load(sys.stdin)['commit'])" || true)
+            if [ "$live" = "$GITHUB_SHA" ]; then echo "Live: $live"; exit 0; fi
+            echo "Live commit is '$live', waiting for $GITHUB_SHA"; sleep 15
+          done
+          echo "::error::$GITHUB_SHA did not go live within 15 minutes"
+          exit 1
+      - uses: astral-sh/setup-uv@v5
+      - run: uv python install 3.12
+      - run: uv sync --locked --no-default-groups
+      - name: Smoke test the live API
+        run: uv run --locked --no-default-groups python scripts/smoke_test.py "$API_URL" --expect-real

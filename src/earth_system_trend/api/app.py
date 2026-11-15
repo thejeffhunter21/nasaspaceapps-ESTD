@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from ..config import get_settings
+from .middleware import add_protection
 from .routes import router
 
 app = FastAPI(title="Earth System Trend Detective API", version="1.0.0")
@@ -17,6 +20,7 @@ app.add_middleware(
     allow_methods=["GET"],
     allow_headers=["*"],
 )
+add_protection(app)  # J12: rate limit + timeout
 
 
 @app.get("/")
@@ -26,7 +30,7 @@ def home() -> dict:
         "name": "Earth System Trend Detective API",
         "status": "ok",
         "try": ["/regions", "/series?region=phoenix_study_area",
-                "/trend?region=phoenix_study_area", "/results", "/health"],
+                "/trend?region=phoenix_study_area", "/results", "/demo", "/health"],
         "docs": "/docs",
     }
 
@@ -35,6 +39,12 @@ def home() -> dict:
 def health() -> dict:
     """Is the server up? Used by Render and the uptime check."""
     return {"status": "ok"}
+
+
+@app.get("/version")
+def version() -> dict:
+    """Which commit is live (Render sets RENDER_GIT_COMMIT). The deploy workflow waits on it."""
+    return {"commit": os.getenv("RENDER_GIT_COMMIT") or "unknown"}
 
 
 app.include_router(router)

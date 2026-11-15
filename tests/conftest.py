@@ -12,3 +12,5 @@ def _no_real_services(monkeypatch, tmp_path):
     # Never read or write the real explanation cache / daily call counter.
     monkeypatch.setenv("EXPLAIN_CACHE_PATH", str(tmp_path / "ai_cache" / "explanations.json"))
     monkeypatch.delenv("AI_DAILY_CALL_CAP", raising=False)
+    # J12: no rate limit in tests unless a test sets one.
+    monkeypatch.setenv("RATE_LIMIT_PER_MINUTE", "0")

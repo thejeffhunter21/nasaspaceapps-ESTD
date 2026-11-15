@@ -18,7 +18,12 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["httpx", "pytest", "ruff"]
+dev = [
+    "httpx",
+    "pytest",
+    "pyyaml>=6.0.3",
+    "ruff",
+]
 # Data layer (download + clean NASA files)
 data = ["earthaccess", "netcdf4", "numpy", "xarray"]
 # Frontend (dashboard)

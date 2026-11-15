@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from ..config import get_settings
+from .demo import pick_stories
 from .files import read_or_http_error
 from .regions import all_regions, find_region
 from .validation import RegionParam
@@ -47,3 +48,12 @@ def get_trend(region: RegionParam = None) -> dict:
             "explanation": r.explanation, "explanation_source": r.explanation_source,
             "source": r.source, "method": r.method,
             "forecast": r.forecast.model_dump() if r.forecast else None}
+
+
+@router.get("/demo")
+def get_demo() -> dict:
+    """J13: three ready-made stories for the demo buttons, picked from the real regions."""
+    stories = pick_stories(all_regions(get_settings()))
+    if not stories:
+        raise HTTPException(status_code=404, detail="No regions to build demo stories from")
+    return {"cases": stories}
