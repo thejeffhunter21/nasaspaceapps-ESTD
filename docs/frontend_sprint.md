@@ -18,7 +18,7 @@ it does not imply teammate approval or that outstanding coordination is complete
 | FE-09 | Verify the real snapshot | Review |
 | FE-10 | Complete the real-data story | To do |
 | FE-11 | Make it readable everywhere | Review (Chrome/Safari checks pending) |
-| FE-12 | Freeze a dependable demo | To do |
+| FE-12 | Freeze a dependable demo | Review (native-browser checks pending) |
 | FE-13 | Fix and document | To do |
 | FE-14 | Rehearse without Wi-Fi | To do |
 | FE-15 | Deliver and keep a buffer | To do |
@@ -520,3 +520,26 @@ readiness; see the deployment handoff for its difference from the reference Blue
 This ticket stays in Review for teammates. The PR changes review tooling, evidence
 and deployment documentation/configuration; it does not change dashboard behavior,
 backend or AI logic. FE-11 has not started.
+
+
+## FE-12: freeze a dependable demo
+
+The frozen core candidate is main commit `78fae30c4fef0e0d504762ecbc13ad7b9469b5a0`,
+including merged FE-10/11 and teammate data/AI updates. The existing public frontend
+was manually deployed to this commit and verified live. This PR adds freeze
+handoff documentation, desktop/phone screenshots and fresh evidence; no product
+features, data, backend/AI logic or dependencies are changed.
+
+Fresh verification passed: 590 repository tests, Ruff, all-five-region live
+snapshot/API/page agreement and all-five explanation consistency checks. The
+public page displays the compact cards, real observations, supplied explanation
+and provenance. No unfinished optional controls were exposed; none needed removal.
+
+`docs/frontend_demo_freeze.md` records the G4 checklist, immutable release identity,
+artifact/source hashes, scope freeze, known limits, reproduction commands and
+screenshots. No critical core-path failure was found in these checks. Native
+Chrome/Safari acceptance and teammate sign-off remain pending. The sprint start
+was never recorded, so a T+18 wall-clock deadline is not claimed.
+
+Keep core feature work frozen; only agreed, user-authorized bug fixes should alter
+this candidate and require fresh affected checks. FE-13 has not started.

@@ -4,9 +4,10 @@ Deployment status: **live** as of November 14, 2026 (Pacific).
 
 - Dashboard: https://estd-frontend.onrender.com
 - Render service: `srv-dbsfr5rl550s738bm9s0` in the confirmed **earth system trend** workspace.
-- Deployment: `dep-dbsfr63l550s738bman0`, status `live`, finished 2026-11-15T00:33:49Z.
-- Release commit: `b762e921b857fb0df8ece44316c1b15b67c3f626` from `main`, including
-  the team's final data freeze (PR #39).
+- Current deployment: `dep-dbshq13bc2fs73bjsjb0`, status `live`, finished 2026-11-15T02:47:51Z.
+- Release commit: `78fae30c4fef0e0d504762ecbc13ad7b9469b5a0` from `main`, including
+  FE-11, the final data freeze and the AI team's A10 update.
+- FE-12 freeze evidence and known limits: [demo freeze handoff](frontend_demo_freeze.md).
 - Backend: https://estd-api.onrender.com (separate service).
 
 Created directly through the connected Render tool as one free Python web service.
