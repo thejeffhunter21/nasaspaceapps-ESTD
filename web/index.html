@@ -104,6 +104,20 @@
       </div>
     </section>
 
+    <section class="block" id="detective" aria-labelledby="det-title">
+      <p class="kicker">AI Climate Detective</p>
+      <h2 id="det-title">Ask a question, see the evidence</h2>
+      <p class="wide">Turn a climate question into an evidence-backed investigation. Pick a suggested question or type your own.</p>
+      <p class="det-mode" id="det-mode">Loading…</p>
+      <div class="det-chips" id="det-chips" aria-label="Suggested questions"></div>
+      <form class="det-form" id="det-form">
+        <label class="sr" for="det-input">Research question</label>
+        <input id="det-input" type="text" placeholder="e.g. Which region of Phoenix warmed fastest?" autocomplete="off">
+        <button type="submit">Investigate</button>
+      </form>
+      <div id="det-result" aria-live="polite"></div>
+    </section>
+
     <footer class="foot">
       <p>Built by the Earth System Trend Detective team for NASA Space Apps 2026. Data: NASA LP DAAC MOD11C3 v061. Statistics: seasonal Mann-Kendall test with Sen's slope (pymannkendall). Map: deck.gl; freeways from Natural Earth; basemap Esri World Light Gray Canvas (Esri, HERE, Garmin, © OpenStreetMap contributors). AI tools (Claude, Gemini) helped write code and plain-language summaries; every number comes from the analysis.</p>
       <p><a href="/docs">API documentation</a> · <a href="https://github.com/thejeffhunter21/nasaspaceapps-ESTD">Source code</a></p>
@@ -112,5 +126,6 @@
 
   <script src="vendor/deck.gl-9.4.1.min.js"></script>
   <script src="app.js"></script>
+  <script src="detective.js"></script>
 </body>
 </html>

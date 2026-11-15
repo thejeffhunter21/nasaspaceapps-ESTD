@@ -141,6 +141,42 @@ table.findings { width: 100%; border-collapse: collapse; font-size: 14px; min-wi
 .foot { max-width: 1080px; margin: 64px auto 0; padding: 22px 28px 48px; border-top: 1px solid var(--line);
   font-size: 12.5px; color: var(--ink-3); }
 
+/* ---------- AI Climate Detective ---------- */
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.det-mode { display: inline-block; font-size: 12px; color: var(--violet); background: rgba(106,75,214,.07);
+  border: 1px solid rgba(106,75,214,.2); border-radius: 999px; padding: 4px 12px; margin: 0 0 16px; }
+.det-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.det-chips button, .det-form button { font: inherit; font-size: 13.5px; border-radius: 8px; cursor: pointer;
+  padding: 8px 14px; border: 1px solid var(--line-2); background: #fff; color: var(--ink);
+  transition: border-color .15s var(--ease), background-color .15s var(--ease); }
+.det-chips button:hover { border-color: var(--blue); }
+.det-form { display: flex; gap: 8px; margin-bottom: 22px; }
+.det-form input { flex: 1; font: inherit; font-size: 15px; padding: 10px 14px; border-radius: 8px;
+  border: 1px solid var(--line-2); background: #fff; color: var(--ink); min-width: 0; }
+.det-form input:focus { outline: 2px solid var(--violet); outline-offset: 1px; }
+.det-form button { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 600; }
+.det-q { margin: 0 0 12px; font-size: 16px; font-weight: 600; }
+.det-q span, .det-finding span { display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 650; margin-bottom: 2px; }
+.det-chart { margin: 0 0 14px; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 14px 8px; }
+.det-chart figcaption { font-size: 14px; font-weight: 650; margin-bottom: 6px; }
+.det-chart svg { width: 100%; height: auto; display: block; }
+.det-chart .tick { font: 10.5px var(--mono); fill: var(--ink-3); }
+.det-chart .axis { font: 11.5px var(--sans); fill: var(--ink-2); }
+.det-chart .ptitle { font: 600 12px var(--sans); fill: var(--ink); }
+.det-chart .val { font: 600 11px var(--mono); fill: var(--ink); }
+.det-src { font-size: 11px; color: var(--ink-3); margin: 6px 0 0; }
+.det-legend { display: flex; gap: 16px; font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+.det-legend i { display: inline-block; width: 14px; height: 3px; margin-right: 6px; vertical-align: middle; border-radius: 2px; }
+.det-finding { border-left: 3px solid var(--violet); background: rgba(106,75,214,.05); padding: 12px 16px;
+  border-radius: 0 var(--radius) var(--radius) 0; margin-bottom: 14px; font-size: 15px; }
+.det-table { min-width: 720px; }
+.det-how { margin: 14px 0 8px; border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 14px; }
+.det-how summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+.det-how p { font-size: 13.5px; color: var(--ink-2); }
+.det-info { border: 1px solid #f0d9a8; background: #fffaf0; color: #7a5200; padding: 12px 16px; border-radius: var(--radius); }
+@media (max-width: 640px) { .det-form { flex-direction: column; } }
+
 /* ---------- Tablet & phone ---------- */
 @media (max-width: 900px) {
   .brand { left: 24px; right: auto; top: auto; bottom: 28px; text-align: left; max-width: 520px; }
