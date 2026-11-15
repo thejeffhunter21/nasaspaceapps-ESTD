@@ -63,7 +63,7 @@ for anomalies, Plasma for warming rate, Viridis for coverage.
 - **Phoenix-shaped map base.** The dark base under the columns follows the Phoenix metro urban
   area (Natural Earth 1:10m urban areas, public domain, mapped from MODIS c. 2002–2003; built by
   `scripts/build_phoenix_outline.py` into `web/assets/phoenix_urban_area.json`). The 88 cells
-  inside are drawn bright; the other 104 stay on the map, faded. Visual only: every statistic
+  inside are drawn; the other 104 are transparent (not drawn). Visual only: every statistic
   still uses all 192 cells, and the study-window frame is still drawn.
 - **Cell yearly chart.** The cell details box shows the cell's yearly mean versus its usual
   (complete years only) with its Sen's slope trend line, from `GET /cell-years?id=`.

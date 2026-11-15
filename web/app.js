@@ -224,7 +224,7 @@
   }
   const freeways = {NW: [], NE: [], SW: [], SE: []};
   // Phoenix metro outline (Natural Earth urban area, MODIS c. 2002-2003): shapes the map base.
-  // Visual only: every cell is still drawn and analysed; cells outside it are faded.
+  // Visual only: cells outside it are not drawn on the map, but every cell is still analysed.
   const urban = {parts: null, inside: null};
 
   // ---------- deck ----------
@@ -317,7 +317,8 @@
         getColor: [150, 126, 84, 130], widthUnits: "pixels", getWidth: 1.2, updateTriggers: {getPath: e}}));
 
       if (state.cells) {
-        const recs = state.cells.filter((c) => c.quarter === q).map((c) => cellRecord(c.id));
+        // Cells outside the Phoenix outline are transparent (not drawn); they stay in every statistic.
+        const recs = state.cells.filter((c) => c.quarter === q && (!urban.inside || urban.inside.has(c.id))).map((c) => cellRecord(c.id));
         const alpha = dim ? 70 : 235;
         const has = recs.filter((r) => layerValue(r) != null), missing = recs.filter((r) => layerValue(r) == null);
         layers.push(new PolygonLayer({   // missing cells: outline only, never a value
@@ -329,7 +330,6 @@
         }));
         const colour = (r) => {
           let a = state.layer === "rate" && !r.significant_fdr ? Math.round(alpha * 0.35) : alpha;
-          if (urban.inside && !urban.inside.has(r.id)) a = Math.round(a * 0.42);   // outside the metro outline: faded
 
           return layerColor(state.layer, layerValue(r), a);
         };
@@ -438,7 +438,7 @@
       <div class="legend-bar" style="background:${rampCss(L.ramp)}" aria-hidden="true"></div>
       <div class="legend-scale" aria-hidden="true">${L.ticks.map((t) => `<span>${esc(t)}</span>`).join("")}</div>
       <p class="legend-note">${esc(L.note)}</p>
-      ${urban.inside ? '<p class="legend-note"><i class="ua-key"></i>Bright: inside the Phoenix urban area (Natural Earth, MODIS c. 2002). Faded: rest of the NASA study window, same data.</p>' : ""}
+      ${urban.inside ? '<p class="legend-note"><i class="ua-key"></i>Shown: the 88 cells inside the Phoenix urban area (Natural Earth, MODIS c. 2002). The other 104 cells of the NASA window are hidden on the map but included in every statistic.</p>' : ""}
       ${!reduceMotion && state.layer !== "rate" ? '<p class="legend-note">Changes ease between observed frames; only the settled frame is data.</p>' : ""}
       ${finding ? `<p class="legend-note overlay"><i style="border-color:rgb(${(HIGHLIGHT[finding.highlight] || HIGHLIGHT.none).join(",")})"></i>${finding.id === "ask" ? `Cells from your question: ${finding.cells.length} outlined.` : `${esc(finding.title)} (${esc(finding.status)}): ${finding.cells.length} cells outlined.`}</p>` : ""}`;
   }

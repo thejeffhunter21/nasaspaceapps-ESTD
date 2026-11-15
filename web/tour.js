@@ -7,7 +7,7 @@
   const $ = (s) => document.querySelector(s);
   const STEPS = [
     {sel: "#map", inset: 0.22, title: "1 · The scene",
-     text: "This is Phoenix at night. Each column is one 5 km NASA grid cell: taller and brighter means a hotter night. The dark base follows the Phoenix urban area. Click any column to open its case file."},
+     text: "This is Phoenix at night. Each column is one 5 km NASA grid cell: taller and brighter means a hotter night. The map is cut to the Phoenix urban area. Click any column to open its case file."},
     {sel: ".timeline", extra: "#year", controls: true, title: "2 · Move through time",
      text: "Press play to watch 2003–2024, or drag the year. Pick a month, or the annual average (shown only when all 12 months passed quality control)."},
     {sel: "#region", controls: true, title: "3 · Pick a region",
