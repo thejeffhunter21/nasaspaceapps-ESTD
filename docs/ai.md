@@ -128,6 +128,7 @@ reported p-values are from the uncorrected test and are smaller than the correct
 | A9 | `ai/explain.py` (`explain_detailed`), `ai/ai_trial.py`, `scripts/try_ai_explanations.py` | `explain_detailed()` returns the reason, raw reply and A3 problems behind each outcome (`explain()` is unchanged). The trial tool runs the real Gemini path on the committed results, prints each reply as ACCEPTED/REJECTED with reasons and saves `data/cache/ai_trial_report.json`; it never writes results files. |
 | A10 | `ai/explain.py`, `ai/prompts/explain_v2.txt`, `ai/ai_trial.py` | Prompt v2 (`PROMPT_VERSION = "v2"`): plain-language facts ("Change: about X per month", missing months, p-value; no slope, tau, method or source text), and AI text must name the selected region. Gemini is called only when `GEMINI_LIVE=1` (or `allow_live=True`); a key alone is not enough, and cached approved replies are still reused. The trial tool defaults to a dry run (no request); `--ping` sends one tiny request with no project data; `--live` sends the facts. |
 | A11 | `ai/ai_release.py`, `scripts/verify_ai_release.py` | Release check before the offline rehearsal; never calls Gemini. Rebuilds all five results with AI off and sockets blocked and requires them to match the committed files (approved `"ai"` text is exempt only in its two explanation fields). A fallback must equal `fallback_text()` of its own numbers; AI text must pass A3 and name its region. The API, dashboard and `backup_run.py` must not import the AI layer or a model SDK. Evidence: `docs/evidence/ai/a11_release_check.json`. |
+| A12 | `docs/ai_submission.md`, `docs/evidence/ai/a12_*.json` | Submission handoff: the four checks (trend arithmetic, story review on files and live API, A11) re-run at the release commit on an LF checkout, all PASS; per-region results table, limits and a suggested AI-use statement. `tests/ai/test_submission_handoff.py` fails if the results change and the handoff is not updated. |
 
 The fallback text (`ai/explain.py: fallback_text`) is built from the numbers only and passes the
 A3 checks on every committed results file. Example (southeast): "From 2003-01 to 2024-12,
@@ -191,7 +192,23 @@ uv run python scripts/try_ai_explanations.py --live --fresh --region phoenix_nor
 
 Trial log: v1 on 2026-11-15 (gemini-3.5-flash-lite) - 5 of 5 accepted, numbers correct, but the
 study-area reply did not name its region, none gave p or missing months, and two used "slope"
-or "Kendall's tau". v2 addresses these; not yet run live.
+or "Kendall's tau".
+
+v2 run on 2026-11-15 at 03:41 UTC (gemini-3.5-flash-lite, `--live`, approved by the AI owner).
+All 5 replies were accepted, using 5 requests with no retries. Every number matched the results,
+and every reply named its region and gave p (< 0.001) and the number of missing months. None
+used "slope" or "tau" or claimed a cause, a forecast or advice. The v1 problems are fixed.
+
+Some flaws pass the checks: "There were 1 missing months" (northwest), "There were 0 missing
+months" (study area, where "all 264 months present" reads better), and "threshold 0.05" copied
+from the facts block (northeast, southwest). The replies add little over the fallback text,
+which says the same in cleaner English.
+
+Decision: the committed results keep the fallback text. Using the Gemini text would change
+results after the G4 freeze, so the frontend owner would have to agree and redo their snapshot
+and story checks. The approved replies are cached only on the machine that ran the trial
+(`data/cache/`, git-ignored). If the team adopts them, a pipeline rebuild without `GEMINI_LIVE`
+reuses that cache with no new requests. A11, A12 and the README would then need updating.
 
 ## Release check (A11)
 
