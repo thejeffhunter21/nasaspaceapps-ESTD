@@ -216,3 +216,81 @@ def test_all_problems_are_reported_together():
     found = problems(text)
     for word in ("3.5", "direction", "cause", "forecast", "significan"):
         assert word in found
+
+
+# --- A8: gaps found by the data team's question bank -------------------------------------
+
+def make_sub(compass="northeast", gaps=("2007-07",)):
+    results = make_results()
+    results["region_id"] = f"phoenix_{compass}"
+    results["region"] = f"Phoenix study area {compass}"
+    for point in results["series"]:
+        point["value"] = None if point["time"] in gaps else (point["value"] or 20.0)
+    return results
+
+
+NE = make_sub()
+
+
+@pytest.mark.parametrize("text, results", [
+    ("In Tucson, temperature is rising; significant.", RESULTS),
+    ("Mesa and Tempe are rising; significant.", RESULTS),
+    ("The southeast box is rising; significant.", NE),
+    ("The northwest is rising faster than the rest; significant.", RESULTS),
+    ("Shade Van Buren Street first; temperature is rising; significant.", RESULTS),
+])
+def test_other_places_and_street_level_claims_are_rejected(text, results):
+    assert "place" in problems(text, results)
+
+
+@pytest.mark.parametrize("text, results", [
+    (("Nighttime land surface temperature in Phoenix study area northeast is rising; "
+     "significant."), NE),
+    ("Across the Phoenix study area, temperature is rising; significant.", RESULTS),
+    ("The northeast box is rising; significant.", NE),
+    ("A mesa landscape is rising; significant.", RESULTS),  # lower-case word, not the city
+])
+def test_own_region_is_allowed(text, results):
+    assert "place" not in problems(text, results)
+
+
+def test_missing_month_date_must_be_described_as_missing():
+    assert "missing" in problems("Temperature was low in 2007-07; rising; significant.", NE)
+    assert problems("The 2007-07 value is missing; temperature is rising; significant.", NE) == ""
+    assert problems("Rising since 2003-01; one month (2007-07) is a gap; significant.", NE) == ""
+
+
+@pytest.mark.parametrize("text", [
+    "Temperature was 0 degC in one month; rising; significant.",  # 0 used to match p ~ 0
+    "Rising by 3 degC per month; significant.",
+])
+def test_whole_numbers_must_round_from_a_real_value(text):
+    # Unrounded p (as A5 writes it) and one missing month: 0 is not a value here.
+    # Whole numbers are matched by value, not meaning: a real count (e.g. 1 missing month)
+    # would still match "1".
+    assert "number" in problems(text, make_results(p=7.0e-11))
+
+
+def test_whole_numbers_that_round_from_real_values_pass():
+    complete = make_results()
+    complete["series"][50]["value"] = 20.5  # no missing months, so "0 missing" is exact
+    # 2 = slope x 264 months (2.04); 264 months; 22 years; 0 missing months.
+    text = "Rising about 2 degC over 264 months (22 years), with 0 missing months; significant."
+    assert problems(text, complete) == ""
+
+
+@pytest.mark.parametrize("phrase", [
+    "These are current live measurements.", "Right now it is rising.",
+    "Temperatures today are rising.", "This year is the warmest.",
+])
+def test_claims_that_old_data_is_current_are_rejected(phrase):
+    assert "current" in problems(f"Rising; significant. {phrase}")
+
+
+@pytest.mark.parametrize("text, reason", [
+    ("Rising; significant. Increase drainage capacity.", "advice"),
+    ("Rising; significant. Add shade to exposed areas.", "advice"),
+    ("The hottest day was in summer; rising; significant.", "product"),
+])
+def test_claims_without_numbers_are_still_rejected(text, reason):
+    assert reason in problems(text)
