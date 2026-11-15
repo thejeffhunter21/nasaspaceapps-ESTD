@@ -177,7 +177,7 @@ with evidence.container():
 
     st.subheader("Explanation")
     st.caption(
-        "Automatic summary (AI unavailable)"
+        f'{"Automatic summary"} (AI unavailable)'
         if view.explanation_source == "fallback"
         else "AI-assisted explanation"
     )
