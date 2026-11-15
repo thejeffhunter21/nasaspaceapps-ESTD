@@ -192,7 +192,23 @@ uv run python scripts/try_ai_explanations.py --live --fresh --region phoenix_nor
 
 Trial log: v1 on 2026-11-15 (gemini-3.5-flash-lite) - 5 of 5 accepted, numbers correct, but the
 study-area reply did not name its region, none gave p or missing months, and two used "slope"
-or "Kendall's tau". v2 addresses these; not yet run live.
+or "Kendall's tau".
+
+v2 run on 2026-11-15 at 03:41 UTC (gemini-3.5-flash-lite, `--live`, approved by the AI owner).
+All 5 replies were accepted, using 5 requests with no retries. Every number matched the results,
+and every reply named its region and gave p (< 0.001) and the number of missing months. None
+used "slope" or "tau" or claimed a cause, a forecast or advice. The v1 problems are fixed.
+
+Some flaws pass the checks: "There were 1 missing months" (northwest), "There were 0 missing
+months" (study area, where "all 264 months present" reads better), and "threshold 0.05" copied
+from the facts block (northeast, southwest). The replies add little over the fallback text,
+which says the same in cleaner English.
+
+Decision: the committed results keep the fallback text. Using the Gemini text would change
+results after the G4 freeze, so the frontend owner would have to agree and redo their snapshot
+and story checks. The approved replies are cached only on the machine that ran the trial
+(`data/cache/`, git-ignored). If the team adopts them, a pipeline rebuild without `GEMINI_LIVE`
+reuses that cache with no new requests. A11, A12 and the README would then need updating.
 
 ## Release check (A11)
 

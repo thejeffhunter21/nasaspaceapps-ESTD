@@ -35,8 +35,10 @@ expected gaps of the approved snapshot.
 
 **AI text is not used in this release.** All five explanations are automatic summaries and the
 dashboard labels them "Automatic summary". The Gemini path is built and tested
-(prompt v2, safety checks, cache, daily cap, opt-in live switch), but the v2 trial was not run
-before the feature freeze, so no Gemini text was approved for the demo.
+(prompt v2, safety checks, cache, daily cap, opt-in live switch). A live v2 trial on 2026-11-15
+had all 5 Gemini replies accepted with correct numbers. They add little over the automatic
+summaries and include small grammar slips, so the frozen results keep the automatic summaries.
+See the trial log in [ai.md](ai.md#trying-gemini).
 
 ## How it was verified
 
