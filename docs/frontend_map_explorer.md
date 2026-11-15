@@ -114,3 +114,17 @@ for anomalies, Plasma for warming rate, Viridis for coverage.
   the browser.
 - Not built yet (deliberately not faked): notebook, PDF reports, and 1 km cells
   (see `docs/data_request_1km.md`).
+
+## Plain-language wording and scroll transitions
+
+- **Wording.** Panels, tooltips, legends and the Discovery Engine lead with everyday sentences
+  (what happened, where, how much, how sure). The same backend numbers are used; the technical
+  values (Sen's slope, 95% CI, p, τ, q) sit under "Technical details" / "Technical evidence".
+  "How sure" text is derived only from the published p-value: below 0.001 "very strong evidence",
+  below 0.05 "good evidence", otherwise "weak evidence".
+- **Geography hints.** Each area says where it is on the map and which labelled places fall in it.
+- **AI Scientific Discovery Engine.** Four fixed investigations (hidden pattern, fastest area,
+  one square vs its area, has warming sped up). The workflow is scripted; every number is read from
+  the API. It is labelled as a prototype: no vector database or language model runs.
+- **Fade-in.** Groups below the map fade and rise 16 px as they enter the viewport (0.55 s), and
+  fade again when scrolled back above. Off with reduced motion; content is visible if scripting fails.

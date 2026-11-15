@@ -721,3 +721,18 @@ a { color: #e0a43a; }
 .eng-arch { font-size: 12.5px; color: var(--ink-3) !important; letter-spacing: .02em; }
 .answer.engine .answer-meta, .eng-disclosure { color: var(--ink-3) !important; font-size: 12px; }
 @media (max-width: 640px) { .eng-report, .eng-stages li, .eng-facts div, .eng-tools li { grid-template-columns: 1fr; gap: 2px; } }
+
+/* plain-language case files */
+.inspector .ins-main { margin: 6px 0; font-size: 14px; line-height: 1.45; color: #2a2418; }
+.inspector .ins-sure { margin: 8px 0; padding: 8px 10px; background: #f6edd5; border-left: 3px solid #b3261e; font-size: 13.5px; line-height: 1.45; }
+.inspector .ins-tech { margin-top: 10px; border-top: 1px dashed #b9a67c; padding-top: 8px; }
+.inspector .ins-tech summary { cursor: pointer; font: 700 12.5px "Courier Prime", monospace; margin-bottom: 8px; }
+.inspector .ins-sub { font-size: 13px; line-height: 1.4; }
+.eng-report dd.eng-lead { font-size: 17px; }
+.eng-tech { margin: 8px 0 0; padding-left: 18px; font-size: 13px; color: var(--ink-3); } .eng-tech li { margin: 3px 0; }
+.eng-report { grid-template-columns: 170px 1fr; }
+/* content below the map eases in as it scrolls into view (grouped; visible by default if scripting fails) */
+.reveal { transition: opacity .55s var(--ease), transform .55s var(--ease); }
+.reveal-ready .reveal:not(.in) { opacity: 0; transform: translateY(16px); }
+@media (prefers-reduced-motion: reduce) { .reveal, .reveal-ready .reveal:not(.in) { opacity: 1 !important; transform: none !important; transition: none !important; } }
+.inspector .stamp { display: inline-block; white-space: nowrap; margin-top: 4px; }

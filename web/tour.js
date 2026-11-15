@@ -7,15 +7,15 @@
   const $ = (s) => document.querySelector(s);
   const STEPS = [
     {sel: "#map", inset: 0.22, title: "1 · The scene",
-     text: "This is Phoenix at night. Each column is one 5 km NASA grid cell: taller and brighter means a hotter night. The map is cut to the Phoenix urban area. Click any column to open its case file."},
+     text: "This is Phoenix at night. Each column is one 5 km square of ground, measured from space by NASA. Taller and brighter means a hotter night. Click any column to learn about that spot."},
     {sel: ".timeline", extra: "#year", controls: true, title: "2 · Move through time",
-     text: "Press play to watch 2003–2024, or drag the year. Pick a month, or the annual average (shown only when all 12 months passed quality control)."},
+     text: "Press play to watch 2003–2024, or drag the year. Pick a month, or the yearly average (shown only when all 12 months have a reliable reading)."},
     {sel: "#region", controls: true, title: "3 · Pick a region",
-     text: "Click a quarter's name on the map, or pick it here, to open its case file: warming rate, 95% range, the monthly record and data coverage. Scroll down from the map and Phoenix splits into its four quarters, side by side."},
+     text: "Click a quarter's name on the map, or pick it here, to see how that part of the city has changed and how sure we are. Scroll down from the map and Phoenix splits into its four areas, side by side."},
     {sel: "#toolbar", title: "4 · Compare",
-     text: "Compare puts any two periods side by side and tests whether two regions really warm at different rates: a direct test, not two separate p-values. Data information holds the source, methods and limits."},
-    {sel: "#ask", scroll: true, title: "5 · Ask the Climate Detective",
-     text: "Ask anything about Phoenix's nights: a place, a year, a season, a comparison. Answers come from the statistical tests on the NASA cells, never invented."},
+     text: "Compare puts any two dates side by side, and checks whether one area is really warming faster than another. About the data explains where the numbers come from and what they can't tell you."},
+    {sel: "#ask", scroll: true, title: "5 · AI Discovery Engine",
+     text: "Pick a red investigation, or ask your own question about a place, a year or a season. Answers come from real checks on the NASA measurements, never invented."},
     {sel: ".ctl-actions", controls: true, title: "6 · Keep your evidence",
      text: "'Copy link to this view' saves your exact view (year, month, layer, region, cell) as a link you can reopen or share. 'Download CSV' saves the numbers and 'Download map image' saves the picture. There is no saved notebook yet: links are how you keep a case."},
   ];
