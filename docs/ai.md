@@ -126,6 +126,7 @@ reported p-values are from the uncorrected test and are smaller than the correct
 | A7 | `pipeline/run.py` (import switch), `tests/conftest.py` | The pipeline uses A4-A6; committed results regenerated (unrounded p, A4 fallback text). Shared test setup strips `GEMINI_API_KEY`/`GEMINI_MODEL` and isolates the cache, because `config.py` loads `.env`. `tests/ai/test_pipeline_integration.py` checks the wiring and that every committed results file matches A5 and passes A3. |
 | A8 | `tests/ai/test_question_bank.py`, `docs/ai_question_results.md` | Runs the data team's 17-case question bank against the AI layer: expected facts recomputed from the data, evidence hashes checked, the trend case met by the independently verified result, and a mocked Gemini reply with each applicable case's forbidden claim rejected. The conversational cases are not run: there is no chat interface this sprint. |
 | A9 | `ai/explain.py` (`explain_detailed`), `ai/ai_trial.py`, `scripts/try_ai_explanations.py` | `explain_detailed()` returns the reason, raw reply and A3 problems behind each outcome (`explain()` is unchanged). The trial tool runs the real Gemini path on the committed results, prints each reply as ACCEPTED/REJECTED with reasons and saves `data/cache/ai_trial_report.json`; it never writes results files. |
+| A10 | `ai/explain.py`, `ai/prompts/explain_v2.txt`, `ai/ai_trial.py` | Prompt v2 (`PROMPT_VERSION = "v2"`): plain-language facts ("Change: about X per month", missing months, p-value; no slope, tau, method or source text), and AI text must name the selected region. Gemini is called only when `GEMINI_LIVE=1` (or `allow_live=True`); a key alone is not enough, and cached approved replies are still reused. The trial tool defaults to a dry run (no request); `--ping` sends one tiny request with no project data; `--live` sends the facts. |
 
 The fallback text (`ai/explain.py: fallback_text`) is built from the numbers only and passes the
 A3 checks on every committed results file. Example (southeast): "From 2003-01 to 2024-12,
@@ -156,29 +157,40 @@ uv run --locked python -m earth_system_trend.pipeline.run --all-regions --force 
 
 - Without `GEMINI_API_KEY` (or with `GEMINI_API_KEY= AI_DAILY_CALL_CAP=0` in front of the command)
   every explanation is the fallback: reproducible, no data leaves the machine.
-- With a key and `GEMINI_MODEL` set, each region makes at most 3 requests; checked replies are
-  written as `"ai"` and cached (A6), so a re-run costs nothing.
+- With a key, `GEMINI_MODEL` and `GEMINI_LIVE=1`, each region makes at most 3 requests; checked
+  replies are written as `"ai"` and cached (A6), so a re-run costs nothing. Without
+  `GEMINI_LIVE`, only already-cached approved replies are used.
 - The committed qc-v1 results were built without a key (all `"fallback"`).
 
 ## Trying Gemini
 
-The committed results use the fallback text. To see what Gemini writes with the current prompt,
-without changing any results file:
+Gemini is never called unless you ask: live calls need `GEMINI_LIVE=1` (pipeline) or the trial
+tool's `--live`. A key in `.env` alone does nothing. All tests are mocked.
 
 ```bash
 # .env (git-ignored): GEMINI_API_KEY=... and GEMINI_MODEL=<a Gemini Flash model>
-uv run python scripts/try_ai_explanations.py            # all five regions
-uv run python scripts/try_ai_explanations.py --fresh    # ignore cached replies
+uv run python scripts/try_ai_explanations.py              # DRY RUN: shows the facts, no request
+uv run python scripts/try_ai_explanations.py --ping       # 1 tiny request, no project data
+uv run python scripts/try_ai_explanations.py --live       # sends each region's facts
+uv run python scripts/try_ai_explanations.py --live --fresh --region phoenix_northwest
 ```
 
-- Sends each region's facts block (numbers already computed by code; see `build_messages`) to
-  Google. At most 3 requests per region, within `AI_DAILY_CALL_CAP`.
-- Prints each reply as ACCEPTED (passed A3) or REJECTED (with the reasons) and saves a report to
-  `data/cache/ai_trial_report.json`. The key is never printed or saved.
-- If the replies are good, run the pipeline command in "Building the results": approved replies
-  come from the cache, so it makes no new request, and the results get `"explanation_source": "ai"`.
-- If many replies are rejected, read the reasons: either the prompt needs a v2
-  (`explain_v2.txt`, bump `PROMPT_VERSION`) or a check is too strict. Keep the fallback until then.
+- Dry run: prints the exact facts block each region would send (prompt v2) and any cached
+  approved reply. No key needed.
+- Ping: checks the key and model with one request ("ping" -> "OK"), no retry, counts against
+  `AI_DAILY_CALL_CAP`. No results data is sent.
+- Live: at most 3 requests per region. Prints ACCEPTED (passed A3 and names the region) or
+  REJECTED with the reasons, and saves `data/cache/ai_trial_report.json` (never the key).
+  Results files are never written.
+- If the replies are good, run the pipeline command in "Building the results" **without**
+  `GEMINI_LIVE`: approved replies come from the cache, so no request is made, and the results
+  get `"explanation_source": "ai"`.
+- Prompt changes go in a new `explain_vN.txt` with `PROMPT_VERSION` bumped; this changes the
+  cache key, so a new `--live` run is needed.
+
+Trial log: v1 on 2026-11-15 (gemini-3.5-flash-lite) - 5 of 5 accepted, numbers correct, but the
+study-area reply did not name its region, none gave p or missing months, and two used "slope"
+or "Kendall's tau". v2 addresses these; not yet run live.
 
 ## What the results do not say
 

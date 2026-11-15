@@ -239,6 +239,7 @@ def gemini_says(monkeypatch):
             http_client=httpx.Client(transport=httpx.MockTransport(respond)), **kw))
         monkeypatch.setenv("GEMINI_API_KEY", "test-only-key")
         monkeypatch.setenv("GEMINI_MODEL", "test-flash")
+        monkeypatch.setenv("GEMINI_LIVE", "1")
         return requests
 
     return install

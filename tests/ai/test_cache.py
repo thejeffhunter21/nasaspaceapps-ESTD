@@ -65,6 +65,7 @@ def gemini(monkeypatch):
         else:
             monkeypatch.delenv("GEMINI_API_KEY", raising=False)
         monkeypatch.setenv("GEMINI_MODEL", "test-flash")
+        monkeypatch.setenv("GEMINI_LIVE", "1")
         return requests
 
     return install
@@ -137,7 +138,7 @@ def test_cache_file_records_metadata_and_never_the_key(gemini):
     data = json.loads(cache_file().read_text())
     (entry,) = data["explanations"].values()
     assert entry["text"] == GOOD
-    assert entry["prompt_version"] == "v1"
+    assert entry["prompt_version"] == explain_mod.PROMPT_VERSION
     assert entry["model"] == "test-flash"
     assert entry["created"]
     assert SECRET not in cache_file().read_text()

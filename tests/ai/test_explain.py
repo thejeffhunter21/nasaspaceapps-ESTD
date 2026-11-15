@@ -94,6 +94,7 @@ def gemini(monkeypatch):
         monkeypatch.setattr(ai_setup, "OpenAI", sdk)
         monkeypatch.setenv("GEMINI_API_KEY", SECRET)
         monkeypatch.setenv("GEMINI_MODEL", "test-flash")
+        monkeypatch.setenv("GEMINI_LIVE", "1")
         return state
 
     return install
@@ -121,13 +122,16 @@ def test_prompt_carries_preformatted_facts_and_rules(gemini):
     run()
     system, user = sent_messages(state)
     assert system["role"] == "system" and user["role"] == "user"
-    for rule in ("only the numbers", "cause", "forecast", "advice", "air temperature", "plain text"):
+    for rule in ("only the numbers", "cause", "forecast", "advice", "air temperature",
+                 "plain text", "region", "p-value", "missing months", "slope", "tau"):
         assert rule in system["content"].lower()
     facts = user["content"]
-    for fact in ("Phoenix study area", "2003-01", "2024-12", "0.00771 degC/month",
-                 "0.0926 degC/year", "p < 0.001", "Statistically significant: yes",
-                 "Direction: increasing", "Seasonal Mann-Kendall"):
+    for fact in ("Region: Phoenix study area", "2003-01", "2024-12",
+                 "about 0.00771 degC per month (0.0926 degC per year)", "p < 0.001",
+                 "Statistically significant: yes", "Direction: increasing",
+                 "Months with data: 264 of 264 (missing months: 0)"):
         assert fact in facts
+    assert "tau" not in facts.lower() and "slope" not in facts.lower()  # plain words only
 
 
 def test_every_number_in_the_prompt_facts_passes_the_checks():
@@ -268,7 +272,37 @@ def test_p_text(p, expected):
 
 
 def test_prompt_is_versioned_file():
-    assert PROMPT_VERSION == "v1"
-    prompt = ROOT / "src" / "earth_system_trend" / "ai" / "prompts" / "explain_v1.txt"
-    assert prompt.is_file()
+    assert PROMPT_VERSION == "v2"
+    prompts = ROOT / "src" / "earth_system_trend" / "ai" / "prompts"
+    assert (prompts / "explain_v1.txt").is_file()  # old versions are kept, never edited
+    prompt = prompts / "explain_v2.txt"
     assert build_messages(RESULTS)[0]["content"] == prompt.read_text(encoding="utf-8").strip()
+
+
+def test_facts_report_missing_months_for_regions_with_gaps():
+    southeast = load(ROOT / "results" / "regions" / "phoenix_southeast.json")
+    facts = build_messages(southeast)[1]["content"]
+    assert "Months with data: 261 of 264 (missing months: 3, left as gaps)" in facts
+
+
+@pytest.mark.parametrize("reply, ok", [
+    (("Nighttime land surface temperature rose by about 0.00771 degC per month; statistically "
+     "significant (p < 0.001)."), False),  # no region
+    (("In the Phoenix study area, nighttime land surface temperature rose by about 0.00771 degC "
+     "per month; statistically significant (p < 0.001)."), True),
+])
+def test_ai_reply_must_name_the_selected_region(gemini, reply, ok):
+    gemini(completion(reply))
+    assert run()["source"] == ("ai" if ok else "fallback")
+
+
+@pytest.mark.parametrize("reply, ok", [
+    (("In the northeast part of the Phoenix study area, nighttime land surface temperature rose by "
+     "about 0.00529 degC per month; statistically significant (p < 0.001)."), True),
+    (("In Phoenix, nighttime land surface temperature rose by about 0.00529 degC per month; "
+     "statistically significant (p < 0.001)."), False),  # which box?
+])
+def test_subregion_reply_must_name_its_box(gemini, reply, ok):
+    gemini(completion(reply))
+    northeast = load(ROOT / "results" / "regions" / "phoenix_northeast.json")
+    assert run(northeast)["source"] == ("ai" if ok else "fallback")
