@@ -13,7 +13,9 @@
     "nighttime land surface temperature warming warmed fastest most compare northeast " +
     "southwest northwest southeast and vs versus is getting warmer increased " +
     "significantly statistically significant since from to between through " +
-    "accelerated acceleration trend trends show me please evidence for").split(/\s+/));
+    "accelerated acceleration trend trends show me please evidence for " +
+    "find hidden pattern patterns that regional averages might hide discover localized local " +
+    "observation observations with its average can warming most").split(/\s+/));
 
   function interpretQuestion(question) {
     const q = String(question).toLowerCase().trim();
@@ -26,12 +28,14 @@
       return !compass.length && (same(years, []) || same(years, ["2014"])) ? "acceleration" : null;
     }
     if (!(same(years, []) || same(years, ["2003"]) || same(years, ["2003", "2024"]))) return null;
+    if (/\bregional average\b/.test(q) || q.includes("compare local")) return compass.length ? null : "local_vs_region";
+    if (["hidden", "hide", "discover", "pattern", "localized", "local warming"].some(w => q.includes(w))) return compass.length ? null : "hidden_pattern";
     if (q.includes("compare") || q.includes(" vs ") || q.includes("versus")) {
       return compass.length === 2 && compass.includes("northeast") && compass.includes("southwest")
         ? "compare" : null;
     }
     if (compass.length) return null;
-    if (q.includes("fastest") || q.includes("warmed most") || q.includes("most nighttime warming")) return "rank";
+    if (q.includes("fastest") || q.includes("warmed most") || q.includes("warming most") || q.includes("most nighttime warming")) return "rank";
     if (["significan", "warmer", "warming", "trend", "increased"].some((w) => q.includes(w))) return "trend";
     return null;
   }
@@ -130,14 +134,23 @@
     const cols = [...new Set(inv.rows.flatMap((r) => Object.keys(r)))];
     out.innerHTML = `
       <p class="det-q"><span>Research question</span>${esc(question)}</p>
+      <div class="det-flow">RETRIEVE → INVESTIGATE → VALIDATE → DISCOVER</div>
+      <p class="note">Precomputed Python workflow: verified observations → seasonal tools → evidence checks → chart. No live AI reasoning.</p>
       <figure class="det-chart"><figcaption>${esc(inv.title)}</figcaption>${chart}
         <p class="det-src">NASA MOD11C3.061 · phoenix-qc-v1.0 · Seasonal MK / Sen's slope</p></figure>
-      <div class="det-finding"><span>Key finding</span>${esc(inv.finding)}</div>
+      <div class="det-finding"><span>Discovery</span>${esc(inv.finding)}</div>
       <div class="table-wrap"><table class="findings det-table"><thead><tr>${cols.map((c) => `<th scope="col">${esc(c)}</th>`).join("")}</tr></thead>
         <tbody>${inv.rows.map((r) => `<tr>${cols.map((c) => `<td class="${typeof r[c] === "number" ? "num" : ""}">${r[c] == null ? "—" : fmtCell(c, r[c])}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+      <h3>Challenge</h3><p>${esc(inv.challenge)}</p>
+      <h3>Conclusion</h3><p>${esc(inv.conclusion)}</p>
+      <h3>Why it matters</h3><p>${esc(inv.matters)}</p>
+      <details class="det-how"><summary>Retrieved Evidence</summary>
+        ${Object.entries(inv.metadata).map(([k,v]) => `<p><b>${esc(k)}:</b> ${esc(v)}</p>`).join("")}</details>
+      <details class="det-how"><summary>Investigation Tools</summary><p>Executed by Python during export, not by the browser.</p>
+        <ul>${inv.tools.map(t => `<li>${esc(t)}</li>`).join("")}</ul></details>
       <details class="det-how"><summary>How was this calculated?</summary><p>${esc(data.method_note)}</p><p>${esc(data.source)}</p>
         <p><a href="https://doi.org/10.5067/MODIS/MOD11C3.061">NASA dataset reference</a></p></details>
-      <p class="note">${esc(data.limits)}</p>`;
+      <p class="note">${esc(data.limits)}</p><p class="note">${esc(data.disclosure)}</p>`;
   }
 
   async function init() {
