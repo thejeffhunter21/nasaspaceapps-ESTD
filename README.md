@@ -15,6 +15,8 @@ warming trend (p < 0.001), from about +0.06 °C per year (northeast) to +0.11 °
 
 Scope: the demo covers Phoenix. Extending to the whole United States is a stretch goal.
 
+**Live dashboard:** [estd-frontend.onrender.com](https://estd-frontend.onrender.com)
+
 **Live API:** https://estd-api.onrender.com · interactive docs at
 https://estd-api.onrender.com/docs
 
@@ -30,14 +32,39 @@ uv run --locked streamlit run app/streamlit_app.py
 ```
 
 The dashboard opens at http://localhost:8501 and reads the live API. To run the API on your
-own machine instead:
+own machine instead, start it in a separate terminal:
 
 ```
 uv run --locked uvicorn earth_system_trend.api.app:app --reload
 ```
 
 Then open http://localhost:8000/docs. It serves mock data unless `USE_MOCK=false`
-(see [Settings](#settings)).
+(see [Settings](#settings)). To point the dashboard at that local API, start Streamlit with:
+
+```sh
+API_URL=http://127.0.0.1:8000 uv run --locked streamlit run app/streamlit_app.py
+```
+
+For a synthetic preview without API requests, use `API_URL=` instead. The preview
+shows **Offline preview** and **Sample data**; it is not the real-data offline backup.
+The dashboard's Python server calls the API, so this setup requires no backend
+browser-origin CORS changes.
+
+Frontend-only installation, port changes, settings and recovery steps are in the
+[tested frontend runbook](docs/frontend_runbook.md). See the
+[freeze checklist and known limits](docs/frontend_demo_freeze.md) before presenting.
+Native Chrome/Safari and full screen-reader checks remain pending.
+
+### Dashboard preview
+
+Real Phoenix study-area observations and supplied explanation/source, captured
+from the FE-12 release (the runtime is unchanged in FE-13):
+
+![Real Phoenix monthly nighttime surface-temperature chart, automatic summary and supplied source/method](docs/evidence/frontend/fe12_provenance.jpg)
+
+[Desktop overview](docs/evidence/frontend/fe12_desktop.jpg) ·
+[Phone cards](docs/evidence/frontend/fe12_phone_cards.jpg) ·
+[Phone chart](docs/evidence/frontend/fe12_phone_chart.jpg)
 
 ## How it fits together
 
