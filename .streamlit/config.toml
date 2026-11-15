@@ -1,0 +1,13 @@
+# Dashboard look: night sky with heat accents. No web fonts, so offline matches live.
+[theme]
+base = "dark"
+primaryColor = "#FFC857"
+backgroundColor = "#0A0F1E"
+secondaryBackgroundColor = "#121A30"
+textColor = "#EAEEF9"
+font = "sans-serif"
+baseRadius = "0.9rem"
+borderColor = "#26304F"
+
+[client]
+toolbarMode = "minimal"

@@ -123,7 +123,7 @@ def test_network_operations_run_inside_loading_indicators(service, monkeypatch):
     app = AppTest.from_file(str(APP)).run()
     assert not app.exception
     assert not app.error
-    assert service["calls"] == ["health", "regions", "series", "trend"]
+    assert service["calls"] == ["health", "regions", "series", "trend", "anomaly"]
     assert app.metric
 
 

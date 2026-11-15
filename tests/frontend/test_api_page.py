@@ -33,6 +33,9 @@ def backend(monkeypatch):
             body = {k: payload[k] for k in (
                 "region_id", "region", "variable", "units", "period", "series",
             )}
+        elif url.endswith("/anomaly"):
+            result.status_code = 404  # optional view; the page must still render without it
+            body = {"detail": "No anomaly data"}
         else:
             assert url.endswith("/trend")
             assert kwargs["params"] == {"region": payload["region_id"]}
@@ -57,6 +60,7 @@ def test_connected_results_render_and_rerun_uses_cache(backend):
     assert backend["calls"] == [
         "https://backend.example/health", "https://backend.example/regions",
         "https://backend.example/series", "https://backend.example/trend",
+        "https://backend.example/anomaly",
     ]
 
 
@@ -88,7 +92,7 @@ def test_failure_offers_sample_without_automatically_substituting(backend):
     assert not app.exception
     assert app.subheader[0].value == "Phoenix study area"
     assert not app.warning
-    assert len(backend["calls"]) == 6
+    assert len(backend["calls"]) == 7
 
 
 def test_default_url_is_the_supplied_live_service(backend, monkeypatch):
@@ -98,6 +102,7 @@ def test_default_url_is_the_supplied_live_service(backend, monkeypatch):
     assert backend["calls"] == [
         "https://estd-api.onrender.com/health", "https://estd-api.onrender.com/regions",
         "https://estd-api.onrender.com/series", "https://estd-api.onrender.com/trend",
+        "https://estd-api.onrender.com/anomaly",
     ]
 
 
@@ -108,4 +113,4 @@ def test_refresh_loads_changed_results_from_the_same_host(backend):
     next(button for button in app.button if button.label == "Refresh data").click().run()
     assert not app.exception
     assert app.subheader[0].value == "Updated study area"
-    assert len(backend["calls"]) == 8
+    assert len(backend["calls"]) == 10

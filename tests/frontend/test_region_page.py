@@ -76,13 +76,13 @@ def test_switch_updates_chart_cards_explanation_period_source_and_method(regiona
     assert chart["layout"]["yaxis"]["title"]["text"].endswith("(K)")
     assert regional_backend["calls"] == [
         ("health", None), ("regions", None), ("series", "north"), ("trend", "north"),
-        ("series", "south"), ("trend", "south"),
+        ("anomaly", "north"), ("series", "south"), ("trend", "south"), ("anomaly", "south"),
     ]
     app.selectbox[0].select("north").run()
     assert not app.exception
     assert app.subheader[0].value == "North"
     assert app.text[0].value == "North explanation"
-    assert len(regional_backend["calls"]) == 6
+    assert len(regional_backend["calls"]) == 8
 
 
 def test_failed_switch_removes_previous_evidence(regional_backend):
