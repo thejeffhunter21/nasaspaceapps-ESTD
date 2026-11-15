@@ -1,21 +1,19 @@
 /* Earth System Trend Detective — map explorer.
  *
  * Data rules (same as the rest of the project):
- *  - Every number comes from the backend (/regions, /series, /anomaly) or from
- *    data/grid.json, which is built from the Data layer's per-cell export
- *    (scripts/build_grid_json.py). Nothing is interpolated or estimated.
+ *  - The page shows regional results only (/regions, /series, /anomaly). The per-cell
+ *    dataset stays on the server (private /analysis service); the page receives only
+ *    verified AI discoveries and their cell outlines from /discoveries, never measurements.
  *  - A missing month stays missing. An annual average needs all 12 months.
- *  - Without grid.json the map shows each quarter's real regional average,
- *    labelled as such, never pretend per-cell values.
  * The camera never moves. Scrolling only moves the four quarter pieces.
  */
 (() => {
   "use strict";
-  const {Deck, ColumnLayer, PolygonLayer, PathLayer, TextLayer, TileLayer, BitmapLayer,
+  const {Deck, PolygonLayer, PathLayer, TextLayer, TileLayer, BitmapLayer,
          WebMercatorViewport} = deck;
 
   // Study window and quarter split (docs/data_card.md).
-  const W = -112.4, S = 33.2, E = -111.6, N = 33.8, MID_LON = -112.0, MID_LAT = 33.5, CELL = 0.05;
+  const W = -112.4, S = 33.2, E = -111.6, N = 33.8, MID_LON = -112.0, MID_LAT = 33.5;
   const QUARTERS = {
     NW: {name: "Northwest", b: [W, MID_LAT, MID_LON, N], dir: [-1, 1]},
     NE: {name: "Northeast", b: [MID_LON, MID_LAT, E, N], dir: [1, 1]},
@@ -26,8 +24,8 @@
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const PLACES = [["Downtown Phoenix", -112.074, 33.4484], ["Tempe", -111.94, 33.4255],
                   ["Glendale", -112.186, 33.5387], ["Scottsdale", -111.926, 33.4942]];
+  const HIGHLIGHT = {faster: [106, 75, 214], slower: [37, 99, 235], extremes: [217, 70, 39], anomalies: [217, 119, 6], default: [106, 75, 214]};
   const T_MIN = 0, T_MAX = 40;               // one fixed colour/height scale for every view
-  const METRES_PER_DEG_C = 95;               // column height scale (34 °C ≈ 3.2 km on a 5 km cell)
   const PITCH = 42;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const params = new URLSearchParams(location.search);
@@ -36,7 +34,7 @@
   const CHARS = " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,:+-()°·–/".split("");
 
   const state = {
-    regions: null, series: {}, anomaly: {}, baseline: null, grid: null,
+    regions: null, series: {}, anomaly: {}, baseline: null, discoveries: null, activeFinding: null,
     year: 2024, month: 7, progress: 0, eased: 0, quarterIds: {}, view: null, error: null, targets: {},
   };
 
@@ -138,15 +136,7 @@
     return out;
   }
 
-  // Static geometry: cell footprints per quarter (known grid, no values) and clipped freeways.
-  const cellsByQuarter = {NW: [], NE: [], SW: [], SE: []};
-  for (let r = 0; r < Math.round((N - S) / CELL); r++) {
-    for (let c = 0; c < Math.round((E - W) / CELL); c++) {
-      const lon = W + (c + 0.5) * CELL, lat = N - (r + 0.5) * CELL;
-      const q = (lat >= MID_LAT ? "N" : "S") + (lon < MID_LON ? "W" : "E");
-      cellsByQuarter[q].push({lon, lat, id: `r${String(r).padStart(2, "0")}_c${String(c).padStart(2, "0")}`});
-    }
-  }
+  // Freeways clipped to each quarter (static geometry).
   let freeways = {NW: [], NE: [], SW: [], SE: []};
 
   // ---------- deck ----------
@@ -180,26 +170,24 @@
     if (!object || !layer) return null;
     const style = {backgroundColor: "#fff", color: "#141a2b", border: "1px solid #cfd4e2", borderRadius: "8px",
                    fontSize: "12px", boxShadow: "0 6px 16px rgba(20,26,43,.12)", padding: "8px 10px"};
-    if (object.kind === "cell") {
-      const v = object.value;
-      return {style, html: `<b>Grid cell ${esc(object.id)}</b><br>${object.lat.toFixed(3)}° N, ${Math.abs(object.lon).toFixed(3)}° W<br>${esc(periodLabel())}: <b>${v == null ? "no valid measurement" : fmt(v, 2) + " °C"}</b>`};
+    if (object.kind === "found") {
+      const m = object.metric == null ? "" : `<br>${object.finding.highlight === "anomalies" ? `robust z ${object.metric.toFixed(1)} (${esc(object.month)})` : `${object.metric >= 0 ? "+" : "−"}${Math.abs(object.metric).toFixed(3)} °C/yr`}`;
+      return {style, html: `<b>Cell ${esc(object.id)}</b> · ${esc(object.quarter)}<br>${object.lat.toFixed(3)}° N, ${Math.abs(object.lon).toFixed(3)}° W${m}${object.q != null ? `<br>q = ${object.q.toPrecision(2)}` : ""}<br><span style="color:#6a4bd6">${esc(object.finding.status)}</span>`};
     }
     if (object.kind === "quarter") {
       const v = object.value;
-      return {style, html: `<b>${esc(object.label)}</b><br>Quarter average, ${esc(periodLabel())}: <b>${v == null ? "no valid value" : fmt(v, 2) + " °C"}</b><br><span style="color:#7a839c">Cell-level values not loaded</span>`};
+      return {style, html: `<b>${esc(object.label)}</b><br>Quarter average, ${esc(periodLabel())}: <b>${v == null ? "no valid value" : fmt(v, 2) + " °C"}</b>`};
     }
     return null;
   }
 
   function buildLayers() {
-    const e = state.eased, grid = state.grid, layers = [];
-    const transitions = reduceMotion ? {} : {
-      getElevation: {duration: 520, easing: easeInOut}, getFillColor: {duration: 520, easing: easeInOut}};
+    const e = state.eased, layers = [];
 
     layers.push(new TileLayer({
-      // Esri World Light Gray Canvas: no API key needed (CARTO raster tiles now require one).
-      id: "basemap", minZoom: 0, maxZoom: 16, tileSize: 256, opacity: 1 - 0.9 * e,
-      data: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+      // Esri World Street Map: a familiar street map with labels, no API key needed.
+      id: "basemap", minZoom: 0, maxZoom: 16, tileSize: 256, opacity: 1 - 0.85 * e,
+      data: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
       onTileError: () => {}, maxRequests: 8,
       renderSubLayers: (props) => {
         const {boundingBox} = props.tile;
@@ -214,8 +202,8 @@
       const rid = state.quarterIds[q];
       layers.push(new PolygonLayer({
         id: `piece-${q}`, data: [{poly: rect(w, s, ea, n)}], getPolygon: (d) => d.poly.map(f),
-        getFillColor: [255, 255, 255, Math.round(70 + 170 * e)], getLineColor: [120, 132, 168, 200],
-        lineWidthUnits: "pixels", getLineWidth: 1, stroked: true, filled: true,
+        getFillColor: [255, 255, 255, Math.round(235 * e)], getLineColor: [70, 84, 130, 220],
+        lineWidthUnits: "pixels", getLineWidth: 1.5, stroked: true, filled: true,
         updateTriggers: {getPolygon: e, getFillColor: e},
       }));
       layers.push(new PathLayer({
@@ -223,48 +211,32 @@
         widthUnits: "pixels", getWidth: 1.2, updateTriggers: {getPath: e},
       }));
 
-      if (grid) {
-        const cells = grid.byQuarter[q].map((cell) => ({kind: "cell", ...cell,
-          value: periodValue(grid.months, cell.values, state.year, state.month)}));
-        layers.push(new PolygonLayer({   // footprints for missing cells: visible, never filled with a value
-          id: `missing-${q}`, data: cells.filter((c) => c.value == null), pickable: true,
-          getPolygon: (c) => rect(c.lon - CELL * 0.42, c.lat - CELL * 0.42, c.lon + CELL * 0.42, c.lat + CELL * 0.42).map(f),
-          getFillColor: [255, 255, 255, 0], getLineColor: [150, 158, 184, 220], lineWidthUnits: "pixels",
-          getLineWidth: 1, stroked: true, filled: true, updateTriggers: {getPolygon: [e, state.year, state.month]},
-        }));
-        layers.push(new ColumnLayer({
-          id: `cells-${q}`, data: cells.filter((c) => c.value != null), pickable: true, extruded: true,
-          diskResolution: 4, angle: 45, radius: CELL * 0.3 * 111320 * Math.SQRT2 * Math.cos(33.5 * Math.PI / 180) * k,
-          getPosition: (c) => f([c.lon, c.lat]), getElevation: (c) => Math.max(0, c.value) * METRES_PER_DEG_C,
-          elevationScale: k, getFillColor: (c) => tempColor(c.value), autoHighlight: true,
-          highlightColor: [106, 75, 214, 160], material: {ambient: 0.55, diffuse: 0.55, shininess: 24},
-          transitions, updateTriggers: {getPosition: e, getElevation: [state.year, state.month],
-                                        getFillColor: [state.year, state.month]},
-        }));
-      } else {
-        const ser = rid && state.series[rid];
-        const value = ser ? periodValue(ser.times, ser.values, state.year, state.month) : null;
+      const ser = rid && state.series[rid];
+      const value = ser ? periodValue(ser.times, ser.values, state.year, state.month) : null;
+      layers.push(new PolygonLayer({
+        id: `quarter-${q}`, data: [{kind: "quarter", label: QUARTERS[q].name, value}],
+        pickable: true, getPolygon: () => rect(w, s, ea, n).map(f),
+        getFillColor: value == null ? [255, 255, 255, 0] : tempColor(value, 95), stroked: false, filled: true,
+        transitions: reduceMotion ? {} : {getFillColor: {duration: 520, easing: easeInOut}},
+        updateTriggers: {getPolygon: e, getFillColor: [state.year, state.month, value]},
+      }));
+      const finding = state.activeFinding && state.discoveries?.findings.find((x) => x.id === state.activeFinding);
+      if (finding) {   // AI discovery: outline the verified cells (locations only, from /discoveries)
+        const color = HIGHLIGHT[finding.highlight] || HIGHLIGHT.default;
         layers.push(new PolygonLayer({
-          id: `quarter-${q}`, data: [{kind: "quarter", label: QUARTERS[q].name, value}],
-          pickable: true, getPolygon: () => rect(w, s, ea, n).map(f),
-          getFillColor: value == null ? [255, 255, 255, 0] : tempColor(value, 105), stroked: false, filled: true,
-          transitions: reduceMotion ? {} : {getFillColor: {duration: 520, easing: easeInOut}},
-          updateTriggers: {getPolygon: e, getFillColor: [state.year, state.month, value]},
-        }));
-        layers.push(new PolygonLayer({   // the known 0.05° grid, shown as outlines only
-          id: `grid-${q}`, data: cellsByQuarter[q],
-          getPolygon: (c) => rect(c.lon - CELL / 2, c.lat - CELL / 2, c.lon + CELL / 2, c.lat + CELL / 2).map(f),
-          filled: false, stroked: true, getLineColor: [255, 255, 255, 150], lineWidthUnits: "pixels",
-          getLineWidth: 0.8, updateTriggers: {getPolygon: e},
-        }));
-        layers.push(new TextLayer({
-          id: `qval-${q}`, data: [{t: value == null ? "no value" : `${fmt(value)} °C`}], characterSet: CHARS,
-          getPosition: () => f([(w + ea) / 2, (s + n) / 2]), getText: (d) => d.t, getSize: 15,
-          getColor: [20, 26, 43, 235], fontWeight: 700, fontFamily: "system-ui, -apple-system, Segoe UI, Arial",
-          outlineWidth: 3, outlineColor: [255, 255, 255, 230], fontSettings: {sdf: true}, parameters: {depthTest: false},
-          updateTriggers: {getPosition: e, getText: [state.year, state.month]},
+          id: `found-${q}`, data: finding.cells.filter((c) => c.quarter === q).map((c) => ({kind: "found", finding, ...c})),
+          pickable: true, getPolygon: (c) => c.footprint.map(f), getFillColor: [...color, 150],
+          getLineColor: [...color, 255], lineWidthUnits: "pixels", getLineWidth: 2, stroked: true, filled: true,
+          updateTriggers: {getPolygon: [e, state.activeFinding], getFillColor: state.activeFinding},
         }));
       }
+      layers.push(new TextLayer({
+        id: `qval-${q}`, data: [{t: value == null ? "no value" : `${fmt(value)} °C`}], characterSet: CHARS,
+        getPosition: () => f([(w + ea) / 2, (s + n) / 2]), getText: (d) => d.t, getSize: 16,
+        getColor: [20, 26, 43, 240], fontWeight: 700, fontFamily: "system-ui, -apple-system, Segoe UI, Arial",
+        outlineWidth: 4, outlineColor: [255, 255, 255, 240], fontSettings: {sdf: true}, parameters: {depthTest: false},
+        updateTriggers: {getPosition: e, getText: [state.year, state.month]},
+      }));
       layers.push(new TextLayer({
         id: `qname-${q}`, data: [{t: QUARTERS[q].name.toUpperCase()}], characterSet: CHARS,
         getPosition: () => f([q.endsWith("W") ? w + 0.012 : ea - 0.012, n - 0.012]),
@@ -477,13 +449,7 @@
       $("retry").addEventListener("click", () => location.reload());
       return;
     }
-    if (state.grid) {
-      const all = state.grid.cells, shown = all.filter((c) => periodValue(state.grid.months, c.values, state.year, state.month) != null).length;
-      el.innerHTML = `<b>${shown} of ${all.length}</b> grid cells have a valid measurement for ${esc(periodLabel())}. Outlined squares have none; nothing is filled in.${state.month === "avg" ? " An annual average needs all 12 months." : ""}`;
-    } else {
-      el.classList.add("warn");
-      el.innerHTML = `<b>Showing quarter averages.</b> Per-cell NASA values are not loaded yet, so each quarter is shaded by its real regional average. No cell values are estimated.`;
-    }
+    el.innerHTML = `Each quarter is shaded by its <b>real regional average</b> for ${esc(periodLabel())}.${state.month === "avg" ? " An annual average needs all 12 months." : ""}`;
   }
 
   // ---------- story sections ----------
@@ -536,18 +502,48 @@
     }
   }
 
-  // ---------- data ----------
-  async function loadGrid() {
-    const g = await getJSON("data/grid.json", true).catch(() => null);
-    if (!g || !Array.isArray(g.cells) || !Array.isArray(g.months)) return null;
-    const byQuarter = {NW: [], NE: [], SW: [], SE: []};
-    for (const c of g.cells) {
-      if (!byQuarter[c.quarter] || c.values.length !== g.months.length) return null;
-      byQuarter[c.quarter].push({id: c.id, lon: c.lon, lat: c.lat, values: c.values});
-    }
-    return {months: g.months, cells: g.cells, byQuarter, source: g.source};
+  // ---------- AI discoveries ----------
+  const STATUS = {supported: "Statistically supported", exploratory: "Exploratory", not_supported: "Not supported"};
+  function setFinding(id) {
+    state.activeFinding = id || null;
+    const sel = $("finding");
+    if (sel) sel.value = state.activeFinding || "";
+    const f = state.activeFinding && state.discoveries.findings.find((x) => x.id === state.activeFinding);
+    $("finding-note").textContent = f ? `${STATUS[f.status]}: ${f.cells.length} cells outlined. Locations only; measurements stay on the server.` : "";
+    render();
   }
 
+  function buildDiscoveries() {
+    const d = state.discoveries, host = $("discovery-list");
+    if (!d) {
+      $("discoveries").hidden = true;
+      $("finding-wrap").hidden = true;
+      return;
+    }
+    const sel = $("finding");
+    for (const f of d.findings.filter((x) => x.cells.length)) {
+      const o = document.createElement("option");
+      o.value = f.id; o.textContent = `${f.hypothesis.replace(/\.$/, "")} (${STATUS[f.status].toLowerCase()})`;
+      sel.appendChild(o);
+    }
+    sel.addEventListener("change", () => setFinding(sel.value));
+    host.innerHTML = d.findings.map((f) => `
+      <article class="disc ${esc(f.status)}">
+        <div class="disc-head"><span class="badge ${esc(f.status)}">${esc(STATUS[f.status])}</span>${f.cells.length ? `<button type="button" data-finding="${esc(f.id)}">Show on map</button>` : ""}</div>
+        <h3>${esc(f.hypothesis)}</h3>
+        <p>${esc(f.statement)}</p>
+        <p class="disc-challenge"><b>Challenge.</b> ${esc(f.challenge)}</p>
+      </article>`).join("");
+    host.querySelectorAll("button[data-finding]").forEach((b) => b.addEventListener("click", () => {
+      setFinding(b.dataset.finding);
+      window.scrollTo({top: 0, behavior: reduceMotion ? "auto" : "smooth"});
+    }));
+    $("discovery-caveats").innerHTML = d.caveats.map((c) => `<li>${esc(c)}</li>`).join("");
+    const p = d.provenance;
+    $("discovery-prov").textContent = `${d.engine}. Data: ${p.cells} grid cells × ${p.months} months (${p.period[0]} to ${p.period[1]}), ${p.data_version}, grid_cells.csv sha256 ${p.sha256.slice(0, 12)}…`;
+  }
+
+  // ---------- data ----------
   async function load() {
     try {
       const fw = await getJSON("assets/phoenix_freeways.json", true).catch(() => null);
@@ -560,10 +556,10 @@
         if (r) state.quarterIds[q] = r.region_id;
       }
       const ids = regions.map((r) => r.region_id);
-      const [series, anomalies, grid] = await Promise.all([
+      const [series, anomalies, discoveries] = await Promise.all([
         Promise.all(ids.map((id) => getJSON(`${API}/series?region=${encodeURIComponent(id)}`))),
         Promise.all(ids.map((id) => getJSON(`${API}/anomaly?region=${encodeURIComponent(id)}`, true).catch(() => null))),
-        loadGrid(),
+        getJSON(`${API}/discoveries`, true).catch(() => null),
       ]);
       series.forEach((s) => { state.series[s.region_id] = {times: s.series.map((p) => p.time), values: s.series.map((p) => p.value)}; });
       anomalies.forEach((a) => {
@@ -571,13 +567,14 @@
         state.anomaly[a.region_id] = {times: a.series.map((p) => p.time), values: a.series.map((p) => p.value)};
         if (a.region_id === state.quarterIds.whole) state.baseline = a.baseline;
       });
-      state.grid = grid;
+      state.discoveries = discoveries;
       const times = state.series[state.quarterIds.whole || ids[0]].times;
       const years = [...new Set(times.map((t) => +t.slice(0, 4)))];
       buildControls(years);
       buildPanels();
       buildFindings();
       buildMethodFigure();
+      buildDiscoveries();
     } catch (err) {
       state.error = err.message || String(err);
     }

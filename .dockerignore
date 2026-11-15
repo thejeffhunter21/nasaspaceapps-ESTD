@@ -2,6 +2,9 @@
 .venv
 .env
 data
+# ...except the per-cell export, read server-side by the private /analysis service
+!data/processed/grid_cells.csv
+!data/processed/grid_cells_manifest.json
 tests
 notebooks
 **/__pycache__

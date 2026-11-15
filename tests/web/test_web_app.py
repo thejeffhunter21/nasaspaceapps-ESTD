@@ -1,7 +1,6 @@
 """Map explorer: served by the API, and the grid converter refuses anything it can't verify."""
 
 import csv
-import json
 import math
 from pathlib import Path
 
@@ -15,12 +14,9 @@ pytestmark = pytest.mark.unit
 
 
 def load_converter():
-    import importlib.util
+    from earth_system_trend.analysis import grid
 
-    spec = importlib.util.spec_from_file_location("build_grid_json", ROOT / "scripts/build_grid_json.py")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return grid
 
 
 def test_page_and_assets_are_served_without_rate_limit():
@@ -33,17 +29,17 @@ def test_page_and_assets_are_served_without_rate_limit():
         assert client.get("/").json()["status"] == "ok"  # the API home is unchanged
 
 
-def test_no_grid_file_is_committed_without_the_data_layer_export():
-    grid = ROOT / "web/data/grid.json"
-    if grid.exists():  # once real data lands it must carry its provenance and checks
-        payload = json.loads(grid.read_text())
-        assert payload["data_version"] == "phoenix-qc-v1.0" and "input_sha256" in payload
-        assert all(check["max_abs_diff_degC"] <= 0.01 for check in payload["checks"].values())
+def test_raw_grid_cells_are_never_in_the_public_web_folder():
+    """The per-cell dataset is server-side only (private /analysis service)."""
+    public = [p.name for p in (ROOT / "web").rglob("*") if p.is_file()]
+    assert not any("grid" in name for name in public), public
+    with TestClient(app) as client:
+        assert client.get("/app/data/grid.json").status_code == 404
 
 
 def test_page_never_offers_a_live_or_forecast_claim():
     text = (ROOT / "web/index.html").read_text() + (ROOT / "web/app.js").read_text()
-    assert "Not a forecast" in text and "nothing is filled in" in text.lower()
+    assert "Not a forecast" in text
     assert "annual mean only with all 12 months" in text
 
 
@@ -84,9 +80,9 @@ def test_converter_accepts_consistent_cells_and_keeps_gaps(tmp_path):
     conv = load_converter()
     months = ["2003-01", "2003-02", "2003-03"]
     rows = _cells(months, lambda c, d: "" if (c, d) == ("b", "2003-02") else 20.0 + months.index(d))
-    months_out, cells = conv.read_grid(_write(tmp_path, rows))
+    months_out, cells = conv.read_cells(_write(tmp_path, rows))
     assert months_out == months and cells["b"]["v"]["2003-02"] is None
-    report = conv.compare_with_regions(months_out, cells, 0.01, _published(months, rows))
+    report = conv.compare_with_regions(months_out, cells, _published(months, rows), 0.01)
     assert report["NE"]["not_compared"] == ["2003-02"]
 
 
@@ -106,7 +102,7 @@ def test_converter_rejects_bad_exports(tmp_path, problem):
     else:
         rows[0][5] = 999
     with pytest.raises(conv.GridError):
-        conv.read_grid(_write(tmp_path, rows))
+        conv.read_cells(_write(tmp_path, rows))
 
 
 def test_converter_rejects_cells_that_do_not_reproduce_published_series(tmp_path):
@@ -115,6 +111,6 @@ def test_converter_rejects_cells_that_do_not_reproduce_published_series(tmp_path
     rows = _cells(months)
     published = _published(months, rows)
     published["NW"]["2003-01"] += 0.5
-    months_out, cells = conv.read_grid(_write(tmp_path, rows))
+    months_out, cells = conv.read_cells(_write(tmp_path, rows))
     with pytest.raises(conv.GridError, match="not the published data"):
-        conv.compare_with_regions(months_out, cells, 0.01, published)
+        conv.compare_with_regions(months_out, cells, published, 0.01)

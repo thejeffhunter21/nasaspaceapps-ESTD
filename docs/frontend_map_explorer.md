@@ -28,22 +28,9 @@ still shows the study grid, freeways (Natural Earth, `web/assets/`) and all data
 
 ## Data rules
 
-- Numbers come from `/regions`, `/series` and `/anomaly`, or from `web/data/grid.json`.
-- A missing month stays missing. An annual average needs all 12 months; otherwise the cell or
-  quarter shows as missing.
-- **Per-cell columns need the Data layer's export.** Until `web/data/grid.json` exists, each
-  quarter is shaded by its real regional average with a visible "Showing quarter averages"
-  notice, and the 0.05° grid is drawn as outlines only. No cell values are estimated.
-
-## Adding the per-cell data
-
-1. Data layer exports `data/processed/grid_cells.csv`: `cell_id, lat, lon, quarter, date, value`,
-   one row per cell per month (192 × 264), value in °C after qc-v1, empty when the cell failed.
-2. `uv run --locked python scripts/build_grid_json.py`
-   It refuses the file (and writes nothing) unless every cell has every month once, sits on the
-   0.05° grid inside the window with the right quarter, has plausible values, and the
-   cosine-latitude weighted mean of accepted cells reproduces every published regional month
-   (`timeseries*.csv`) within 0.01 °C. On success it writes `web/data/grid.json` with the input
-   SHA-256 and the comparison report.
-3. Commit `grid_cells.csv` and `web/data/grid.json` together. The page switches to per-cell
-   columns automatically.
+- The page shows regional results only: `/regions`, `/series`, `/anomaly`.
+- The per-cell dataset never reaches the browser. The page reads `/discoveries`, which carries
+  the AI investigator's findings with statuses (supported / exploratory) and cell outlines only;
+  choosing a discovery outlines its cells on the map. See `docs/analysis_service.md`.
+- A missing month stays missing. An annual average needs all 12 months.
+- Basemap: Esri World Street Map (no key). CARTO raster tiles now require an API key.

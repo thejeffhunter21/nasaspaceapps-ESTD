@@ -15,6 +15,7 @@ RUN uv sync --locked --no-default-groups --no-install-project
 COPY src ./src
 COPY results.mock.json ./
 COPY results ./results
+COPY data/processed/grid_cells.csv data/processed/grid_cells_manifest.json ./data/processed/
 COPY web ./web
 RUN uv sync --locked --no-default-groups
 

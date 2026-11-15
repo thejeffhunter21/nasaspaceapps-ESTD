@@ -34,7 +34,12 @@
         <div class="legend">
           <div class="legend-bar" aria-hidden="true"></div>
           <div class="legend-scale" aria-hidden="true"><span>0 °C</span><span>10</span><span>20</span><span>30</span><span>40 °C</span></div>
-          <p class="legend-note" id="legend-note">Column height and colour use one fixed 0–40 °C scale for every year and month.</p>
+          <p class="legend-note" id="legend-note">Quarter colour uses one fixed 0–40 °C scale for every year and month.</p>
+        </div>
+        <div class="finding-wrap" id="finding-wrap">
+          <label class="ctl-label" for="finding">Highlight an AI discovery</label>
+          <select id="finding"><option value="">None</option></select>
+          <p class="legend-note" id="finding-note" aria-live="polite"></p>
         </div>
         <p class="status" id="data-status" role="status">Loading NASA results…</p>
       </div>
@@ -45,7 +50,7 @@
       </div>
 
       <div class="panels" id="panels" aria-live="polite"></div>
-      <p class="attribution" id="attribution">Basemap: Esri, HERE, Garmin, © OpenStreetMap contributors · Freeways: Natural Earth</p>
+      <p class="attribution" id="attribution">Basemap: Esri World Street Map (Esri, HERE, Garmin, © OpenStreetMap contributors) · Freeways: Natural Earth</p>
     </div>
   </section>
 
@@ -77,6 +82,14 @@
         </table>
       </div>
       <p class="note" id="findings-note">Slopes are seasonal Sen's slopes per month from the backend; per-year values multiply by 12. The period figure is a trend-line estimate, not a measured difference between two years.</p>
+    </section>
+
+    <section class="block" id="discoveries">
+      <p class="kicker">Beneath the averages</p>
+      <h2>What the AI found in the 5 km cells</h2>
+      <p class="wide">The map shows four regional averages. Behind it, an AI investigator works through all 192 quality-controlled NASA grid cells on the server: it states a hypothesis, runs the statistics, corrects for testing many cells at once, then tries to break its own result. Only findings that survive are marked <b>statistically supported</b>; everything else stays <b>exploratory</b>.</p>
+      <div class="disc-list" id="discovery-list"></div>
+      <details class="det-how"><summary>Rules and caveats</summary><ul id="discovery-caveats"></ul><p class="note" id="discovery-prov"></p></details>
     </section>
 
     <section class="block" id="data">
@@ -119,7 +132,7 @@
     </section>
 
     <footer class="foot">
-      <p>Built by the Earth System Trend Detective team for NASA Space Apps 2026. Data: NASA LP DAAC MOD11C3 v061. Statistics: seasonal Mann-Kendall test with Sen's slope (pymannkendall). Map: deck.gl; freeways from Natural Earth; basemap Esri World Light Gray Canvas (Esri, HERE, Garmin, © OpenStreetMap contributors). AI tools (Claude, Gemini) helped write code and plain-language summaries; every number comes from the analysis.</p>
+      <p>Built by the Earth System Trend Detective team for NASA Space Apps 2026. Data: NASA LP DAAC MOD11C3 v061. Statistics: seasonal Mann-Kendall test with Sen's slope (pymannkendall). Map: deck.gl; freeways from Natural Earth; basemap Esri World Street Map (Esri, HERE, Garmin, © OpenStreetMap contributors). AI tools (Claude, Gemini) helped write code and plain-language summaries; every number comes from the analysis.</p>
       <p><a href="/docs">API documentation</a> · <a href="https://github.com/thejeffhunter21/nasaspaceapps-ESTD">Source code</a></p>
     </footer>
   </main>
