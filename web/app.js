@@ -479,7 +479,7 @@
     }
     if (state.grid) {
       const all = state.grid.cells, shown = all.filter((c) => periodValue(state.grid.months, c.values, state.year, state.month) != null).length;
-      el.innerHTML = `<b>${shown} of ${all.length}</b> grid cells have a valid measurement for ${esc(periodLabel())}. Outlined squares have none; nothing is filled in.`;
+      el.innerHTML = `<b>${shown} of ${all.length}</b> grid cells have a valid measurement for ${esc(periodLabel())}. Outlined squares have none; nothing is filled in.${state.month === "avg" ? " An annual average needs all 12 months." : ""}`;
     } else {
       el.classList.add("warn");
       el.innerHTML = `<b>Showing quarter averages.</b> Per-cell NASA values are not loaded yet, so each quarter is shaded by its real regional average. No cell values are estimated.`;
